@@ -55,8 +55,10 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   const stream = new ReadableStream({
     async start(controller) {
+      // Cliente pode fechar a conexão SSE antes do finally (ao receber done/error).
+      // Guard silencioso evita "Invalid state: Controller is already closed".
       function emit(data: ProgressEvent | ResultEvent | AtlasErrorPayload): void {
-        controller.enqueue(frame(data));
+        try { controller.enqueue(frame(data)); } catch { /* cliente desconectou */ }
       }
 
       // Alias com tipo exato — passado a captureDevice como onProgress
@@ -125,7 +127,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         }
       } finally {
         await browser?.close();
-        controller.close();
+        try { controller.close(); } catch { /* já fechado pelo cliente */ }
       }
     },
   });
