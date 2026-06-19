@@ -4,9 +4,9 @@ Checklist **vivo** da construção. O Claude Code deve marcar cada fase como con
 (`[x]`) e escrever uma nota de 1 linha ao terminá-la. Detalhes de cada fase estão na
 seção "Ordem de Implementação" do `docs/architecture.md`.
 
-**Status atual:** v1.3 concluída — roadmap pós-v1.0 zerado. Aguardando teste do Matheus.
-**Última fase concluída:** v1.1–v1.3 — lightbox das capturas, paleta de comando (Cmd+K), seleção em lote na biblioteca e opções de captura (vídeo/seções) por geração. `next build` ✓ 12 rotas. Testes: reprocess 7/7, portfolio-manifest 16/16, delete-project 10/10, capture-options 7/7. Verificado por screenshots (paleta, lightbox, seleção em lote, toggles do form).
-**Próximos passos:** roadmap zerado — ver `docs/ROADMAP.md` para retomar/priorizar novas frentes.
+**Status atual:** v1.4 concluída + v1.5 em andamento (itens 7 e 8 prontos). Aguardando teste do Matheus.
+**Última fase concluída:** v1.5 item 8 (estados de interação) — clicar seletor e fotografar. Antes: item 7 (múltiplas páginas) e v1.4 (composições + mockups). `next build` ✓. Testes: states 6/6, multipage 8/8, capture-options 7/7, +regressões.
+**ONDE PARAMOS:** v1.5 **item 9 — Nomes de seção inteligentes** é o próximo (ver `docs/ROADMAP.md`).
 
 ---
 
@@ -129,6 +129,14 @@ Sistema visual comprometido (ver `design.md` › "Sistema visual (v1.0)"): token
 - [x] **v1.2 — Seleção em lote na biblioteca** — modo de seleção em `ProjectsLibrary` + `ProjectCatalogCard` selecionável; barra de ações (excluir em lote com confirmação, baixar ZIPs, selecionar todos/limpar).
 - [x] **v1.3 — Opções de captura por geração** — `CaptureOptions` em `lib/types.ts`; `captureDevice` resolve `input.options ?? config` (config vira default); toggles Vídeo/Seções no `UrlInput`; opções salvas no `catalog.json` e herdadas no reprocess.
   _Status:_ `next build` ✓ 12 rotas, zero warnings. `test-capture-options.ts` 7/7. E2E: gerar sem vídeo/seções não cria `videos/` nem `sections-*` nem a chave `videos`; reprocess herda; geração padrão segue com vídeo+seções. Verificado por screenshots (paleta, lightbox, seleção em lote, toggles).
+
+---
+
+## v1.5 — Captura mais rica (em andamento)
+
+- [x] **Item 7 — Múltiplas páginas** — `ProjectInput.pages` + `lib/capture/capture-page.ts` (viewport + full page desktop/mobile por página); rota itera com dedupe e cap (`config.maxExtraPages`); passo `capturing-pages`; `catalog.pages`; seção "Outras páginas" + ZIP; reprocess herda. `buildCatalog` refatorado para objeto `extras`. `test-multipage` 8/8.
+- [x] **Item 8 — Estados de interação** — `ProjectInput.states` (`{name, selector}`) + `lib/capture/capture-states.ts` (clica seletor, espera, fotografa desktop); passo `capturing-states`; `catalog.states`; campo no form (`Nome | seletor`); seção "Estados" + ZIP. `test-states` 6/6. E2E: clicou o botão de busca do próprio app e capturou a paleta aberta.
+- [ ] **Item 9 — Nomes de seção inteligentes** ← retomar aqui.
 
 ---
 

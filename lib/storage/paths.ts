@@ -34,6 +34,14 @@ export const compositionDir = (slug: string) =>
 export const mockupDir = (slug: string) =>
   path.join(projectDir(slug), "mockups");
 
+// v1.5 — páginas extras (screenshots por página)
+export const pageScreenshotDir = (slug: string, pageSlug: string) =>
+  path.join(screenshotDir(slug), "pages", pageSlug);
+
+// v1.5 — estados de interação
+export const stateScreenshotDir = (slug: string) =>
+  path.join(screenshotDir(slug), "states");
+
 export const caseDraftPath = (slug: string) =>
   path.join(projectDir(slug), "case-draft.mdx");
 

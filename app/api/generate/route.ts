@@ -11,6 +11,8 @@ import { generateThumbnails } from "@/lib/capture/generate-thumbnails";
 import { generateCover } from "@/lib/capture/generate-cover";
 import { generateCompositions } from "@/lib/capture/generate-compositions";
 import { generateMockups } from "@/lib/capture/generate-mockups";
+import { captureExtraPage, resolvePageUrl } from "@/lib/capture/capture-page";
+import { captureState } from "@/lib/capture/capture-states";
 import { buildCatalog } from "@/lib/capture/build-catalog";
 import { writeJson } from "@/lib/storage/write-json";
 import { catalogPath } from "@/lib/storage/paths";
@@ -19,6 +21,8 @@ import { AtlasError } from "@/lib/errors";
 import type {
   AtlasErrorPayload,
   ProjectInput,
+  PageCapture,
+  StateCapture,
   ProgressEvent,
   ResultEvent,
 } from "@/lib/types";
@@ -88,6 +92,56 @@ export async function POST(req: NextRequest): Promise<Response> {
           browser, input, config.viewports.mobile, emitProgress
         );
 
+        // Páginas extras (v1.5) — captura leve por página, falha por página é silenciosa.
+        const pages: PageCapture[] = [];
+        const seen = new Set<string>([input.url]);
+        const pageEntries = (input.pages ?? [])
+          .map((p) => p.trim())
+          .filter(Boolean)
+          .filter((e) => {
+            try {
+              const u = resolvePageUrl(e, input.url);
+              if (seen.has(u)) return false;
+              seen.add(u);
+              return true;
+            } catch {
+              return false;
+            }
+          })
+          .slice(0, config.maxExtraPages);
+
+        for (let i = 0; i < pageEntries.length; i++) {
+          emit({
+            step: "capturing-pages",
+            message: `Capturando página ${i + 1}/${pageEntries.length}: ${pageEntries[i]}`,
+            progress: 70,
+          });
+          try {
+            pages.push(await captureExtraPage(browser, input, pageEntries[i], i));
+          } catch (err) {
+            console.warn(`[atlas:${input.slug}] página "${pageEntries[i]}" falhou: ${err}`);
+          }
+        }
+
+        // Estados de interação (v1.5) — clica um seletor e fotografa; falha é silenciosa.
+        const states: StateCapture[] = [];
+        const stateInputs = (input.states ?? [])
+          .filter((s) => s?.name?.trim() && s?.selector?.trim())
+          .slice(0, config.maxStates);
+
+        for (let i = 0; i < stateInputs.length; i++) {
+          emit({
+            step: "capturing-states",
+            message: `Capturando estado ${i + 1}/${stateInputs.length}: ${stateInputs[i].name}`,
+            progress: 75,
+          });
+          try {
+            states.push(await captureState(browser, input, stateInputs[i], i));
+          } catch (err) {
+            console.warn(`[atlas:${input.slug}] estado "${stateInputs[i].name}" falhou: ${err}`);
+          }
+        }
+
         emit({ step: "generating-thumbnails", message: "Gerando thumbnails, capa e composições...", progress: 80 });
         const thumbnails = await generateThumbnails(input.slug, desktop, mobile);
         const cover = await generateCover(
@@ -100,7 +154,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         const mockups = await generateMockups(input.slug, desktop, mobile).catch(() => []);
 
         emit({ step: "writing-catalog", message: "Montando catálogo...", progress: 92 });
-        const catalog = buildCatalog(input, { desktop, mobile }, thumbnails, cover, compositions, mockups, startedAt);
+        const catalog = buildCatalog(input, { desktop, mobile }, thumbnails, cover, { compositions, mockups, pages, states }, startedAt);
         await writeJson(catalogPath(input.slug), catalog);
 
         const result: ResultEvent = {

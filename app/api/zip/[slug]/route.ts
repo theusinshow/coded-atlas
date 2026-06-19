@@ -88,6 +88,18 @@ export async function GET(_req: NextRequest, { params }: Params): Promise<Respon
     archive.directory(mockupsDir, "mockups");
   } catch { /* opcional */ }
 
+  const pagesDir = `${dir}/screenshots/pages`;
+  try {
+    await fs.access(pagesDir);
+    archive.directory(pagesDir, "screenshots/pages");
+  } catch { /* opcional */ }
+
+  const statesDir = `${dir}/screenshots/states`;
+  try {
+    await fs.access(statesDir);
+    archive.directory(statesDir, "screenshots/states");
+  } catch { /* opcional */ }
+
   archive.finalize();
 
   const readable = new ReadableStream({

@@ -263,6 +263,82 @@ export default async function ProjectPage({ params }: Props) {
           />
         </div>
 
+        {/* ── Outras páginas ── */}
+        {catalog.pages && catalog.pages.length > 0 && (
+          <div className="border-t border-line pt-16 space-y-10">
+            <div className="flex items-baseline justify-between">
+              <p className="text-[11px] font-mono text-zinc-300 uppercase tracking-widest">
+                Outras páginas
+              </p>
+              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
+                {catalog.pages.length} página{catalog.pages.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+            {catalog.pages.map((pg) => (
+              <div key={pg.path} className="space-y-3">
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <span className="text-sm font-medium text-zinc-100">{pg.path}</span>
+                  <a
+                    href={pg.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[11px] font-mono text-zinc-500 hover:text-accent transition-colors break-all"
+                  >
+                    {pg.url} ↗
+                  </a>
+                </div>
+                <div className="grid md:grid-cols-[1fr_10rem] gap-4 items-start">
+                  <div className="border border-line bg-surface overflow-hidden max-h-80">
+                    <ZoomImage
+                      src={pg.desktop.screenshot}
+                      alt={`${pg.path} — desktop`}
+                      className="w-full block"
+                    />
+                  </div>
+                  <div className="border border-line bg-surface overflow-hidden">
+                    <ZoomImage
+                      src={pg.mobile.screenshot}
+                      alt={`${pg.path} — mobile`}
+                      className="w-full block"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── Estados de interação ── */}
+        {catalog.states && catalog.states.length > 0 && (
+          <div className="border-t border-line pt-16">
+            <div className="flex items-baseline justify-between mb-6">
+              <p className="text-[11px] font-mono text-zinc-300 uppercase tracking-widest">
+                Estados de interação
+              </p>
+              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
+                desktop
+              </span>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4">
+              {catalog.states.map((st) => (
+                <div key={st.screenshot} className="space-y-2">
+                  <div className="border border-line bg-surface overflow-hidden max-h-80">
+                    <ZoomImage
+                      src={st.screenshot}
+                      alt={`${project.name} — ${st.name}`}
+                      className="w-full block"
+                    />
+                  </div>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-[13px] text-zinc-200">{st.name}</span>
+                    <span className="text-[10px] font-mono text-zinc-500 truncate">{st.selector}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* ── Section strips ── */}
         {catalog.sections && catalog.sections.length > 0 && (() => {
           const desktopSections = catalog.sections.filter(s => s.device === "desktop");

@@ -3,9 +3,9 @@
 Plano vivo das próximas evoluções. Cada item é fechado e testável de forma isolada,
 no mesmo espírito do `BUILD-PLAN.md`. Marcar `[x]` só quando o critério de aceite passar.
 
-**Status:** v1.1–v1.3 concluídas (lightbox, paleta de comando, seleção em lote, opções de
-captura). Planejadas: v1.4 saída para apresentação · v1.5 captura mais rica · v1.6 case com
-IA · v1.7 monitoramento dos sites entregues.
+**Status:** v1.1–v1.4 concluídas. **v1.5 em andamento:** itens 7 (múltiplas páginas) e 8
+(estados de interação) concluídos; **paramos no item 9 (nomes de seção inteligentes)** — é o
+próximo a fazer. Depois: v1.6 case com IA · v1.7 monitoramento dos sites entregues.
 
 **Como usar:** atacar uma versão por vez, na ordem sugerida. Ao concluir um item,
 mover o detalhe correspondente para o `BUILD-PLAN.md` (registro do que foi feito) e
@@ -135,7 +135,7 @@ da Coded by M (ver `design.md` › "Sistema visual (v1.0)").
 > Matéria-prima melhor por projeto. Mesma natureza das `options` da v1.3 (toca tipos + engine),
 > sem tecnologia nova — o Playwright já faz tudo isso.
 
-- [ ] **7. Múltiplas páginas do site** `M`
+- [x] **7. Múltiplas páginas do site** `M`
   _Objetivo:_ capturar várias rotas do mesmo site, não só a home.
   _Escopo:_ `ProjectInput` ganha `pages?: string[]` (URLs ou paths relativos); a engine itera as
   páginas reusando o pipeline; o catálogo agrupa as capturas por página; UI pra adicionar páginas.
@@ -144,7 +144,7 @@ da Coded by M (ver `design.md` › "Sistema visual (v1.0)").
   _Risco:_ toca tipos + catálogo — testar contrato. _Esforço:_ `M`.
   _Aceite:_ gerar 3 páginas produz 3 conjuntos de capturas; catálogo válido; reprocess herda.
 
-- [ ] **8. Estados de interação** `M`
+- [x] **8. Estados de interação** `M`
   _Objetivo:_ capturar além do estático: menu aberto, modal, dark mode, hover, clicando um seletor.
   _Escopo:_ por captura, uma lista curta de "ações antes do print" (`click <seletor>`, `toggle dark`);
   o Playwright executa antes de fotografar; UI simples pra definir 1–2 passos.
@@ -152,7 +152,7 @@ da Coded by M (ver `design.md` › "Sistema visual (v1.0)").
   _Esforço:_ `M` (o Playwright faz fácil; o trabalho é a UX de definir os passos).
   _Aceite:_ definir "clicar `.menu-toggle`" gera um print com o menu aberto.
 
-- [ ] **9. Nomes de seção inteligentes** `P`–`M`
+- [ ] **9. Nomes de seção inteligentes** `P`–`M` ← **PRÓXIMO (retomar aqui)**
   _Objetivo:_ nomear seções ("Hero", "Sobre", "Serviços") em vez de `section-001`.
   _Escopo:_ melhorar a heurística em `detect-sections` usando heading/landmark/aria/id já capturados;
   fallback pro número. (IA opcional, só se a heurística não bastar.)

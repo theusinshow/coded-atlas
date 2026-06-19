@@ -18,6 +18,8 @@ const STEPS: StepDef[] = [
   { step: "capturing-fullpage-mobile", phase: "Mobile", label: "Full page", desc: "Página inteira em mobile." },
   { step: "recording-video-mobile", phase: "Mobile", label: "Gravando scroll", desc: "Vídeo curto da navegação em mobile." },
 
+  { step: "capturing-pages", phase: "Finalizando", label: "Páginas extras", desc: "Capturando as outras páginas do site." },
+  { step: "capturing-states", phase: "Finalizando", label: "Estados de interação", desc: "Clicando os seletores e fotografando." },
   { step: "generating-thumbnails", phase: "Finalizando", label: "Gerando thumbnails e capa", desc: "Redimensionando com Sharp para o portfólio." },
   { step: "writing-catalog", phase: "Finalizando", label: "Montando catálogo", desc: "Escrevendo o catalog.json com tudo organizado." },
   { step: "done", phase: "Finalizando", label: "Catálogo pronto", desc: "" },

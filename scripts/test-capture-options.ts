@@ -40,8 +40,7 @@ const noExtras = buildCatalog(
   { desktop: device(false), mobile: device(false) },
   thumbs,
   undefined,
-  [],
-  [],
+  {},
   Date.now() - 1000
 );
 ok("sem vídeo → sem chave 'videos' no catálogo", noExtras.videos === undefined);
@@ -54,8 +53,7 @@ const withVid = buildCatalog(
   { desktop: device(true), mobile: device(true) },
   thumbs,
   undefined,
-  [],
-  [],
+  {},
   Date.now() - 1000
 );
 ok("com vídeo → chave 'videos' presente", withVid.videos !== undefined && withVid.videos.desktop !== undefined);

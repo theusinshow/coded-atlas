@@ -1,20 +1,31 @@
 import { config } from "../config";
-import type { Catalog, ProjectInput } from "../types";
+import type { Catalog, ProjectInput, PageCapture, StateCapture } from "../types";
 import type { DeviceCaptureResult } from "./capture-device";
 import type { ThumbnailResult } from "./generate-thumbnails";
 import type { CoverResult } from "./generate-cover";
 import type { CompositionResult } from "./generate-compositions";
 import type { MockupResult } from "./generate-mockups";
 
+/** Artefatos opcionais agregados ao catálogo (cresce sem mexer na assinatura). */
+export interface CatalogExtras {
+  compositions?: CompositionResult[];
+  mockups?: MockupResult[];
+  pages?: PageCapture[];
+  states?: StateCapture[];
+}
+
 export function buildCatalog(
   input: ProjectInput,
   captures: { desktop: DeviceCaptureResult; mobile: DeviceCaptureResult },
   thumbnails: ThumbnailResult,
   cover: CoverResult | undefined,
-  compositions: CompositionResult[],
-  mockups: MockupResult[],
+  extras: CatalogExtras,
   startedAt: number
 ): Catalog {
+  const compositions = extras.compositions ?? [];
+  const mockups = extras.mockups ?? [];
+  const pages = extras.pages ?? [];
+  const states = extras.states ?? [];
   const hasVideos =
     captures.desktop.videoPublicPath !== undefined ||
     captures.mobile.videoPublicPath  !== undefined;
@@ -51,6 +62,8 @@ export function buildCatalog(
       ...captures.desktop.sections,
       ...captures.mobile.sections,
     ],
+    ...(pages.length ? { pages } : {}),
+    ...(states.length ? { states } : {}),
     ...(captures.desktop.inspection ? { inspection: captures.desktop.inspection } : {}),
     ...(cover ? { cover: { image: cover.cover, source: cover.source } } : {}),
     ...(compositions.length ? { compositions } : {}),

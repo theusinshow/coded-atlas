@@ -77,6 +77,15 @@ export const config = {
   captureSections: process.env.ATLAS_CAPTURE_SECTIONS !== "false",
   captureVideo:    process.env.ATLAS_CAPTURE_VIDEO    !== "false",
 
+  // ── Páginas extras (v1.5) ──────────────────────────────────────────────────
+  // Cap de segurança: máximo de páginas adicionais por projeto.
+  maxExtraPages: Number(process.env.ATLAS_MAX_EXTRA_PAGES ?? 10),
+
+  // ── Estados de interação (v1.5) ────────────────────────────────────────────
+  maxStates: Number(process.env.ATLAS_MAX_STATES ?? 10),
+  // pausa após clicar o seletor, para a animação assentar antes do print
+  stateSettleMs: Number(process.env.ATLAS_STATE_SETTLE_MS ?? 800),
+
   userAgent:
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
     "(KHTML, like Gecko) Chrome/124.0 Safari/537.36",

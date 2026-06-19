@@ -34,6 +34,8 @@ export function UrlInput({ onSubmit }: Props) {
   const [customCategory, setCustomCategory] = useState("");
   const [client, setClient] = useState("");
   const [description, setDescription] = useState("");
+  const [pages, setPages] = useState("");
+  const [states, setStates] = useState("");
   const [video, setVideo] = useState(true);
   const [sections, setSections] = useState(true);
   const [nameEdited, setNameEdited] = useState(false);
@@ -87,6 +89,17 @@ export function UrlInput({ onSubmit }: Props) {
     const finalSlug = slug.trim() || slugify(name);
     const finalCategory = isOther ? customCategory.trim() : category;
     if (!name.trim() || !finalSlug || !finalCategory) return;
+    const pageList = pages
+      .split(/[\n,]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const stateList = states
+      .split("\n")
+      .map((line) => {
+        const [name, ...rest] = line.split("|");
+        return { name: (name ?? "").trim(), selector: rest.join("|").trim() };
+      })
+      .filter((s) => s.name && s.selector);
     onSubmit({
       url: url.trim(),
       name: name.trim(),
@@ -95,6 +108,8 @@ export function UrlInput({ onSubmit }: Props) {
       client: client.trim() || undefined,
       description: description.trim() || undefined,
       options: { video, sections },
+      pages: pageList.length ? pageList : undefined,
+      states: stateList.length ? stateList : undefined,
     });
   }
 
@@ -270,6 +285,38 @@ export function UrlInput({ onSubmit }: Props) {
                 rows={3}
                 className={`${INPUT} resize-none`}
               />
+            </div>
+            <div>
+              <label className={LABEL}>
+                Páginas adicionais{" "}
+                <span className="text-zinc-600 normal-case tracking-normal font-sans">(opcional)</span>
+              </label>
+              <textarea
+                value={pages}
+                onChange={(e) => setPages(e.target.value)}
+                placeholder={"/sobre\n/servicos\n/contato"}
+                rows={3}
+                className={`${INPUT} resize-none font-mono text-zinc-300`}
+              />
+              <p className="text-zinc-500 text-xs mt-1.5">
+                Uma por linha. Paths (ex: /sobre) ou URLs completas. Capturadas em desktop e mobile.
+              </p>
+            </div>
+            <div>
+              <label className={LABEL}>
+                Estados de interação{" "}
+                <span className="text-zinc-600 normal-case tracking-normal font-sans">(opcional)</span>
+              </label>
+              <textarea
+                value={states}
+                onChange={(e) => setStates(e.target.value)}
+                placeholder={"Menu aberto | .menu-toggle\nBusca | button[aria-label^='Buscar']"}
+                rows={3}
+                className={`${INPUT} resize-none font-mono text-zinc-300`}
+              />
+              <p className="text-zinc-500 text-xs mt-1.5">
+                Formato <span className="font-mono text-zinc-400">Nome | seletor</span>, uma por linha. Clica o seletor e fotografa (desktop).
+              </p>
             </div>
           </div>
         )}

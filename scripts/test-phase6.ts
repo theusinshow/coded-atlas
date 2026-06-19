@@ -77,7 +77,7 @@ async function main() {
   // ── buildCatalog ───────────────────────────────────────────────────────────
   console.log("── buildCatalog ─────────────────────────────────────");
 
-  const catalog = buildCatalog(input, { desktop, mobile }, thumbnails, undefined, [], [], startedAt);
+  const catalog = buildCatalog(input, { desktop, mobile }, thumbnails, undefined, {}, startedAt);
 
   ok("version = atlasVersion do config", () => {
     if (catalog.version !== config.atlasVersion)

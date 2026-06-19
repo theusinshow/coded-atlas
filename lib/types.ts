@@ -13,6 +13,14 @@ export interface ProjectInput {
   client?: string;
   description?: string;
   options?: CaptureOptions; // ausência = usa os defaults do config
+  pages?: string[];         // páginas extras (paths "/sobre" ou URLs completas), v1.5
+  states?: StateInput[];    // estados de interação (clicar seletor), v1.5
+}
+
+/** Estado de interação a capturar: clica um seletor e fotografa (v1.5). */
+export interface StateInput {
+  name: string;     // "Menu aberto"
+  selector: string; // ".menu-toggle"
 }
 
 /** Configuração de um viewport de captura. */
@@ -55,6 +63,8 @@ export interface Catalog {
     mobile?: string;
   };
   sections: CatalogSection[];
+  pages?: PageCapture[];       // capturas de páginas extras (v1.5)
+  states?: StateCapture[];     // estados de interação capturados (v1.5)
   inspection?: SiteInspection; // v0.3 — paleta, fontes e tech stack
   cover?: {
     image: string;                        // caminho público /generated/.../thumbnails/cover.webp
@@ -80,6 +90,21 @@ export interface MockupAsset {
   name: string;   // "browser" | "phone"
   label: string;  // "Navegador" | "Celular"
   image: string;  // caminho público (PNG com fundo transparente)
+}
+
+/** Captura de uma página extra do mesmo site (v1.5): viewport + full page, por device. */
+export interface PageCapture {
+  path: string;          // entrada original ("/sobre" ou URL completa)
+  url: string;           // URL absoluta capturada
+  desktop: DeviceCapture;
+  mobile: DeviceCapture;
+}
+
+/** Estado de interação capturado (v1.5): desktop viewport após clicar o seletor. */
+export interface StateCapture {
+  name: string;       // "Menu aberto"
+  selector: string;   // seletor clicado
+  screenshot: string; // caminho público
 }
 
 /** Seção capturada por detecção semântica + scroll (v0.3). */
@@ -138,6 +163,8 @@ export type CaptureStep =
   | "capturing-fullpage-mobile"
   | "capturing-sections-mobile"
   | "recording-video-mobile"
+  | "capturing-pages"
+  | "capturing-states"
   | "generating-thumbnails"
   | "writing-catalog"
   | "done"
