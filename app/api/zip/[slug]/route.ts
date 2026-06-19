@@ -76,6 +76,18 @@ export async function GET(_req: NextRequest, { params }: Params): Promise<Respon
     } catch { /* opcional */ }
   }
 
+  const compositionsDir = `${dir}/compositions`;
+  try {
+    await fs.access(compositionsDir);
+    archive.directory(compositionsDir, "compositions");
+  } catch { /* opcional */ }
+
+  const mockupsDir = `${dir}/mockups`;
+  try {
+    await fs.access(mockupsDir);
+    archive.directory(mockupsDir, "mockups");
+  } catch { /* opcional */ }
+
   archive.finalize();
 
   const readable = new ReadableStream({

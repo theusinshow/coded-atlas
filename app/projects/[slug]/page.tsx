@@ -168,6 +168,83 @@ export default async function ProjectPage({ params }: Props) {
           </div>
         )}
 
+        {/* ── Composições para redes ── */}
+        {catalog.compositions && catalog.compositions.length > 0 && (
+          <div className="border-t border-line pt-16">
+            <div className="flex items-baseline justify-between mb-6">
+              <p className="text-[11px] font-mono text-zinc-300 uppercase tracking-widest">
+                Composições para redes
+              </p>
+              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
+                prontas para postar
+              </span>
+            </div>
+            <div className="grid sm:grid-cols-3 gap-4">
+              {catalog.compositions.map((comp) => (
+                <div key={comp.name} className="space-y-2">
+                  <div className="border border-line bg-surface h-48 flex items-center justify-center p-3">
+                    <ZoomImage
+                      src={comp.image}
+                      alt={`${project.name} — ${comp.label}`}
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-mono text-zinc-400">
+                      {comp.label}{" "}
+                      <span className="text-zinc-600">{comp.width}×{comp.height}</span>
+                    </span>
+                    <a
+                      href={comp.image}
+                      download
+                      className="text-[11px] font-mono text-accent hover:text-accent-bright transition-colors uppercase tracking-wider"
+                    >
+                      Baixar →
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Mockups ── */}
+        {catalog.mockups && catalog.mockups.length > 0 && (
+          <div className="border-t border-line pt-16">
+            <div className="flex items-baseline justify-between mb-6">
+              <p className="text-[11px] font-mono text-zinc-300 uppercase tracking-widest">
+                Mockups
+              </p>
+              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
+                fundo transparente
+              </span>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4">
+              {catalog.mockups.map((mk) => (
+                <div key={mk.name} className="space-y-2">
+                  <div className="border border-line bg-surface/40 h-64 flex items-center justify-center p-4">
+                    <ZoomImage
+                      src={mk.image}
+                      alt={`${project.name} — ${mk.label}`}
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-mono text-zinc-400">{mk.label}</span>
+                    <a
+                      href={mk.image}
+                      download
+                      className="text-[11px] font-mono text-accent hover:text-accent-bright transition-colors uppercase tracking-wider"
+                    >
+                      Baixar →
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* ── Desktop gallery ── */}
         <div className="border-t border-line pt-16">
           <GeneratedGallery

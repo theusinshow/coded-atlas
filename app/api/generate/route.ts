@@ -9,6 +9,8 @@ import { ensureProjectFolder } from "@/lib/storage/ensure-project-folder";
 import { captureDevice } from "@/lib/capture/capture-device";
 import { generateThumbnails } from "@/lib/capture/generate-thumbnails";
 import { generateCover } from "@/lib/capture/generate-cover";
+import { generateCompositions } from "@/lib/capture/generate-compositions";
+import { generateMockups } from "@/lib/capture/generate-mockups";
 import { buildCatalog } from "@/lib/capture/build-catalog";
 import { writeJson } from "@/lib/storage/write-json";
 import { catalogPath } from "@/lib/storage/paths";
@@ -86,7 +88,7 @@ export async function POST(req: NextRequest): Promise<Response> {
           browser, input, config.viewports.mobile, emitProgress
         );
 
-        emit({ step: "generating-thumbnails", message: "Gerando thumbnails e capa...", progress: 80 });
+        emit({ step: "generating-thumbnails", message: "Gerando thumbnails, capa e composições...", progress: 80 });
         const thumbnails = await generateThumbnails(input.slug, desktop, mobile);
         const cover = await generateCover(
           input.slug,
@@ -94,9 +96,11 @@ export async function POST(req: NextRequest): Promise<Response> {
           input.url,
           desktop.inspection?.ogImage
         ).catch(() => undefined);
+        const compositions = await generateCompositions(input.slug, desktop, mobile).catch(() => []);
+        const mockups = await generateMockups(input.slug, desktop, mobile).catch(() => []);
 
         emit({ step: "writing-catalog", message: "Montando catálogo...", progress: 92 });
-        const catalog = buildCatalog(input, { desktop, mobile }, thumbnails, cover, startedAt);
+        const catalog = buildCatalog(input, { desktop, mobile }, thumbnails, cover, compositions, mockups, startedAt);
         await writeJson(catalogPath(input.slug), catalog);
 
         const result: ResultEvent = {

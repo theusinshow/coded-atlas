@@ -26,6 +26,14 @@ export const videoFilePath = (slug: string, label: string) =>
 export const coverPath = (slug: string) =>
   path.join(thumbnailDir(slug), "cover.webp");
 
+// v1.4 — composições para redes
+export const compositionDir = (slug: string) =>
+  path.join(projectDir(slug), "compositions");
+
+// v1.4 — mockups com moldura
+export const mockupDir = (slug: string) =>
+  path.join(projectDir(slug), "mockups");
+
 export const caseDraftPath = (slug: string) =>
   path.join(projectDir(slug), "case-draft.mdx");
 

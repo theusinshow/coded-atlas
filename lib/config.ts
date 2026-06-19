@@ -25,6 +25,49 @@ export const config = {
   coverWidth:  Number(process.env.ATLAS_COVER_WIDTH  ?? 1200),
   coverHeight: Number(process.env.ATLAS_COVER_HEIGHT ?? 630),
 
+  // ── Composições para redes (v1.4) ──────────────────────────────────────────
+  // A captura centralizada sobre um fundo da marca, com moldura e sombra, nos
+  // formatos prontos para postar. Tudo tunável aqui (nada hardcoded na engine).
+  compositions: {
+    background: "#0f1014",   // fundo da marca (~ --color-base)
+    paddingRatio: 0.07,      // margem = fração da menor dimensão do canvas
+    cornerRadius: 18,        // cantos arredondados da captura
+    shadowSigma: 26,         // suavidade da sombra
+    shadowOpacity: 0.5,      // opacidade da sombra
+    shadowOffsetY: 28,       // deslocamento vertical da sombra
+    formats: [
+      { name: "social-1x1",  label: "Quadrado (1:1)", width: 1080, height: 1080, source: "desktop" },
+      { name: "social-9x16", label: "Story (9:16)",   width: 1080, height: 1920, source: "mobile"  },
+      { name: "social-16x9", label: "Paisagem (16:9)", width: 1200, height: 675, source: "desktop" },
+    ],
+  },
+
+  // ── Mockups com moldura (v1.4) ─────────────────────────────────────────────
+  // Molduras desenhadas via SVG (sem asset externo). Fundo transparente para
+  // reuso em qualquer layout de case. Tudo tunável aqui.
+  mockups: {
+    pad: 90,            // margem ao redor (espaço para a sombra)
+    shadowSigma: 30,
+    shadowOpacity: 0.45,
+    shadowOffsetY: 30,
+    browser: {
+      width: 1600,
+      chromeHeight: 48,
+      radius: 14,
+      chrome: "#15171c",
+      addressBar: "#23262d",
+      border: "#2a2d34",
+      dots: ["#ff5f57", "#febc2e", "#28c840"],
+    },
+    phone: {
+      screenWidth: 460,
+      bezelRatio: 0.035,
+      bodyRadiusRatio: 0.16,
+      body: "#0a0a0c",
+      border: "#2a2d34",
+    },
+  },
+
   // ── Animação de scroll (vídeo) ─────────────────────────────────────────────
   // Mais passos + timing alinhado a 60fps → ~24 frames de animação por seção
   scrollSteps: Number(process.env.ATLAS_SCROLL_STEPS ?? 60),

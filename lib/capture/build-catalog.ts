@@ -3,12 +3,16 @@ import type { Catalog, ProjectInput } from "../types";
 import type { DeviceCaptureResult } from "./capture-device";
 import type { ThumbnailResult } from "./generate-thumbnails";
 import type { CoverResult } from "./generate-cover";
+import type { CompositionResult } from "./generate-compositions";
+import type { MockupResult } from "./generate-mockups";
 
 export function buildCatalog(
   input: ProjectInput,
   captures: { desktop: DeviceCaptureResult; mobile: DeviceCaptureResult },
   thumbnails: ThumbnailResult,
   cover: CoverResult | undefined,
+  compositions: CompositionResult[],
+  mockups: MockupResult[],
   startedAt: number
 ): Catalog {
   const hasVideos =
@@ -49,6 +53,8 @@ export function buildCatalog(
     ],
     ...(captures.desktop.inspection ? { inspection: captures.desktop.inspection } : {}),
     ...(cover ? { cover: { image: cover.cover, source: cover.source } } : {}),
+    ...(compositions.length ? { compositions } : {}),
+    ...(mockups.length ? { mockups } : {}),
     meta: {
       captureDelayMs: config.captureDelayMs,
       navTimeoutMs:   config.navTimeoutMs,

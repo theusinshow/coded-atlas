@@ -60,8 +60,26 @@ export interface Catalog {
     image: string;                        // caminho público /generated/.../thumbnails/cover.webp
     source: "og-image" | "smart-crop";   // como foi gerada
   };
+  compositions?: CompositionAsset[];     // composições para redes (v1.4)
+  mockups?: MockupAsset[];               // mockups com moldura (v1.4)
   meta: CatalogMeta;
   createdAt: string; // new Date().toISOString()
+}
+
+/** Composição para redes: a captura sobre fundo da marca num formato pronto (v1.4). */
+export interface CompositionAsset {
+  name: string;   // "social-1x1"
+  label: string;  // "Quadrado (1:1)"
+  width: number;
+  height: number;
+  image: string;  // caminho público
+}
+
+/** Mockup: a captura dentro de uma moldura (navegador ou celular) (v1.4). */
+export interface MockupAsset {
+  name: string;   // "browser" | "phone"
+  label: string;  // "Navegador" | "Celular"
+  image: string;  // caminho público (PNG com fundo transparente)
 }
 
 /** Seção capturada por detecção semântica + scroll (v0.3). */
