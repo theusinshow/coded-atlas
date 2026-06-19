@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+/* Dark scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgb(39 39 42); }
+::-webkit-scrollbar-thumb:hover { background: rgb(63 63 70); }
+
+/* Text selection */
+::selection { background: rgb(63 63 70); color: rgb(244 244 245); }
+
+/* Smooth scroll */
+html { scroll-behavior: smooth; }
+
+/* Focus ring — applies to keyboard nav; inputs override with focus: border changes */
+:focus-visible {
+  outline: 1px solid rgb(113 113 122); /* zinc-500 */
+  outline-offset: 2px;
+}

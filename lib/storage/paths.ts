@@ -1,0 +1,33 @@
+import path from "node:path";
+import { config } from "../config";
+
+export const projectDir = (slug: string) =>
+  path.join(config.outputDir, slug);
+
+export const screenshotDir = (slug: string) =>
+  path.join(projectDir(slug), "screenshots");
+
+export const thumbnailDir = (slug: string) =>
+  path.join(projectDir(slug), "thumbnails");
+
+export const catalogPath = (slug: string) =>
+  path.join(projectDir(slug), "catalog.json");
+
+// v0.2 — seções e vídeos
+export const sectionDir = (slug: string, device: string) =>
+  path.join(screenshotDir(slug), `sections-${device}`);
+
+export const videoDir = (slug: string) =>
+  path.join(projectDir(slug), "videos");
+
+export const videoFilePath = (slug: string, label: string) =>
+  path.join(videoDir(slug), `${label}-scroll.webm`);
+
+export const coverPath = (slug: string) =>
+  path.join(thumbnailDir(slug), "cover.webp");
+
+export const caseDraftPath = (slug: string) =>
+  path.join(projectDir(slug), "case-draft.mdx");
+
+export const publicPath = (slug: string, ...parts: string[]) =>
+  "/" + path.posix.join("generated", slug, ...parts);
