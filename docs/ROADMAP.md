@@ -3,8 +3,9 @@
 Plano vivo das próximas evoluções. Cada item é fechado e testável de forma isolada,
 no mesmo espírito do `BUILD-PLAN.md`. Marcar `[x]` só quando o critério de aceite passar.
 
-**Status:** v1.1, v1.2 e v1.3 concluídas (lightbox, paleta de comando, seleção em lote,
-opções de captura por geração). Roadmap pós-v1.0 zerado.
+**Status:** v1.1–v1.3 concluídas (lightbox, paleta de comando, seleção em lote, opções de
+captura). Planejadas: v1.4 saída para apresentação · v1.5 captura mais rica · v1.6 case com
+IA · v1.7 monitoramento dos sites entregues.
 
 **Como usar:** atacar uma versão por vez, na ordem sugerida. Ao concluir um item,
 mover o detalhe correspondente para o `BUILD-PLAN.md` (registro do que foi feito) e
@@ -81,12 +82,127 @@ da Coded by M (ver `design.md` › "Sistema visual (v1.0)").
 
 ---
 
+## v1.4 — Saída pronta para apresentação
+
+> Maior alavanca de portfólio: transforma screenshot crua em peça apresentável. Reaproveita o
+> Sharp, que já está no pipeline (`generate-cover` / `generate-thumbnails`). Esforço baixo, valor alto.
+
+- [ ] **5. Composições para redes sociais** `P`
+  _Objetivo:_ gerar a captura (ou capa) centralizada sobre um fundo da marca, nos formatos prontos
+  para postar: 1:1 (Instagram), 9:16 (stories) e 16:9 (Behance/LinkedIn).
+  _Escopo:_ `lib/capture/generate-compositions.ts` (Sharp: cria o canvas do formato, aplica o fundo
+  da marca, encaixa a captura com padding, cantos arredondados e sombra); formatos/cores em
+  `lib/config.ts`; saídas em `compositions/` dentro do projeto; campos opcionais no `Catalog`; UI
+  pra ver/baixar na página do projeto e incluir na ZIP.
+  _Arquivos:_ `generate-compositions.ts`, `config.ts`, `types.ts`, `build-catalog.ts`,
+  `app/api/generate/route.ts`, `app/projects/[slug]/page.tsx`.
+  _Depende de:_ Sharp (já no pipeline). _Esforço:_ `P`.
+  _Aceite:_ cada projeto gera os 3 formatos com caminho público; baixáveis; aparecem na ZIP.
+
+- [ ] **6. Mockups com moldura (browser / device)** `P`–`M`
+  _Objetivo:_ a captura dentro de uma moldura realista (janela de browser e/ou device) com sombra,
+  parecendo produto. Inclui uma variação inclinada usando uma moldura PNG pronta.
+  _Escopo:_ assets de moldura versionados; `lib/capture/generate-mockups.ts` (Sharp compõe a
+  screenshot dentro da área útil da moldura); molduras disponíveis em `config`; UI pra escolher/baixar.
+  _Arquivos:_ `generate-mockups.ts`, assets de moldura, `config.ts`, `types.ts`, página do projeto.
+  _Esforço:_ `P`–`M` (frame reto = P; inclinado via asset = P/M).
+  _Nota:_ a versão inclinada aqui é fingida com asset PNG; o 3D renderizado de verdade é o item 12.
+  _Aceite:_ gerar mockup de desktop e mobile; baixável; visual premium consistente entre projetos.
+
+- [ ] **12. Mockups 3D em perspectiva (render real)** `G`
+  _Objetivo:_ o site num device/browser inclinado em perspectiva **real** (não fingido), com sombra,
+  profundidade e reflexo — o visual de "revelação" de Behance/Dribbble. Entra no hero do case
+  (`/cases/[slug]`), na capa/thumbnail e em posts de rede.
+  _Abordagem (reusa a infra atual):_ montar um template HTML com a screenshot aplicada a um elemento
+  com `transform: perspective() rotateX/rotateY`, sombra e moldura via CSS, e **fotografar com o
+  próprio Playwright** (fundo transparente). É a mesma renderização headless que já roda a captura —
+  sem engine 3D pesada. Escalável depois para Three.js (modelos `.glb` de device) se quiser fidelidade
+  de foto.
+  _Escopo:_ `lib/mockup/templates/` (HTML+CSS dos cenários: laptop, phone, laptop+phone),
+  `lib/mockup/render-3d.ts` (injeta a screenshot, abre no Playwright, screenshot com alpha),
+  presets de ângulo/luz/fundo em `lib/config.ts`, UI pra escolher cenário e baixar.
+  _Arquivos:_ `render-3d.ts`, templates, `config.ts`, `types.ts`, rota/engine, página do projeto.
+  _Esforço:_ `G` (o render em si é médio; o trabalho de verdade é desenhar os cenários e tunar
+  ângulo/luz/sombra até ficar premium — é iteração de design, não de código).
+  _Risco:_ qualidade visual depende do template, não da tecnologia — vai pedir algumas rodadas de ajuste.
+  _Aceite:_ gerar mockup 3D de desktop e mobile com fundo transparente + variação sobre fundo da
+  marca; baixável; com cara de peça de portfólio premium.
+
+---
+
+## v1.5 — Captura mais rica
+
+> Matéria-prima melhor por projeto. Mesma natureza das `options` da v1.3 (toca tipos + engine),
+> sem tecnologia nova — o Playwright já faz tudo isso.
+
+- [ ] **7. Múltiplas páginas do site** `M`
+  _Objetivo:_ capturar várias rotas do mesmo site, não só a home.
+  _Escopo:_ `ProjectInput` ganha `pages?: string[]` (URLs ou paths relativos); a engine itera as
+  páginas reusando o pipeline; o catálogo agrupa as capturas por página; UI pra adicionar páginas.
+  _Arquivos:_ `types.ts`, `url-input.tsx`, `app/api/generate/route.ts`, orquestração da engine,
+  `build-catalog.ts`, página do projeto.
+  _Risco:_ toca tipos + catálogo — testar contrato. _Esforço:_ `M`.
+  _Aceite:_ gerar 3 páginas produz 3 conjuntos de capturas; catálogo válido; reprocess herda.
+
+- [ ] **8. Estados de interação** `M`
+  _Objetivo:_ capturar além do estático: menu aberto, modal, dark mode, hover, clicando um seletor.
+  _Escopo:_ por captura, uma lista curta de "ações antes do print" (`click <seletor>`, `toggle dark`);
+  o Playwright executa antes de fotografar; UI simples pra definir 1–2 passos.
+  _Arquivos:_ `types.ts`, engine, `url-input.tsx`, página do projeto.
+  _Esforço:_ `M` (o Playwright faz fácil; o trabalho é a UX de definir os passos).
+  _Aceite:_ definir "clicar `.menu-toggle`" gera um print com o menu aberto.
+
+- [ ] **9. Nomes de seção inteligentes** `P`–`M`
+  _Objetivo:_ nomear seções ("Hero", "Sobre", "Serviços") em vez de `section-001`.
+  _Escopo:_ melhorar a heurística em `detect-sections` usando heading/landmark/aria/id já capturados;
+  fallback pro número. (IA opcional, só se a heurística não bastar.)
+  _Arquivos:_ `detect-sections.ts`, `capture-device.ts`. _Esforço:_ `P`–`M`.
+  _Depende de:_ já existem `heading`/`suggestedName`.
+  _Aceite:_ a maioria das seções recebe nome legível; nunca quebra (cai no número).
+
+---
+
+## v1.6 — Aceleração do case (IA)
+
+> Mata o passo manual mais lento depois da captura. Introduz uma dependência externa (Claude),
+> com custo por uso — por isso é uma versão à parte e degrada com elegância quando não há chave.
+
+- [ ] **10. Rascunho de case escrito com IA** `M`
+  _Objetivo:_ a partir das capturas + inspeção + 2–3 respostas (problema / objetivo / resultado),
+  gerar o texto do case na sua voz, editável, caindo no `case-draft.mdx`.
+  _Escopo:_ `lib/case/ai.ts` + `POST /api/case-ai/[slug]` chamando o Claude (Anthropic SDK) com o
+  contexto do catálogo; chave em env (`ATLAS_ANTHROPIC_KEY`); UI: formulário curto de contexto + preview.
+  _Arquivos:_ `lib/case/ai.ts`, `app/api/case-ai/[slug]/route.ts`, `config.ts`, `case-draft-section.tsx`.
+  _Depende de:_ chave de API + custo (externo). _Esforço:_ `M` (técnico médio; o trabalho é o prompt).
+  _Aceite:_ com chave, gera um rascunho coerente; sem chave, segue o gerador atual (sem IA).
+
+---
+
+## v1.7 — Monitoramento dos sites entregues
+
+> Dá um motivo recorrente pra abrir a ferramenta: vigiar os sites que você entregou.
+
+- [ ] **11. Diff visual de recaptura** `M`–`G`
+  _Objetivo:_ recapturar um site já catalogado e comparar com a última versão, destacando o que mudou.
+  _Escopo:_ guardar a captura-base; recaptura; `pixelmatch` gera a imagem de diff + % de mudança;
+  UI de comparação (antes / depois / diff). Limiar em `config`.
+  _Arquivos:_ `lib/capture/visual-diff.ts` (+ dep `pixelmatch`), `types.ts`, rota, página de comparação.
+  _Esforço:_ `M`–`G` (o diff é fácil; o storage da base + a UI dão o trabalho).
+  _Aceite:_ recapturar mostra % de mudança e destaca regiões; sem base, cria a primeira base.
+
+---
+
 ## Ordem sugerida e dependências
 
 ```txt
-v1.1  Lightbox  ──►  Cmd+K            (independentes, rápidos)
-v1.2  Seleção múltipla                (usa exclusão + ZIP já prontos)
-v1.3  Opções de captura por geração   (toca tipos + engine; testar contrato)
+v1.1  Lightbox  ──►  Cmd+K            (independentes, rápidos)            ✓
+v1.2  Seleção múltipla                (usa exclusão + ZIP já prontos)     ✓
+v1.3  Opções de captura por geração   (toca tipos + engine)              ✓
+v1.4  Composições  ──►  Mockups       (Sharp; maior valor de portfólio)
+        └─► Mockups 3D em perspectiva  (HTML+CSS 3D fotografado pelo Playwright)
+v1.5  Múltiplas páginas · Estados · Nomes de seção  (captura mais rica)
+v1.6  Case com IA                     (dependência externa: Claude)
+v1.7  Diff visual de recaptura        (pixelmatch + storage de base)
 ```
 
 > Publicação automática no GitHub do portfólio ficou **fora do roadmap** (decisão do Matheus).
