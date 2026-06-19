@@ -197,8 +197,9 @@ export async function captureDevice(
   onProgress: (event: ProgressEvent) => void
 ): Promise<DeviceCaptureResult> {
   const isDesktop = viewport.label === "desktop";
-  const doSections = config.captureSections;
-  const doVideo = config.captureVideo;
+  // Opções por geração sobrescrevem os defaults do config (ausência = default).
+  const doSections = input.options?.sections ?? config.captureSections;
+  const doVideo = input.options?.video ?? config.captureVideo;
 
   // Prepara dir temporário para o vídeo (Playwright grava com nome aleatório)
   const vidTempDir = doVideo

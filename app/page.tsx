@@ -1,148 +1,108 @@
 import Link from "next/link";
+import { listProjects } from "@/lib/storage/list-projects";
+import { ProjectCatalogCard } from "@/components/project-catalog-card";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const projects = await listProjects();
+  const recent = projects.slice(0, 6);
+
   return (
-    <main className="min-h-screen px-6 py-16 flex flex-col">
-      {/* Subtle technical grid — fixed */}
-      <div
-        className="fixed inset-0 pointer-events-none"
-        aria-hidden
-        style={{
-          backgroundImage: [
-            "linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px)",
-            "linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px)",
-          ].join(", "),
-          backgroundSize: "32px 32px",
-        }}
-      />
+    <main className="min-h-[calc(100vh-3.5rem)]">
+      {/* ── Hero ── */}
+      <section className="relative border-b border-line overflow-hidden">
+        <div className="bg-grid absolute inset-0 pointer-events-none" aria-hidden />
+        <div className="relative max-w-6xl mx-auto px-6 py-20 md:py-28">
+          <p className="text-[11px] font-mono text-accent uppercase tracking-[0.2em] mb-5 flex items-center gap-2">
+            <span className="tri" aria-hidden />
+            Coded by M · Laboratório interno
+          </p>
+          <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-zinc-50 leading-[1.05] max-w-3xl">
+            Transforme uma URL em um catálogo visual de projeto.
+          </h1>
+          <p className="text-zinc-300 text-base md:text-lg leading-relaxed mt-6 max-w-2xl">
+            Capture screenshots desktop e mobile, full page, seções e vídeo de scroll,
+            e organize tudo num pacote pronto para virar case no portfólio.
+          </p>
 
-      <div className="relative w-full max-w-3xl mx-auto flex flex-col flex-1">
-
-        {/* ── Header ── */}
-        <header className="mb-24">
-          <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
-            Coded by M · Laboratório
-          </span>
-        </header>
-
-        {/* ── Hero ── */}
-        <section className="space-y-8">
-          <div>
-            <p className="text-[10px] font-mono text-zinc-600 mb-3 flex items-center gap-2">
-              <span
-                aria-hidden
-                style={{
-                  display: "inline-block",
-                  width: 0,
-                  height: 0,
-                  borderTop: "4px solid transparent",
-                  borderBottom: "4px solid transparent",
-                  borderLeft: "6px solid rgb(113 113 122)",
-                }}
-              />
-              v0.1.0 · Ferramenta interna
-            </p>
-            <h1 className="text-6xl font-mono font-bold tracking-tight text-zinc-100 leading-none">
-              CODED<br />ATLAS
-            </h1>
-          </div>
-
-          <div className="border-t border-zinc-800 pt-7 space-y-3">
-            <p className="text-xl text-zinc-300 font-light leading-snug">
-              Transforme uma URL em um catálogo visual de projeto.
-            </p>
-            <p className="text-sm text-zinc-500 leading-relaxed max-w-lg">
-              Uma ferramenta interna da Coded by M para capturar sites,
-              gerar screenshots em desktop e mobile e organizar assets
-              visuais para cases de portfólio.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-4 pt-2">
+          <div className="flex flex-wrap items-center gap-3 mt-9">
             <Link
               href="/generate"
-              className="inline-block px-7 py-3 bg-zinc-100 text-zinc-900 text-sm font-medium hover:bg-white transition-colors cursor-pointer"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-zinc-100 text-zinc-950 text-sm font-semibold hover:bg-white transition-colors"
             >
-              Gerar Catálogo →
+              Gerar catálogo
+              <span aria-hidden>→</span>
             </Link>
             <Link
               href="/projects"
-              className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 border border-line text-zinc-200 text-sm font-medium hover:border-line-soft hover:bg-surface transition-colors"
             >
               Ver projetos
+              {projects.length > 0 && (
+                <span className="font-mono text-zinc-500">{projects.length}</span>
+              )}
             </Link>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* ── Como funciona ── */}
-        <section className="mt-24">
-          <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-8">
-            Como funciona
-          </p>
+      {/* ── Projetos recentes / histórico ── */}
+      <section className="max-w-6xl mx-auto px-6 py-14">
+        <div className="flex items-end justify-between gap-4 mb-7">
           <div>
-            {[
-              {
-                n: "01",
-                title: "URL",
-                desc: "Informe a URL do projeto e os metadados básicos: nome, slug, categoria.",
-              },
-              {
-                n: "02",
-                title: "Captura",
-                desc: "Playwright abre o site e captura viewport e full page em desktop (1440px) e mobile (390px).",
-              },
-              {
-                n: "03",
-                title: "Catálogo",
-                desc: "Screenshots PNG, thumbnails WebP e catalog.json organizados e prontos para o portfólio.",
-              },
-            ].map(({ n, title, desc }) => (
-              <div key={n} className="flex gap-6 py-5 border-b border-zinc-800 last:border-b-0">
-                <span className="text-[10px] font-mono text-zinc-600 w-5 shrink-0 pt-px">
-                  {n}
-                </span>
-                <div className="space-y-1">
-                  <p className="text-sm text-zinc-300 font-medium">
-                    <span className="text-zinc-500 mr-2" aria-hidden>▸</span>
-                    {title}
-                  </p>
-                  <p className="text-xs text-zinc-500 leading-relaxed">{desc}</p>
-                </div>
-              </div>
+            <h2 className="text-lg font-semibold text-zinc-100">Projetos recentes</h2>
+            <p className="text-[13px] text-zinc-400 mt-0.5">
+              {projects.length === 0
+                ? "Nenhum catálogo gerado ainda."
+                : `${projects.length} projeto${projects.length !== 1 ? "s" : ""} no catálogo · ${recent.length} mais recente${recent.length !== 1 ? "s" : ""}.`}
+            </p>
+          </div>
+          {projects.length > recent.length && (
+            <Link
+              href="/projects"
+              className="shrink-0 text-[13px] font-medium text-accent hover:text-accent-bright transition-colors"
+            >
+              Ver todos →
+            </Link>
+          )}
+        </div>
+
+        {projects.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {recent.map((project) => (
+              <ProjectCatalogCard key={project.slug} project={project} />
             ))}
           </div>
-        </section>
-
-        {/* ── Saída (estrutura de arquivos) ── */}
-        <section className="mt-16">
-          <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-4">
-            Saída
-          </p>
-          <div className="border border-zinc-800 bg-zinc-900/60 px-5 py-4">
-            <pre className="text-[11px] font-mono text-zinc-500 leading-[1.7]">{`public/generated/[slug]/
-├─ catalog.json
-├─ screenshots/
-│  ├─ desktop-1440x900.png
-│  ├─ desktop-fullpage.png
-│  ├─ mobile-390x844.png
-│  └─ mobile-fullpage.png
-└─ thumbnails/
-   ├─ thumb-main.webp   (640×400)
-   └─ thumb-mobile.webp (320×640)`}</pre>
-          </div>
-        </section>
-
-        {/* ── Footer ── */}
-        <footer className="mt-auto pt-16">
-          <div className="border-t border-zinc-800 pt-6 flex items-center justify-between">
-            <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">
-              Coded Atlas · Coded by M
-            </span>
-            <span className="text-[10px] font-mono text-zinc-600">v0.1.0</span>
-          </div>
-        </footer>
-
-      </div>
+        )}
+      </section>
     </main>
+  );
+}
+
+function EmptyState() {
+  const steps = [
+    { n: "01", t: "URL + dados", d: "Cole a URL e dê um nome. A categoria já vem em lista." },
+    { n: "02", t: "Captura", d: "Desktop e mobile, full page, seções e vídeo de scroll." },
+    { n: "03", t: "Catálogo", d: "Screenshots, thumbnails, capa e catalog.json organizados." },
+  ];
+  return (
+    <div className="border border-line bg-surface/30 p-8 md:p-10">
+      <div className="grid md:grid-cols-3 gap-6 mb-8">
+        {steps.map(({ n, t, d }) => (
+          <div key={n} className="space-y-1.5">
+            <span className="text-[11px] font-mono text-accent">{n}</span>
+            <p className="text-sm font-semibold text-zinc-100">{t}</p>
+            <p className="text-[13px] text-zinc-400 leading-relaxed">{d}</p>
+          </div>
+        ))}
+      </div>
+      <Link
+        href="/generate"
+        className="inline-flex items-center gap-2 px-5 py-2.5 bg-zinc-100 text-zinc-950 text-sm font-semibold hover:bg-white transition-colors"
+      >
+        Gerar o primeiro catálogo →
+      </Link>
+    </div>
   );
 }

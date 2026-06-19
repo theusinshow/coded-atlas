@@ -1,3 +1,9 @@
+/** Opções de captura por geração (sobrescrevem os defaults de lib/config.ts). */
+export interface CaptureOptions {
+  video?: boolean;    // gravar o vídeo de scroll
+  sections?: boolean; // fotografar seções individuais
+}
+
 /** Entrada do formulário / corpo da requisição. */
 export interface ProjectInput {
   url: string;
@@ -6,6 +12,7 @@ export interface ProjectInput {
   category: string;
   client?: string;
   description?: string;
+  options?: CaptureOptions; // ausência = usa os defaults do config
 }
 
 /** Configuração de um viewport de captura. */
@@ -69,6 +76,28 @@ export interface CatalogSection {
   suggestedName?: string; // "Hero", "Sobre Nós" — nome derivado do DOM
   semanticTag?: string;   // "header", "section", "footer", "article"
   sectionId?: string;     // valor do id / data-section do elemento
+}
+
+/**
+ * Fragmento que o portfólio da Coded by M consome para montar `/cases/[slug]`
+ * e a Paisagem Digital da Home (v1.0). Derivado inteiramente do Catalog —
+ * sem dados novos. Caminhos são públicos (`/generated/...`).
+ */
+export interface PortfolioManifest {
+  slug: string;
+  name: string;
+  category: string;
+  description?: string;
+  url: string;
+  thumbnail: string;        // thumb principal (640×400)
+  thumbnailMobile: string;  // thumb mobile (320×640)
+  cover?: string;           // capa 1.91:1, quando existir
+  accent?: string;          // cor/acento dominante do site (de inspection.colors[0])
+  palette: string[];        // paleta completa detectada
+  techStack: string[];
+  hasVideo: boolean;        // se há gravação de scroll para usar no case
+  date: string;             // YYYY-MM-DD da geração
+  atlasVersion: string;
 }
 
 /** Metadados da execução — útil para debug e reprocessamento. */

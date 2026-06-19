@@ -1,22 +1,26 @@
 "use client";
 import type { ProgressEvent } from "@/lib/types";
 
-type StepDef = { step: string; label: string };
+type StepDef = { step: string; phase: string; label: string; desc: string };
 
+// Ordem espelha exatamente a emissão da engine (capture-device + route).
 const STEPS: StepDef[] = [
-  { step: "validating",                 label: "Validando URL e entrada" },
-  { step: "launching",                  label: "Abrindo navegador" },
-  { step: "capturing-desktop",          label: "Capturando viewport desktop" },
-  { step: "capturing-fullpage-desktop", label: "Capturando full page desktop" },
-  { step: "capturing-sections-desktop", label: "Fotografando seções desktop" },
-  { step: "recording-video-desktop",    label: "Gravando vídeo desktop" },
-  { step: "capturing-mobile",           label: "Capturando viewport mobile" },
-  { step: "capturing-fullpage-mobile",  label: "Capturando full page mobile" },
-  { step: "capturing-sections-mobile",  label: "Fotografando seções mobile" },
-  { step: "recording-video-mobile",     label: "Gravando vídeo mobile" },
-  { step: "generating-thumbnails",      label: "Gerando thumbnails" },
-  { step: "writing-catalog",            label: "Montando catálogo" },
-  { step: "done",                       label: "Catálogo gerado" },
+  { step: "validating", phase: "Preparando", label: "Validando URL e dados", desc: "Conferindo se a URL responde e se os campos estão corretos." },
+  { step: "launching", phase: "Preparando", label: "Abrindo navegador", desc: "Iniciando um Chromium isolado para visitar o site." },
+
+  { step: "capturing-desktop", phase: "Desktop", label: "Capturando viewport", desc: "Foto da primeira dobra em 1440×900." },
+  { step: "capturing-sections-desktop", phase: "Desktop", label: "Fotografando seções", desc: "Detectando blocos da página e capturando cada um." },
+  { step: "capturing-fullpage-desktop", phase: "Desktop", label: "Full page", desc: "Rolando até o fim e capturando a página inteira." },
+  { step: "recording-video-desktop", phase: "Desktop", label: "Gravando scroll", desc: "Vídeo curto da navegação em desktop." },
+
+  { step: "capturing-mobile", phase: "Mobile", label: "Capturando viewport", desc: "Foto da primeira dobra em 390×844." },
+  { step: "capturing-sections-mobile", phase: "Mobile", label: "Fotografando seções", desc: "Mesmos blocos, agora na largura mobile." },
+  { step: "capturing-fullpage-mobile", phase: "Mobile", label: "Full page", desc: "Página inteira em mobile." },
+  { step: "recording-video-mobile", phase: "Mobile", label: "Gravando scroll", desc: "Vídeo curto da navegação em mobile." },
+
+  { step: "generating-thumbnails", phase: "Finalizando", label: "Gerando thumbnails e capa", desc: "Redimensionando com Sharp para o portfólio." },
+  { step: "writing-catalog", phase: "Finalizando", label: "Montando catálogo", desc: "Escrevendo o catalog.json com tudo organizado." },
+  { step: "done", phase: "Finalizando", label: "Catálogo pronto", desc: "" },
 ];
 
 interface Props {
@@ -26,72 +30,80 @@ interface Props {
 
 export function GenerationStatus({ events, done = false }: Props) {
   const lastEvent = events.at(-1);
-  const progress  = done ? 100 : (lastEvent?.progress ?? 0);
+  const progress = done ? 100 : lastEvent?.progress ?? 0;
 
   const lastIdx = done
     ? STEPS.length - 1
-    : Math.max(-1, ...events.map(e => STEPS.findIndex(s => s.step === e.step)));
+    : Math.max(-1, ...events.map((e) => STEPS.findIndex((s) => s.step === e.step)));
+
+  const activeStep = lastIdx >= 0 && !done ? STEPS[lastIdx] : undefined;
 
   return (
-    <div className="space-y-6">
-      {/* Progress bar */}
+    <div className="space-y-7">
+      {/* Cabeçalho + barra de progresso */}
       <div>
-        <div className="flex items-center justify-between mb-2">
-          <span
-            className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest"
-            aria-live="polite"
-            aria-atomic="true"
-          >
-            {done ? "Catálogo gerado." : "Construindo catálogo visual..."}
+        <div className="flex items-baseline justify-between mb-2.5">
+          <span className="text-sm font-medium text-zinc-100" aria-live="polite" aria-atomic="true">
+            {done ? "Catálogo gerado." : activeStep ? `${activeStep.phase} · ${activeStep.label}` : "Construindo catálogo visual..."}
           </span>
-          <span className="text-[10px] font-mono text-zinc-600 tabular-nums">{progress}%</span>
+          <span className="text-[13px] font-mono text-accent tabular-nums">{progress}%</span>
         </div>
-        <div className="h-0.5 bg-zinc-800 relative rounded-full overflow-hidden">
+        <div className="h-1.5 bg-surface-2 relative rounded-full overflow-hidden">
           <div
-            className="absolute inset-y-0 left-0 bg-emerald-500 transition-[width] duration-500 rounded-full"
+            className="absolute inset-y-0 left-0 bg-accent transition-[width] duration-500 ease-out rounded-full"
             style={{ width: `${progress}%` }}
           />
         </div>
+        {!done && (
+          <p className="text-[12px] text-zinc-400 mt-2.5 min-h-[1.25rem]">
+            {lastEvent?.message ?? "Iniciando..."}
+          </p>
+        )}
       </div>
 
-      {/* Step list */}
-      <ol>
-        {STEPS.map(({ step, label }, idx) => {
-          const isDone   = idx < lastIdx || (idx === lastIdx && done);
+      {/* Lista de etapas, agrupadas por fase */}
+      <ol className="space-y-0.5">
+        {STEPS.map((s, idx) => {
+          const isDone = idx < lastIdx || (idx === lastIdx && done);
           const isActive = idx === lastIdx && !done;
+          const isPending = idx > lastIdx;
+          const firstOfPhase = idx === 0 || STEPS[idx - 1].phase !== s.phase;
 
           return (
-            <li key={step} className="flex items-start gap-3 py-2.5 border-b border-zinc-900 last:border-b-0">
-              {/* Indicator */}
-              <span
-                className={[
-                  "w-4 shrink-0 mt-px text-center font-mono text-sm leading-none select-none",
-                  isDone   ? "text-emerald-400" :
-                  isActive ? "text-emerald-400 animate-pulse" :
-                             "text-zinc-700",
-                ].join(" ")}
-                aria-hidden
-              >
-                {isDone ? "✓" : isActive ? "▶" : "○"}
-              </span>
-
-              {/* Label + live message */}
-              <div className="min-w-0">
+            <li key={s.step}>
+              {firstOfPhase && (
+                <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 mt-4 first:mt-0 mb-1">
+                  {s.phase}
+                </p>
+              )}
+              <div className="flex items-start gap-3 py-1.5">
+                {/* Indicador */}
                 <span
                   className={[
-                    "text-sm",
-                    isDone   ? "text-zinc-600" :
-                    isActive ? "text-zinc-100" :
-                               "text-zinc-700",
+                    "w-4 shrink-0 mt-0.5 text-center font-mono text-sm leading-none select-none",
+                    isDone ? "text-accent" : isActive ? "text-accent animate-atlas-pulse" : "text-zinc-600",
                   ].join(" ")}
+                  aria-hidden
                 >
-                  {label}
+                  {isDone ? "✓" : isActive ? "▶" : "○"}
                 </span>
-                {isActive && lastEvent?.message && (
-                  <p className="text-[11px] font-mono text-zinc-600 mt-0.5 truncate">
-                    {lastEvent.message}
-                  </p>
-                )}
+
+                {/* Texto */}
+                <div className="min-w-0">
+                  <span
+                    className={[
+                      "text-[14px]",
+                      isActive ? "text-zinc-50 font-medium" : isDone ? "text-zinc-300" : "text-zinc-500",
+                    ].join(" ")}
+                  >
+                    {s.label}
+                  </span>
+                  {(isActive || isPending) && s.desc && (
+                    <p className={["text-[12px] mt-0.5", isActive ? "text-zinc-400" : "text-zinc-600"].join(" ")}>
+                      {s.desc}
+                    </p>
+                  )}
+                </div>
               </div>
             </li>
           );

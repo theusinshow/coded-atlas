@@ -4,9 +4,13 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { catalogPath, caseDraftPath } from "@/lib/storage/paths";
 import type { Catalog } from "@/lib/types";
+import { buildPortfolioManifest } from "@/lib/capture/build-portfolio-manifest";
 import { GeneratedGallery } from "@/components/generated-gallery";
 import { AssetDownloadItems } from "@/components/asset-downloads";
 import { CaseDraftSection } from "@/components/case-draft-section";
+import { PortfolioExport } from "@/components/portfolio-export";
+import { DeleteProject } from "@/components/delete-project";
+import { ZoomImage } from "@/components/zoom-image";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -32,6 +36,7 @@ export default async function ProjectPage({ params }: Props) {
 
   const catalog = JSON.parse(raw) as Catalog;
   const { project, captures, thumbnails, meta, createdAt } = catalog;
+  const portfolioManifest = buildPortfolioManifest(catalog);
 
   const caseExists = await fs
     .access(caseDraftPath(slug))
@@ -47,34 +52,30 @@ export default async function ProjectPage({ params }: Props) {
   });
 
   return (
-    <main className="min-h-screen px-6 py-12">
-      <div className="max-w-4xl mx-auto space-y-16">
+    <main className="max-w-4xl mx-auto px-6 py-10">
+      <div className="space-y-16">
 
-        {/* ── Breadcrumb ── */}
-        <nav
-          aria-label="Navegação"
-          className="flex items-center gap-2 text-[10px] font-mono text-zinc-600 uppercase tracking-widest"
+        {/* ── Voltar ── */}
+        <Link
+          href="/projects"
+          className="inline-flex items-center gap-2 text-[13px] text-zinc-400 hover:text-zinc-100 transition-colors"
         >
-          <Link href="/" className="hover:text-zinc-400 transition-colors">Coded by M</Link>
-          <span aria-hidden>·</span>
-          <Link href="/projects" className="hover:text-zinc-400 transition-colors">Atlas</Link>
-          <span aria-hidden>·</span>
-          <span className="text-zinc-500">{project.slug}</span>
-        </nav>
+          <span aria-hidden>←</span> Biblioteca
+        </Link>
 
         {/* ── Hero ── */}
         <section className="grid md:grid-cols-[1fr_auto] gap-8 items-start">
           {/* Info */}
           <div className="space-y-4 min-w-0">
             <div>
-              <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-2">
+              <p className="text-[11px] font-mono text-accent uppercase tracking-widest mb-2">
                 {project.category}
               </p>
-              <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">
+              <h1 className="text-3xl font-semibold text-zinc-50 tracking-tight">
                 {project.name}
               </h1>
               {project.client && (
-                <p className="text-zinc-500 text-sm mt-1">{project.client}</p>
+                <p className="text-zinc-300 text-sm mt-1.5">{project.client}</p>
               )}
             </div>
 
@@ -82,23 +83,33 @@ export default async function ProjectPage({ params }: Props) {
               href={project.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-zinc-500 text-xs font-mono hover:text-zinc-300 transition-colors break-all block"
+              className="text-zinc-400 text-[13px] font-mono hover:text-accent transition-colors break-all block"
             >
               {project.url} ↗
             </a>
 
             {project.description && (
-              <p className="text-zinc-400 text-sm leading-relaxed">
+              <p className="text-zinc-300 text-sm leading-relaxed">
                 {project.description}
               </p>
             )}
 
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-2">
-              <span className="text-[10px] font-mono text-zinc-600">{createdDate}</span>
-              <span className="text-zinc-700 text-[10px]">·</span>
-              <span className="text-[10px] font-mono text-zinc-600">{durationSec}s</span>
-              <span className="text-zinc-700 text-[10px]">·</span>
-              <span className="text-[10px] font-mono text-zinc-600">v{catalog.version}</span>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-2 text-[11px] font-mono text-zinc-400">
+              <span>{createdDate}</span>
+              <span className="text-zinc-600">·</span>
+              <span>{durationSec}s</span>
+              <span className="text-zinc-600">·</span>
+              <span>v{catalog.version}</span>
+            </div>
+
+            <div className="pt-3">
+              <Link
+                href={`/generate?reprocess=${project.slug}`}
+                className="inline-flex items-center gap-2 px-4 py-2 border border-line text-zinc-200 text-[13px] font-medium hover:border-accent hover:text-accent-bright transition-colors cursor-pointer"
+              >
+                <span aria-hidden>↻</span>
+                Reprocessar capturas
+              </Link>
             </div>
           </div>
 
@@ -108,7 +119,7 @@ export default async function ProjectPage({ params }: Props) {
             <img
               src={thumbnails.main}
               alt={`${project.name} — thumbnail desktop`}
-              className="w-full block border border-zinc-800"
+              className="w-full block border border-line"
               loading="eager"
             />
             <div className="flex gap-2 items-start">
@@ -116,10 +127,10 @@ export default async function ProjectPage({ params }: Props) {
               <img
                 src={thumbnails.mobile}
                 alt={`${project.name} — thumbnail mobile`}
-                className="w-20 block border border-zinc-800"
+                className="w-20 block border border-line"
                 loading="lazy"
               />
-              <div className="text-[10px] font-mono text-zinc-600 pt-1 space-y-1">
+              <div className="text-[11px] font-mono text-zinc-400 pt-1 space-y-1">
                 <p>640 × 400</p>
                 <p>320 × 640</p>
               </div>
@@ -129,29 +140,28 @@ export default async function ProjectPage({ params }: Props) {
 
         {/* ── Capa do catálogo ── */}
         {catalog.cover && (
-          <div className="border-t border-zinc-800 pt-16">
+          <div className="border-t border-line pt-16">
             <div className="flex items-baseline justify-between mb-4">
-              <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
+              <p className="text-[11px] font-mono text-zinc-300 uppercase tracking-widest">
                 Capa do catálogo
               </p>
               <div className="flex items-center gap-4">
-                <span className="text-[9px] font-mono text-zinc-700 uppercase tracking-wider">
+                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
                   {catalog.cover.source === "og-image" ? "og:image do site" : "smart crop · attention"}
                 </span>
                 <a
                   href={catalog.cover.image}
                   download
-                  className="text-[10px] font-mono text-zinc-600 hover:text-zinc-300 transition-colors uppercase tracking-wider cursor-pointer"
+                  className="text-[11px] font-mono text-accent hover:text-accent-bright transition-colors uppercase tracking-wider cursor-pointer"
                 >
                   Baixar →
                 </a>
               </div>
             </div>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <ZoomImage
               src={catalog.cover.image}
               alt={`${project.name} — capa`}
-              className="w-full block border border-zinc-800"
+              className="w-full block border border-line"
               style={{ aspectRatio: "1200/630", objectFit: "cover" }}
               loading="eager"
             />
@@ -159,7 +169,7 @@ export default async function ProjectPage({ params }: Props) {
         )}
 
         {/* ── Desktop gallery ── */}
-        <div className="border-t border-zinc-800 pt-16">
+        <div className="border-t border-line pt-16">
           <GeneratedGallery
             type="desktop"
             capture={captures.desktop}
@@ -168,7 +178,7 @@ export default async function ProjectPage({ params }: Props) {
         </div>
 
         {/* ── Mobile gallery ── */}
-        <div className="border-t border-zinc-800 pt-16">
+        <div className="border-t border-line pt-16">
           <GeneratedGallery
             type="mobile"
             capture={captures.mobile}
@@ -181,15 +191,15 @@ export default async function ProjectPage({ params }: Props) {
           const desktopSections = catalog.sections.filter(s => s.device === "desktop");
           const mobileSections  = catalog.sections.filter(s => s.device === "mobile");
           return (
-            <div className="border-t border-zinc-800 pt-16 space-y-12">
+            <div className="border-t border-line pt-16 space-y-12">
               <div>
-                <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-8">
+                <p className="text-[11px] font-mono text-zinc-300 uppercase tracking-widest mb-8">
                   Seções capturadas
                 </p>
 
                 {desktopSections.length > 0 && (
                   <div className="mb-8">
-                    <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-3">
+                    <p className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider mb-3">
                       Desktop · {desktopSections.length} seções
                     </p>
                     <div className="overflow-x-auto pb-3">
@@ -198,17 +208,15 @@ export default async function ProjectPage({ params }: Props) {
                           const label = section.suggestedName ?? section.heading ?? section.name;
                           return (
                             <div key={section.name} className="shrink-0 w-72 group">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
+                              <ZoomImage
                                 src={section.screenshot}
                                 alt={label}
-                                className="w-full block border border-zinc-800 group-hover:border-zinc-600 transition-colors"
+                                className="w-full block border border-line group-hover:border-accent transition-colors"
                                 style={{ aspectRatio: "16/10", objectFit: "cover", objectPosition: "top" }}
-                                loading="lazy"
                               />
                               <div className="flex items-baseline gap-2 mt-1.5">
                                 {section.semanticTag && (
-                                  <span className="text-[9px] font-mono text-zinc-700 uppercase shrink-0">
+                                  <span className="text-[10px] font-mono text-zinc-500 uppercase shrink-0">
                                     &lt;{section.semanticTag}&gt;
                                   </span>
                                 )}
@@ -226,7 +234,7 @@ export default async function ProjectPage({ params }: Props) {
 
                 {mobileSections.length > 0 && (
                   <div>
-                    <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-3">
+                    <p className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider mb-3">
                       Mobile · {mobileSections.length} seções
                     </p>
                     <div className="overflow-x-auto pb-3">
@@ -235,17 +243,15 @@ export default async function ProjectPage({ params }: Props) {
                           const label = section.suggestedName ?? section.heading ?? section.name;
                           return (
                             <div key={section.name} className="shrink-0 w-32 group">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
+                              <ZoomImage
                                 src={section.screenshot}
                                 alt={label}
-                                className="w-full block border border-zinc-800 group-hover:border-zinc-600 transition-colors"
+                                className="w-full block border border-line group-hover:border-accent transition-colors"
                                 style={{ aspectRatio: "9/16", objectFit: "cover", objectPosition: "top" }}
-                                loading="lazy"
                               />
                               <div className="mt-1.5 space-y-0.5">
                                 {section.semanticTag && (
-                                  <span className="block text-[9px] font-mono text-zinc-700 uppercase">
+                                  <span className="block text-[10px] font-mono text-zinc-500 uppercase">
                                     &lt;{section.semanticTag}&gt;
                                   </span>
                                 )}
@@ -267,18 +273,18 @@ export default async function ProjectPage({ params }: Props) {
 
         {/* ── Vídeos ── */}
         {catalog.videos && (catalog.videos.desktop || catalog.videos.mobile) && (
-          <div className="border-t border-zinc-800 pt-16">
-            <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-8">
+          <div className="border-t border-line pt-16">
+            <p className="text-[11px] font-mono text-zinc-300 uppercase tracking-widest mb-8">
               Gravações de scroll
             </p>
             <div className="grid md:grid-cols-2 gap-8">
               {catalog.videos.desktop && (
                 <div className="space-y-2">
-                  <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider">Desktop</p>
+                  <p className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider">Desktop</p>
                   <video
                     controls
                     preload="metadata"
-                    className="w-full block border border-zinc-800"
+                    className="w-full block border border-line"
                     style={{ maxHeight: "24rem" }}
                   >
                     <source src={catalog.videos.desktop} type="video/webm" />
@@ -287,11 +293,11 @@ export default async function ProjectPage({ params }: Props) {
               )}
               {catalog.videos.mobile && (
                 <div className="space-y-2">
-                  <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider">Mobile</p>
+                  <p className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider">Mobile</p>
                   <video
                     controls
                     preload="metadata"
-                    className="w-full block border border-zinc-800"
+                    className="w-full block border border-line"
                     style={{ maxHeight: "24rem", objectFit: "contain", background: "#000" }}
                   >
                     <source src={catalog.videos.mobile} type="video/webm" />
@@ -308,8 +314,8 @@ export default async function ProjectPage({ params }: Props) {
           catalog.inspection.fonts.length > 0 ||
           catalog.inspection.techStack.length > 0
         ) && (
-          <div className="border-t border-zinc-800 pt-16">
-            <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-8">
+          <div className="border-t border-line pt-16">
+            <p className="text-[11px] font-mono text-zinc-300 uppercase tracking-widest mb-8">
               Inspeção do site
             </p>
             <div className="grid md:grid-cols-3 gap-8">
@@ -317,7 +323,7 @@ export default async function ProjectPage({ params }: Props) {
               {/* Paleta */}
               {catalog.inspection.colors.length > 0 && (
                 <div className="space-y-3">
-                  <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider">
+                  <p className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider">
                     Paleta
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -325,14 +331,14 @@ export default async function ProjectPage({ params }: Props) {
                       <div
                         key={color}
                         title={color}
-                        className="w-8 h-8 border border-zinc-800 shrink-0"
+                        className="w-8 h-8 border border-line shrink-0"
                         style={{ backgroundColor: color }}
                       />
                     ))}
                   </div>
                   <div className="flex flex-wrap gap-x-3 gap-y-1">
                     {catalog.inspection.colors.map((color) => (
-                      <span key={color} className="text-[9px] font-mono text-zinc-600">
+                      <span key={color} className="text-[10px] font-mono text-zinc-400">
                         {color}
                       </span>
                     ))}
@@ -343,7 +349,7 @@ export default async function ProjectPage({ params }: Props) {
               {/* Tipografia */}
               {catalog.inspection.fonts.length > 0 && (
                 <div className="space-y-3">
-                  <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider">
+                  <p className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider">
                     Tipografia
                   </p>
                   <div className="space-y-2">
@@ -365,14 +371,14 @@ export default async function ProjectPage({ params }: Props) {
               {/* Tech Stack */}
               {catalog.inspection.techStack.length > 0 && (
                 <div className="space-y-3">
-                  <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider">
+                  <p className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider">
                     Tech Stack
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {catalog.inspection.techStack.map((tech) => (
                       <span
                         key={tech}
-                        className="text-[10px] font-mono text-zinc-400 bg-zinc-900 border border-zinc-800 px-2 py-1"
+                        className="text-[11px] font-mono text-zinc-200 bg-surface border border-line px-2 py-1"
                       >
                         {tech}
                       </span>
@@ -386,16 +392,16 @@ export default async function ProjectPage({ params }: Props) {
         )}
 
         {/* ── Downloads ── */}
-        <div className="border-t border-zinc-800 pt-16">
-          <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-4">
+        <div className="border-t border-line pt-16">
+          <p className="text-[11px] font-mono text-zinc-300 uppercase tracking-widest mb-4">
             Downloads
           </p>
-          <ul className="divide-y divide-zinc-800 border border-zinc-800">
+          <ul className="divide-y divide-line border border-line">
             {/* ZIP — item destacado */}
             <li>
               <a
                 href={`/api/zip/${slug}`}
-                className="flex items-center justify-between px-4 py-3.5 text-zinc-200 hover:bg-zinc-900 hover:text-white transition-colors group cursor-pointer"
+                className="flex items-center justify-between px-4 py-3.5 text-zinc-100 hover:bg-surface hover:text-white transition-colors group cursor-pointer"
               >
                 <span className="text-sm font-medium">
                   Baixar tudo (.zip)
@@ -411,18 +417,33 @@ export default async function ProjectPage({ params }: Props) {
         </div>
 
         {/* ── Rascunho de case ── */}
-        <div className="border-t border-zinc-800 pt-16">
+        <div className="border-t border-line pt-16">
           <CaseDraftSection slug={slug} existingPath={casePublicPath} />
         </div>
 
+        {/* ── Export para o portfólio ── */}
+        <div className="border-t border-line pt-16">
+          <PortfolioExport manifest={portfolioManifest} />
+        </div>
+
+        {/* ── Zona de risco ── */}
+        <div className="border-t border-line pt-16">
+          <p className="text-[11px] font-mono text-zinc-300 uppercase tracking-widest mb-4">
+            Zona de risco
+          </p>
+          <div className="border border-bad/30 bg-bad/[0.04] p-5">
+            <DeleteProject slug={project.slug} name={project.name} />
+          </div>
+        </div>
+
         {/* ── Footer ── */}
-        <footer className="border-t border-zinc-800 pt-8 flex items-center justify-between">
-          <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">
+        <footer className="border-t border-line pt-8 flex items-center justify-between">
+          <span className="text-[11px] font-mono text-zinc-400 uppercase tracking-widest">
             Coded Atlas · Coded by M
           </span>
           <a
             href="/generate"
-            className="text-[10px] font-mono text-zinc-600 hover:text-zinc-400 transition-colors uppercase tracking-wider cursor-pointer"
+            className="text-[11px] font-mono text-zinc-400 hover:text-accent transition-colors uppercase tracking-wider cursor-pointer"
           >
             Gerar outro →
           </a>

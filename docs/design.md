@@ -35,6 +35,26 @@ Paisagem Digital, do sistema de projetos e dos cases individuais.
 
 ---
 
+## Sistema visual (v1.0)
+
+Tokens definidos em `app/globals.css` (`@theme`, OKLCH). Estratégia **Restrained**:
+neutros frios tintados + **um acento cobre**. Texto sempre de alto contraste.
+
+- **Acento — cobre/âmbar** (`--color-accent` ≈ `oklch(0.72 0.115 62)`). Usado só em
+  estado ativo, links, foco, passo atual e ações de baixo peso. Conceito atlas/cartografia;
+  foge do clichê verde/azul de ferramenta dev. **Não** decorar com ele.
+- **Ação primária** continua em branco-gelo (`bg-zinc-100`), o maior contraste.
+- **Status** reservado a estado: `--color-ok` (verde, sucesso), `--color-bad` (vermelho, erro),
+  `--color-warn` (âmbar, atenção). Nunca como enfeite.
+- **Superfícies frias**: `--color-base` (fundo), `--color-surface` / `--color-surface-2` (painéis),
+  `--color-line` / `--color-line-soft` (bordas).
+- **Texto**: primário `zinc-50/100`, secundário `zinc-300/400`. Evitar `zinc-600/700` como texto.
+- **Foco** sempre visível em cobre (`:focus-visible`). **Navegação global** persistente (`AppNav`)
+  no topo, com o item atual sublinhado em cobre.
+- Utilitários da marca: `.bg-grid` (grid técnico) e `.tri` (marcador triangular).
+
+---
+
 ## Fluxo do usuário
 
 ```txt

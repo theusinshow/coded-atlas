@@ -163,6 +163,12 @@ bloco, preparar integração com `/cases/[slug]` no portfólio.
 Interface premium, histórico de projetos, reprocessamento de captures, exportação ZIP,
 integração com storage e GitHub, publicação manual assistida, página pública no Laboratório.
 
+### Pós-v1.0
+
+Evoluções planejadas (lightbox, paleta de comando, operações em lote e opções de captura por
+geração) estão detalhadas e priorizadas em `ROADMAP.md`. A publicação automática no GitHub
+ficou fora de escopo; a publicação no portfólio segue manual assistida.
+
 ---
 
 ## Integração futura com o portfólio

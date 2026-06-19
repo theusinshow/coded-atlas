@@ -73,18 +73,18 @@ export function GenerationToast() {
     <div
       role="status"
       aria-live="polite"
-      className="fixed bottom-5 right-5 z-50 w-72 border border-zinc-800 bg-zinc-950 shadow-2xl"
+      className="fixed bottom-5 right-5 z-50 w-80 border border-line bg-surface shadow-2xl"
     >
       {/* status bar top */}
       <div
-        className={`h-0.5 w-full ${
+        className={`h-1 w-full ${
           status.state === "generating"
             ? isStale
-              ? "bg-zinc-700"
-              : "bg-emerald-500 animate-pulse"
+              ? "bg-warn"
+              : "bg-accent animate-atlas-pulse"
             : status.state === "done"
-            ? "bg-emerald-500"
-            : "bg-red-700"
+            ? "bg-ok"
+            : "bg-bad"
         }`}
       />
 
@@ -93,23 +93,23 @@ export function GenerationToast() {
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
             {status.state === "generating" && !isStale && (
-              <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse mt-px" />
+              <span className="shrink-0 w-2 h-2 rounded-full bg-accent animate-atlas-pulse mt-0.5" />
             )}
             {status.state === "generating" && isStale && (
-              <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-zinc-600 mt-px" />
+              <span className="shrink-0 w-2 h-2 rounded-full bg-warn mt-0.5" />
             )}
             {status.state === "done" && (
-              <span className="shrink-0 text-emerald-400 text-xs leading-none">✓</span>
+              <span className="shrink-0 text-ok text-sm leading-none">✓</span>
             )}
             {status.state === "error" && (
-              <span className="shrink-0 text-red-400 text-xs leading-none">✗</span>
+              <span className="shrink-0 text-bad text-sm leading-none">✗</span>
             )}
 
-            <p className="text-[11px] font-mono text-zinc-300 truncate">
-              {status.state === "generating" && !isStale && "Gerando..."}
-              {status.state === "generating" && isStale && "Interrompido?"}
+            <p className="text-[13px] font-medium text-zinc-100 truncate">
+              {status.state === "generating" && !isStale && "Gerando catálogo..."}
+              {status.state === "generating" && isStale && "Geração interrompida?"}
               {status.state === "done" && "Catálogo gerado"}
-              {status.state === "error" && "Falhou"}
+              {status.state === "error" && "Geração falhou"}
             </p>
           </div>
 
@@ -117,7 +117,7 @@ export function GenerationToast() {
             <button
               onClick={dismiss}
               aria-label="Fechar"
-              className="shrink-0 text-zinc-600 hover:text-zinc-400 transition-colors text-xs leading-none cursor-pointer"
+              className="shrink-0 text-zinc-400 hover:text-zinc-100 transition-colors text-sm leading-none cursor-pointer"
             >
               ×
             </button>
@@ -125,23 +125,20 @@ export function GenerationToast() {
         </div>
 
         {/* project name */}
-        <p className="text-[10px] font-mono text-zinc-500 truncate pl-3.5">
-          {status.name}{" "}
-          <span className="text-zinc-700">/ {status.slug}</span>
+        <p className="text-[12px] font-mono text-zinc-400 truncate pl-4">
+          {status.name} <span className="text-zinc-600">/ {status.slug}</span>
         </p>
 
         {/* footer row */}
-        <div className="pl-3.5 flex items-center justify-between gap-2">
+        <div className="pl-4 flex items-center justify-between gap-2">
           {status.state === "generating" && (
             <>
-              <span className="text-[9px] font-mono text-zinc-600">
-                {isStale
-                  ? "Pode ter sido interrompido — verifique"
-                  : `há ${elapsed}`}
+              <span className="text-[11px] font-mono text-zinc-500">
+                {isStale ? "Pode ter sido interrompido" : `há ${elapsed}`}
               </span>
               <Link
                 href="/projects"
-                className="text-[9px] font-mono text-zinc-500 hover:text-zinc-300 transition-colors uppercase tracking-wider"
+                className="text-[11px] font-medium text-zinc-300 hover:text-zinc-100 transition-colors"
               >
                 projetos →
               </Link>
@@ -150,12 +147,10 @@ export function GenerationToast() {
 
           {status.state === "done" && status.projectUrl && (
             <>
-              <span className="text-[9px] font-mono text-zinc-600">
-                gerado em {elapsed}
-              </span>
+              <span className="text-[11px] font-mono text-zinc-500">gerado em {elapsed}</span>
               <Link
                 href={status.projectUrl}
-                className="text-[9px] font-mono text-emerald-500 hover:text-emerald-400 transition-colors uppercase tracking-wider"
+                className="text-[11px] font-semibold text-accent hover:text-accent-bright transition-colors"
               >
                 ver catálogo →
               </Link>
@@ -163,7 +158,7 @@ export function GenerationToast() {
           )}
 
           {status.state === "error" && (
-            <span className="text-[9px] font-mono text-zinc-500 leading-relaxed">
+            <span className="text-[11px] text-zinc-400 leading-relaxed">
               {status.errorMessage ?? "Erro desconhecido"}
             </span>
           )}

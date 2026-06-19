@@ -1,48 +1,76 @@
 "use client";
 import { useState } from "react";
 import { slugify } from "@/lib/validation/slugify";
+import { PROJECT_CATEGORIES } from "@/lib/categories";
 import type { ProjectInput } from "@/lib/types";
 
 const INPUT =
-  "w-full bg-zinc-900 border border-zinc-800 text-zinc-100 text-sm px-3 py-2.5 " +
-  "placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors";
+  "w-full bg-surface border border-line text-zinc-100 text-sm px-3 py-2.5 " +
+  "placeholder:text-zinc-500 focus:outline-none focus:border-accent transition-colors";
 
 const LABEL =
-  "block text-[10px] font-mono text-zinc-500 tracking-widest uppercase mb-1.5";
+  "block text-[11px] font-mono text-zinc-400 tracking-wider uppercase mb-1.5";
 
 interface Props {
   onSubmit: (input: ProjectInput) => void;
 }
 
-export function UrlInput({ onSubmit }: Props) {
-  const [url, setUrl]               = useState("");
-  const [name, setName]             = useState("");
-  const [slug, setSlug]             = useState("");
-  const [category, setCategory]     = useState("");
-  const [client, setClient]         = useState("");
-  const [description, setDescription] = useState("");
-  const [slugEdited, setSlugEdited] = useState(false);
-  const [urlError, setUrlError]     = useState("");
+/** Deriva um nome inicial a partir do domínio (só sugestão, editável). */
+function nameFromUrl(url: string): string {
+  try {
+    const host = new URL(url).host.replace(/^www\./, "");
+    const label = host.split(".")[0] ?? "";
+    return label ? label.charAt(0).toUpperCase() + label.slice(1) : "";
+  } catch {
+    return "";
+  }
+}
 
-  function handleNameChange(val: string) {
+export function UrlInput({ onSubmit }: Props) {
+  const [url, setUrl] = useState("");
+  const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+  const [category, setCategory] = useState<string>(PROJECT_CATEGORIES[0]);
+  const [customCategory, setCustomCategory] = useState("");
+  const [client, setClient] = useState("");
+  const [description, setDescription] = useState("");
+  const [video, setVideo] = useState(true);
+  const [sections, setSections] = useState(true);
+  const [nameEdited, setNameEdited] = useState(false);
+  const [slugEdited, setSlugEdited] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const [urlError, setUrlError] = useState("");
+
+  const isOther = category === "Outro";
+
+  function setNameAndSlug(val: string) {
     setName(val);
     if (!slugEdited) setSlug(slugify(val));
   }
 
-  function handleSlugChange(val: string) {
-    setSlug(val);
-    setSlugEdited(true);
+  function handleNameChange(val: string) {
+    setNameEdited(true);
+    setNameAndSlug(val);
+  }
+
+  function handleUrlBlur(val: string) {
+    validateUrl(val);
+    // Autofill: sugere nome a partir do domínio se o usuário ainda não digitou.
+    if (!nameEdited && !name.trim()) {
+      const suggested = nameFromUrl(val);
+      if (suggested) setNameAndSlug(suggested);
+    }
   }
 
   function validateUrl(val: string): boolean {
     if (!val.trim()) {
-      setUrlError("URL é obrigatória.");
+      setUrlError("Informe a URL do projeto.");
       return false;
     }
     try {
       const u = new URL(val.trim());
       if (u.protocol !== "http:" && u.protocol !== "https:") {
-        setUrlError("URL deve começar com http:// ou https://");
+        setUrlError("A URL deve começar com http:// ou https://");
         return false;
       }
     } catch {
@@ -57,14 +85,16 @@ export function UrlInput({ onSubmit }: Props) {
     e.preventDefault();
     if (!validateUrl(url)) return;
     const finalSlug = slug.trim() || slugify(name);
-    if (!name.trim() || !finalSlug || !category.trim()) return;
+    const finalCategory = isOther ? customCategory.trim() : category;
+    if (!name.trim() || !finalSlug || !finalCategory) return;
     onSubmit({
       url: url.trim(),
       name: name.trim(),
       slug: finalSlug,
-      category: category.trim(),
+      category: finalCategory,
       client: client.trim() || undefined,
       description: description.trim() || undefined,
+      options: { video, sections },
     });
   }
 
@@ -76,18 +106,22 @@ export function UrlInput({ onSubmit }: Props) {
         <input
           type="url"
           value={url}
-          onChange={e => {
+          onChange={(e) => {
             setUrl(e.target.value);
             if (urlError) validateUrl(e.target.value);
           }}
-          onBlur={e => validateUrl(e.target.value)}
+          onBlur={(e) => handleUrlBlur(e.target.value)}
           placeholder="https://exemplo.com.br"
           required
           autoFocus
-          className={`${INPUT} ${urlError ? "border-red-900 focus:border-red-700" : ""}`}
+          className={`${INPUT} ${urlError ? "border-bad focus:border-bad" : ""}`}
         />
-        {urlError && (
-          <p className="text-red-400 text-xs font-mono mt-1.5">{urlError}</p>
+        {urlError ? (
+          <p className="text-bad text-xs font-mono mt-1.5">{urlError}</p>
+        ) : (
+          <p className="text-zinc-500 text-xs mt-1.5">
+            O nome é sugerido a partir do domínio. Você pode ajustar.
+          </p>
         )}
       </div>
 
@@ -98,7 +132,7 @@ export function UrlInput({ onSubmit }: Props) {
           <input
             type="text"
             value={name}
-            onChange={e => handleNameChange(e.target.value)}
+            onChange={(e) => handleNameChange(e.target.value)}
             placeholder="Machado Plataformas"
             required
             className={INPUT}
@@ -109,82 +143,143 @@ export function UrlInput({ onSubmit }: Props) {
           <input
             type="text"
             value={slug}
-            onChange={e => handleSlugChange(e.target.value)}
+            onChange={(e) => {
+              setSlug(e.target.value);
+              setSlugEdited(true);
+            }}
             placeholder="machado-plataformas"
             required
-            className={`${INPUT} font-mono text-zinc-400`}
+            className={`${INPUT} font-mono text-zinc-300`}
           />
         </div>
       </div>
 
-      {/* Categoria + Cliente */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className={LABEL}>Categoria</label>
-          <input
-            type="text"
-            value={category}
-            onChange={e => setCategory(e.target.value)}
-            placeholder="Site Institucional"
-            required
-            className={INPUT}
-          />
-        </div>
-        <div>
-          <label className={LABEL}>
-            Cliente{" "}
-            <span className="text-zinc-700 normal-case tracking-normal font-sans">(opcional)</span>
-          </label>
-          <input
-            type="text"
-            value={client}
-            onChange={e => setClient(e.target.value)}
-            placeholder="Nome do cliente"
-            className={INPUT}
-          />
-        </div>
-      </div>
-
-      {/* Descrição */}
+      {/* Categoria (dropdown) */}
       <div>
-        <label className={LABEL}>
-          Descrição{" "}
-          <span className="text-zinc-700 normal-case tracking-normal font-sans">(opcional)</span>
-        </label>
-        <textarea
-          value={description}
-          onChange={e => setDescription(e.target.value)}
-          placeholder="Breve descrição do projeto..."
-          rows={3}
-          className={`${INPUT} resize-none`}
-        />
+        <label className={LABEL}>Tipo de projeto</label>
+        <div className={isOther ? "grid grid-cols-2 gap-4" : ""}>
+          <div className="relative">
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className={`${INPUT} appearance-none pr-9 cursor-pointer`}
+            >
+              {PROJECT_CATEGORIES.map((c) => (
+                <option key={c} value={c} className="bg-surface text-zinc-100">
+                  {c}
+                </option>
+              ))}
+            </select>
+            <span
+              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 text-[10px]"
+              aria-hidden
+            >
+              ▼
+            </span>
+          </div>
+          {isOther && (
+            <input
+              type="text"
+              value={customCategory}
+              onChange={(e) => setCustomCategory(e.target.value)}
+              placeholder="Qual tipo?"
+              required
+              autoFocus
+              className={INPUT}
+            />
+          )}
+        </div>
       </div>
 
-      {/* Divider */}
-      <div className="relative py-2">
-        <div className="border-t border-zinc-800" />
-        <span
-          aria-hidden
-          style={{
-            position: "absolute",
-            left: 0,
-            top: "50%",
-            transform: "translateY(-50%)",
-            display: "inline-block",
-            width: 0,
-            height: 0,
-            borderTop: "4px solid transparent",
-            borderBottom: "4px solid transparent",
-            borderLeft: "6px solid rgb(113 113 122)",
-          }}
-        />
+      {/* Capturas — controle rápido do que gerar */}
+      <div>
+        <label className={LABEL}>Capturas</label>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { on: sections, set: setSections, label: "Seções", hint: "fotografa cada bloco" },
+            { on: video, set: setVideo, label: "Vídeo de scroll", hint: "grava a navegação" },
+          ].map((t) => (
+            <button
+              key={t.label}
+              type="button"
+              onClick={() => t.set(!t.on)}
+              aria-pressed={t.on}
+              title={t.hint}
+              className={[
+                "flex items-center gap-2 px-3 py-2 text-[13px] font-medium border transition-colors cursor-pointer",
+                t.on
+                  ? "border-accent text-accent-bright bg-accent/[0.06]"
+                  : "border-line text-zinc-500 hover:text-zinc-300",
+              ].join(" ")}
+            >
+              <span
+                className={[
+                  "w-3.5 h-3.5 border flex items-center justify-center text-[9px] leading-none",
+                  t.on ? "bg-accent border-accent text-zinc-950" : "border-line text-transparent",
+                ].join(" ")}
+                aria-hidden
+              >
+                ✓
+              </span>
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <p className="text-zinc-500 text-xs mt-1.5">
+          Desligar o vídeo deixa a geração bem mais rápida.
+        </p>
+      </div>
+
+      {/* Detalhes opcionais — recolhidos por padrão (menos a preencher) */}
+      <div className="border-t border-line pt-4">
+        {!showDetails ? (
+          <button
+            type="button"
+            onClick={() => setShowDetails(true)}
+            className="flex items-center gap-2 text-[13px] text-zinc-400 hover:text-zinc-100 transition-colors"
+          >
+            <span className="text-accent" aria-hidden>
+              +
+            </span>
+            Adicionar cliente e descrição (opcional)
+          </button>
+        ) : (
+          <div className="space-y-4">
+            <div>
+              <label className={LABEL}>
+                Cliente{" "}
+                <span className="text-zinc-600 normal-case tracking-normal font-sans">(opcional)</span>
+              </label>
+              <input
+                type="text"
+                value={client}
+                onChange={(e) => setClient(e.target.value)}
+                placeholder="Nome do cliente"
+                className={INPUT}
+              />
+            </div>
+            <div>
+              <label className={LABEL}>
+                Descrição{" "}
+                <span className="text-zinc-600 normal-case tracking-normal font-sans">(opcional)</span>
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Breve descrição do projeto..."
+                rows={3}
+                className={`${INPUT} resize-none`}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <button
         type="submit"
-        className="w-full py-3 bg-zinc-100 text-zinc-900 text-sm font-medium hover:bg-white transition-colors cursor-pointer"
+        className="w-full py-3 bg-zinc-100 text-zinc-950 text-sm font-semibold hover:bg-white transition-colors"
       >
-        Gerar Catálogo →
+        Gerar catálogo →
       </button>
     </form>
   );

@@ -4,8 +4,9 @@ Checklist **vivo** da construção. O Claude Code deve marcar cada fase como con
 (`[x]`) e escrever uma nota de 1 linha ao terminá-la. Detalhes de cada fase estão na
 seção "Ordem de Implementação" do `docs/architecture.md`.
 
-**Status atual:** v0.4 concluída — gerador de case draft. Aguardando teste do Matheus.
-**Última fase concluída:** v0.4 — `generateCaseDraft` + `/api/case` + `CaseDraftSection`. `next build` ✓ 6 rotas, zero erros.
+**Status atual:** v1.3 concluída — roadmap pós-v1.0 zerado. Aguardando teste do Matheus.
+**Última fase concluída:** v1.1–v1.3 — lightbox das capturas, paleta de comando (Cmd+K), seleção em lote na biblioteca e opções de captura (vídeo/seções) por geração. `next build` ✓ 12 rotas. Testes: reprocess 7/7, portfolio-manifest 16/16, delete-project 10/10, capture-options 7/7. Verificado por screenshots (paleta, lightbox, seleção em lote, toggles do form).
+**Próximos passos:** roadmap zerado — ver `docs/ROADMAP.md` para retomar/priorizar novas frentes.
 
 ---
 
@@ -70,6 +71,64 @@ seção "Ordem de Implementação" do `docs/architecture.md`.
   `lib/capture/generate-case.ts` + `POST /api/case` + `CaseDraftSection`.
   _Verifica:_ clicar "Gerar rascunho" em `/projects/[slug]` → baixar `case-draft.mdx` com frontmatter, capturas e inspeção.
   _Status:_ `next build` ✓. Arquivo salvo em `public/generated/[slug]/case-draft.mdx`. Server detecta se já existe e pré-popula o estado.
+
+---
+
+## v1.0 — Ferramenta de portfólio completa
+
+> Já entregue antes deste bloco (em `0b3b943` / `9b9a609` / `0e35809`): histórico em `/projects`, export ZIP (`/api/zip/[slug]`), toast de geração persistente.
+
+- [x] **Reprocessar captures**
+  Botão "Reprocessar capturas" em `/projects/[slug]` → `/generate?reprocess=<slug>`. A página relê o `catalog.json` público, extrai o `project` salvo e reinicia a geração com os mesmos dados (sem redigitar o form), reusando a máquina de estados/SSE/toast.
+  `ensure-project-folder` passa a **preservar o `case-draft.mdx`** ao recriar a pasta (overwrite) — antes ele era apagado junto com as capturas.
+  _Verifica:_ em um projeto existente, clicar "Reprocessar" regenera screenshots/vídeos/seções e mantém o rascunho de case.
+  _Status:_ `next build` ✓ 8 rotas. `scripts/test-reprocess.ts` 7/7. Verificado end-to-end contra example.com.
+
+- [x] **Integração com portfólio (manifesto)**
+  `lib/capture/build-portfolio-manifest.ts` (função pura) + `GET /api/export/[slug]` + seção "Exportar para o portfólio" em `/projects/[slug]` (copiar JSON / baixar `portfolio.json`).
+  Manifesto = fragmento que `/cases/[slug]` e a Paisagem Digital consomem: nome, slug, categoria, descrição, url, thumbnails, cover, acento (de `inspection.colors[0]`), paleta, techStack, `hasVideo`, data, versão. Sem dados novos — só projeta o Catalog. Caminhos públicos.
+  _Status:_ `test-portfolio-manifest.ts` 16/16. E2E ✓.
+  _Pendente (precisa de credenciais/repo):_ push automático via GitHub — hoje a publicação é manual assistida (baixar/copiar).
+
+- [x] **Página pública no Laboratório**
+  `/lab/coded-atlas` (Server Component): hero do experimento, problema, como funciona, capturas geradas (projeto real mais recente), vídeo de navegação, estrutura técnica, próximos passos, CTA. Link a partir da landing. Visual escuro/técnico Coded by M.
+  _Status:_ `next build` ✓ (estática). E2E: HTTP 200 e renderiza o projeto featured.
+
+- [ ] **Push automático para o GitHub do portfólio** — requer token/repo configurados; fora do escopo sem esse setup.
+
+### Ajustes
+
+- [x] **Aviso de lockfile** — `outputFileTracingRoot` fixado no `next.config.ts` (havia um `C:\Dev\package-lock.json` solto que o Next confundia como raiz). Build sem aviso.
+
+---
+
+## v1.0 — Revisão de UI/UX
+
+Sistema visual comprometido (ver `design.md` › "Sistema visual (v1.0)"): tokens OKLCH em
+`globals.css`, acento **cobre**, contraste de texto elevado, navegação global.
+
+- [x] **Token layer + navegação global** — `globals.css` (acento cobre, superfícies, status, foco, `.bg-grid`, `.tri`) + `AppNav` persistente no `layout.tsx`.
+- [x] **Home com histórico** — hero + "Projetos recentes" (6 mais novos) com empty-state que ensina o fluxo.
+- [x] **Biblioteca de projetos** — `ProjectsLibrary`: busca (nome/cliente/URL/categoria), filtro por categoria, sort Recentes/A→Z, contagem; cards com badge, host e ação de reprocessar no hover.
+- [x] **Formulário com menos digitação** — categoria como **dropdown** (`lib/categories.ts`, "Outro" → texto livre), nome auto-sugerido pelo domínio, slug automático, cliente/descrição recolhidos.
+- [x] **Progresso explicado** — `GenerationStatus`: fases (Preparando/Desktop/Mobile/Finalizando), passo atual destacado com descrição do que está fazendo, barra cobre, mensagem ao vivo.
+- [x] **Erros claros** — orientação prática por `AtlasErrorCode` + "Tentar novamente" / "Editar dados".
+- [x] **Contraste e acento** aplicados em toast, galeria, downloads, device-frame, página de projeto, case-draft, portfolio-export e Laboratório.
+  _Status:_ `next build` ✓ 10 rotas, zero warnings. Verificado por screenshots reais de todas as telas (home, biblioteca, formulário, progresso, projeto, lab).
+
+- [x] **Gerenciar projetos** — excluir e cancelar.
+  `lib/storage/delete-project.ts` (guarda contra path traversal, confinado a `outputDir`) + `DELETE /api/projects/[slug]` + `DeleteProject` (confirmação inline, "Zona de risco" na página do projeto). Botão **Cancelar** na tela de progresso (aborta o stream e limpa o toast).
+  _Status:_ `next build` ✓ 11 rotas. `test-delete-project.ts` 10/10 (rejeita `..`, `a/b`, espaços, vazio; sentinela fora da pasta intacta). E2E: 404 em inexistente/ inválido, `{ok:true}` + pasta removida no real.
+
+---
+
+## v1.1–v1.3 — Roadmap pós-v1.0 (ver `docs/ROADMAP.md`)
+
+- [x] **v1.1 — Lightbox das capturas** — `components/zoom-image.tsx` (tela cheia, zoom 1×/real, Esc/clique, scroll-lock) na galeria, capa e seções.
+- [x] **v1.1 — Paleta de comando (Cmd/Ctrl+K)** — `command-palette.tsx` + `GET /api/projects`; busca projetos e ações, navegação por teclado, gatilho também por botão na nav.
+- [x] **v1.2 — Seleção em lote na biblioteca** — modo de seleção em `ProjectsLibrary` + `ProjectCatalogCard` selecionável; barra de ações (excluir em lote com confirmação, baixar ZIPs, selecionar todos/limpar).
+- [x] **v1.3 — Opções de captura por geração** — `CaptureOptions` em `lib/types.ts`; `captureDevice` resolve `input.options ?? config` (config vira default); toggles Vídeo/Seções no `UrlInput`; opções salvas no `catalog.json` e herdadas no reprocess.
+  _Status:_ `next build` ✓ 12 rotas, zero warnings. `test-capture-options.ts` 7/7. E2E: gerar sem vídeo/seções não cria `videos/` nem `sections-*` nem a chave `videos`; reprocess herda; geração padrão segue com vídeo+seções. Verificado por screenshots (paleta, lightbox, seleção em lote, toggles).
 
 ---
 
