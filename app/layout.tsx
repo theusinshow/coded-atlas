@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { GenerationToast } from "@/components/generation-toast";
 
 export const metadata: Metadata = {
   title: "Coded Atlas",
@@ -13,7 +14,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body className="bg-zinc-950 text-zinc-100 antialiased">{children}</body>
+      <body className="bg-zinc-950 text-zinc-100 antialiased">
+        {children}
+        <GenerationToast />
+      </body>
     </html>
   );
 }

@@ -7,6 +7,7 @@ import type {
   ResultEvent,
   AtlasErrorPayload,
 } from "@/lib/types";
+import { emitGenStatus } from "@/lib/gen-status";
 import { UrlInput } from "@/components/url-input";
 import { GenerationStatus } from "@/components/generation-status";
 
@@ -24,10 +25,14 @@ export default function GeneratePage() {
     const ctrl = new AbortController();
     abortRef.current = ctrl;
 
+    const startedAt = Date.now();
+
     setGenState("generating");
     setEvents([]);
     setResult(null);
     setError(null);
+
+    emitGenStatus({ state: "generating", slug: input.slug, name: input.name, startedAt });
 
     try {
       const res = await fetch("/api/generate", {
@@ -55,11 +60,27 @@ export default function GeneratePage() {
             | AtlasErrorPayload;
 
           if (ev.step === "done") {
-            setResult(ev as ResultEvent);
+            const r = ev as ResultEvent;
+            setResult(r);
             setGenState("done");
+            emitGenStatus({
+              state: "done",
+              slug: input.slug,
+              name: input.name,
+              projectUrl: r.projectUrl,
+              startedAt,
+            });
           } else if (ev.step === "error") {
-            setError(ev as AtlasErrorPayload);
+            const e = ev as AtlasErrorPayload;
+            setError(e);
             setGenState("error");
+            emitGenStatus({
+              state: "error",
+              slug: input.slug,
+              name: input.name,
+              errorMessage: e.message,
+              startedAt,
+            });
           } else {
             setEvents(prev => [...prev, ev as ProgressEvent]);
           }
@@ -67,12 +88,16 @@ export default function GeneratePage() {
       }
     } catch (err: unknown) {
       if (err instanceof Error && err.name === "AbortError") return;
-      setError({
-        step: "error",
-        code: "UNKNOWN",
-        message: "Falha de conexão. Verifique sua rede e tente novamente.",
-      });
+      const msg = "Falha de conexão. Verifique sua rede e tente novamente.";
+      setError({ step: "error", code: "UNKNOWN", message: msg });
       setGenState("error");
+      emitGenStatus({
+        state: "error",
+        slug: input.slug,
+        name: input.name,
+        errorMessage: msg,
+        startedAt,
+      });
     }
   }
 
