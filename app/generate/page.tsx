@@ -88,16 +88,13 @@ export default function GeneratePage() {
       }
     } catch (err: unknown) {
       if (err instanceof Error && err.name === "AbortError") return;
-      const msg = "Falha de conexão. Verifique sua rede e tente novamente.";
-      setError({ step: "error", code: "UNKNOWN", message: msg });
+      const isServerDown = err instanceof TypeError;
+      const msg = isServerDown
+        ? "Servidor de desenvolvimento não respondeu. Reinicie o start.bat e tente novamente."
+        : "Falha de conexão inesperada. Verifique o terminal do servidor.";
+      setError({ step: "error", code: isServerDown ? "SERVER_DOWN" : "UNKNOWN", message: msg });
       setGenState("error");
-      emitGenStatus({
-        state: "error",
-        slug: input.slug,
-        name: input.name,
-        errorMessage: msg,
-        startedAt,
-      });
+      emitGenStatus({ state: "error", slug: input.slug, name: input.name, errorMessage: msg, startedAt });
     }
   }
 
