@@ -57,7 +57,7 @@ export default async function ProjectPage({ params }: Props) {
         >
           <Link href="/" className="hover:text-zinc-400 transition-colors">Coded by M</Link>
           <span aria-hidden>·</span>
-          <a href="/generate" className="hover:text-zinc-400 transition-colors">Atlas</a>
+          <Link href="/projects" className="hover:text-zinc-400 transition-colors">Atlas</Link>
           <span aria-hidden>·</span>
           <span className="text-zinc-500">{project.slug}</span>
         </nav>

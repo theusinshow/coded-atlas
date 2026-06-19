@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function HomePage() {
   return (
     <main className="min-h-screen px-6 py-16 flex flex-col">
@@ -56,13 +58,19 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="pt-2">
-            <a
+          <div className="flex items-center gap-4 pt-2">
+            <Link
               href="/generate"
               className="inline-block px-7 py-3 bg-zinc-100 text-zinc-900 text-sm font-medium hover:bg-white transition-colors cursor-pointer"
             >
               Gerar Catálogo →
-            </a>
+            </Link>
+            <Link
+              href="/projects"
+              className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+            >
+              Ver projetos
+            </Link>
           </div>
         </section>
 

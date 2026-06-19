@@ -97,9 +97,12 @@ export default function GeneratePage() {
               Coded by M
             </Link>
             <span className="text-zinc-700">·</span>
-            <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">
+            <Link
+              href="/projects"
+              className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest hover:text-zinc-400 transition-colors"
+            >
               Atlas
-            </span>
+            </Link>
           </div>
           <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">
             Gerar Catálogo
