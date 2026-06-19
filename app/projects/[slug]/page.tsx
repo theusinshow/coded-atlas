@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import { catalogPath, caseDraftPath } from "@/lib/storage/paths";
 import type { Catalog } from "@/lib/types";
 import { GeneratedGallery } from "@/components/generated-gallery";
-import { AssetDownloads } from "@/components/asset-downloads";
+import { AssetDownloadItems } from "@/components/asset-downloads";
 import { CaseDraftSection } from "@/components/case-draft-section";
 
 interface Props {
@@ -386,27 +386,28 @@ export default async function ProjectPage({ params }: Props) {
         )}
 
         {/* ── Downloads ── */}
-        <div className="border-t border-zinc-800 pt-16 space-y-8">
-          {/* ZIP */}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-1">
-                Exportar tudo
-              </p>
-              <p className="text-xs text-zinc-600">
-                Screenshots, thumbnails, catalog.json e case-draft.mdx em um único arquivo.
-              </p>
-            </div>
-            <a
-              href={`/api/zip/${slug}`}
-              className="shrink-0 px-5 py-2.5 border border-zinc-700 text-zinc-300 text-sm hover:border-zinc-500 hover:text-zinc-100 transition-colors cursor-pointer font-mono"
-            >
-              Baixar .zip ↓
-            </a>
-          </div>
-
-          {/* Assets individuais */}
-          <AssetDownloads catalog={catalog} />
+        <div className="border-t border-zinc-800 pt-16">
+          <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-4">
+            Downloads
+          </p>
+          <ul className="divide-y divide-zinc-800 border border-zinc-800">
+            {/* ZIP — item destacado */}
+            <li>
+              <a
+                href={`/api/zip/${slug}`}
+                className="flex items-center justify-between px-4 py-3.5 text-zinc-200 hover:bg-zinc-900 hover:text-white transition-colors group cursor-pointer"
+              >
+                <span className="text-sm font-medium">
+                  Baixar tudo (.zip)
+                </span>
+                <span className="flex items-center gap-2 text-[10px] font-mono text-zinc-500 group-hover:text-zinc-300 transition-colors">
+                  <span>ZIP</span>
+                  <span>↓</span>
+                </span>
+              </a>
+            </li>
+            <AssetDownloadItems catalog={catalog} />
+          </ul>
         </div>
 
         {/* ── Rascunho de case ── */}

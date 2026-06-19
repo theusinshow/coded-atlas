@@ -120,6 +120,7 @@ export type AtlasErrorCode =
   | "CAPTURE_FAILED"
   | "STORAGE_FAILED"
   | "SLUG_CONFLICT"
+  | "SERVER_DOWN"
   | "UNKNOWN";
 
 export interface AtlasErrorPayload {
