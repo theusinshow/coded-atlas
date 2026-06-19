@@ -334,18 +334,18 @@ export async function captureDevice(
   let videoAbsPath: string | undefined;
 
   if (doVideo) {
-    const tmpPath = await page.video()?.path();
-    if (tmpPath) {
-      try {
+    try {
+      const tmpPath = await page.video()?.path();
+      if (tmpPath) {
         const destDir = videoDir(input.slug);
         await fs.mkdir(destDir, { recursive: true });
         const destPath = videoFilePath(input.slug, viewport.label);
         await fs.rename(tmpPath, destPath);
         videoPublicPath = makePublicPath(input.slug, "videos", `${viewport.label}-scroll.webm`);
         videoAbsPath = destPath;
-      } catch (err) {
-        console.warn(`[atlas:${input.slug}] Não foi possível salvar vídeo: ${err}`);
       }
+    } catch (err) {
+      console.warn(`[atlas:${input.slug}] Não foi possível salvar vídeo: ${err}`);
     }
   }
 
