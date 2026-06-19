@@ -3,9 +3,9 @@
 Plano vivo das próximas evoluções. Cada item é fechado e testável de forma isolada,
 no mesmo espírito do `BUILD-PLAN.md`. Marcar `[x]` só quando o critério de aceite passar.
 
-**Status:** v1.1–v1.4 concluídas. **v1.5 em andamento:** itens 7 (múltiplas páginas) e 8
-(estados de interação) concluídos; **paramos no item 9 (nomes de seção inteligentes)** — é o
-próximo a fazer. Depois: v1.6 case com IA · v1.7 monitoramento dos sites entregues.
+**Status:** **Roadmap concluído.** v1.1–v1.5, mockups 3D (item 12) e v1.7 (diff visual) feitos.
+**v1.6 (case com IA) descartada** — decisão do Matheus: o software fica **sem IA**, 100% determinístico.
+Não há frentes em aberto.
 
 **Como usar:** atacar uma versão por vez, na ordem sugerida. Ao concluir um item,
 mover o detalhe correspondente para o `BUILD-PLAN.md` (registro do que foi feito) e
@@ -109,7 +109,7 @@ da Coded by M (ver `design.md` › "Sistema visual (v1.0)").
   _Nota:_ a versão inclinada aqui é fingida com asset PNG; o 3D renderizado de verdade é o item 12.
   _Aceite:_ gerar mockup de desktop e mobile; baixável; visual premium consistente entre projetos.
 
-- [ ] **12. Mockups 3D em perspectiva (render real)** `G`
+- [x] **12. Mockups 3D em perspectiva (render real)** `G`
   _Objetivo:_ o site num device/browser inclinado em perspectiva **real** (não fingido), com sombra,
   profundidade e reflexo — o visual de "revelação" de Behance/Dribbble. Entra no hero do case
   (`/cases/[slug]`), na capa/thumbnail e em posts de rede.
@@ -152,7 +152,7 @@ da Coded by M (ver `design.md` › "Sistema visual (v1.0)").
   _Esforço:_ `M` (o Playwright faz fácil; o trabalho é a UX de definir os passos).
   _Aceite:_ definir "clicar `.menu-toggle`" gera um print com o menu aberto.
 
-- [ ] **9. Nomes de seção inteligentes** `P`–`M` ← **PRÓXIMO (retomar aqui)**
+- [x] **9. Nomes de seção inteligentes** `P`–`M`
   _Objetivo:_ nomear seções ("Hero", "Sobre", "Serviços") em vez de `section-001`.
   _Escopo:_ melhorar a heurística em `detect-sections` usando heading/landmark/aria/id já capturados;
   fallback pro número. (IA opcional, só se a heurística não bastar.)
@@ -162,19 +162,13 @@ da Coded by M (ver `design.md` › "Sistema visual (v1.0)").
 
 ---
 
-## v1.6 — Aceleração do case (IA)
+## v1.6 — Aceleração do case (IA) — DESCARTADA
 
-> Mata o passo manual mais lento depois da captura. Introduz uma dependência externa (Claude),
-> com custo por uso — por isso é uma versão à parte e degrada com elegância quando não há chave.
+> **Fora de escopo (decisão do Matheus).** O Coded Atlas fica **sem IA**, 100% determinístico
+> (Playwright + Sharp). Nada foi implementado. O `case-draft.mdx` segue gerado pelo caminho
+> atual, sem narrativa automática.
 
-- [ ] **10. Rascunho de case escrito com IA** `M`
-  _Objetivo:_ a partir das capturas + inspeção + 2–3 respostas (problema / objetivo / resultado),
-  gerar o texto do case na sua voz, editável, caindo no `case-draft.mdx`.
-  _Escopo:_ `lib/case/ai.ts` + `POST /api/case-ai/[slug]` chamando o Claude (Anthropic SDK) com o
-  contexto do catálogo; chave em env (`ATLAS_ANTHROPIC_KEY`); UI: formulário curto de contexto + preview.
-  _Arquivos:_ `lib/case/ai.ts`, `app/api/case-ai/[slug]/route.ts`, `config.ts`, `case-draft-section.tsx`.
-  _Depende de:_ chave de API + custo (externo). _Esforço:_ `M` (técnico médio; o trabalho é o prompt).
-  _Aceite:_ com chave, gera um rascunho coerente; sem chave, segue o gerador atual (sem IA).
+- [~] **10. Rascunho de case escrito com IA** — descartado; não será feito.
 
 ---
 
@@ -182,7 +176,7 @@ da Coded by M (ver `design.md` › "Sistema visual (v1.0)").
 
 > Dá um motivo recorrente pra abrir a ferramenta: vigiar os sites que você entregou.
 
-- [ ] **11. Diff visual de recaptura** `M`–`G`
+- [x] **11. Diff visual de recaptura** `M`–`G`
   _Objetivo:_ recapturar um site já catalogado e comparar com a última versão, destacando o que mudou.
   _Escopo:_ guardar a captura-base; recaptura; `pixelmatch` gera a imagem de diff + % de mudança;
   UI de comparação (antes / depois / diff). Limiar em `config`.
@@ -201,9 +195,11 @@ v1.3  Opções de captura por geração   (toca tipos + engine)              ✓
 v1.4  Composições  ──►  Mockups       (Sharp; maior valor de portfólio)
         └─► Mockups 3D em perspectiva  (HTML+CSS 3D fotografado pelo Playwright)
 v1.5  Múltiplas páginas · Estados · Nomes de seção  (captura mais rica)
-v1.6  Case com IA                     (dependência externa: Claude)
-v1.7  Diff visual de recaptura        (pixelmatch + storage de base)
+v1.6  Case com IA                     (DESCARTADA — software fica sem IA)   ✗
+v1.7  Diff visual de recaptura        (pixelmatch)                          ✓
 ```
+
+**Roadmap fechado.** Tudo entregue exceto a v1.6, descartada por decisão de manter o software sem IA.
 
 > Publicação automática no GitHub do portfólio ficou **fora do roadmap** (decisão do Matheus).
 > A publicação segue manual assistida: baixar/copiar `portfolio.json` + `case-draft.mdx`.

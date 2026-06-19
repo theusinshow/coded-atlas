@@ -4,9 +4,9 @@ Checklist **vivo** da construção. O Claude Code deve marcar cada fase como con
 (`[x]`) e escrever uma nota de 1 linha ao terminá-la. Detalhes de cada fase estão na
 seção "Ordem de Implementação" do `docs/architecture.md`.
 
-**Status atual:** v1.4 concluída + v1.5 em andamento (itens 7 e 8 prontos). Aguardando teste do Matheus.
-**Última fase concluída:** v1.5 item 8 (estados de interação) — clicar seletor e fotografar. Antes: item 7 (múltiplas páginas) e v1.4 (composições + mockups). `next build` ✓. Testes: states 6/6, multipage 8/8, capture-options 7/7, +regressões.
-**ONDE PARAMOS:** v1.5 **item 9 — Nomes de seção inteligentes** é o próximo (ver `docs/ROADMAP.md`).
+**Status atual:** **Projeto fechado.** Todo o roadmap entregue (exceto v1.6, descartada). Software 100% determinístico, sem IA.
+**Última fase concluída:** Mockups 3D (v1.4 item 12) + Diff visual (v1.7). `next build` ✓. Mockups 3D verificados por screenshot; diff verificado e2e (6.86% mudança, regiões destacadas).
+**Sem frentes em aberto.** Detalhes em `docs/ROADMAP.md` (fechado).
 
 ---
 
@@ -136,7 +136,14 @@ Sistema visual comprometido (ver `design.md` › "Sistema visual (v1.0)"): token
 
 - [x] **Item 7 — Múltiplas páginas** — `ProjectInput.pages` + `lib/capture/capture-page.ts` (viewport + full page desktop/mobile por página); rota itera com dedupe e cap (`config.maxExtraPages`); passo `capturing-pages`; `catalog.pages`; seção "Outras páginas" + ZIP; reprocess herda. `buildCatalog` refatorado para objeto `extras`. `test-multipage` 8/8.
 - [x] **Item 8 — Estados de interação** — `ProjectInput.states` (`{name, selector}`) + `lib/capture/capture-states.ts` (clica seletor, espera, fotografa desktop); passo `capturing-states`; `catalog.states`; campo no form (`Nome | seletor`); seção "Estados" + ZIP. `test-states` 6/6. E2E: clicou o botão de busca do próprio app e capturou a paleta aberta.
-- [ ] **Item 9 — Nomes de seção inteligentes** ← retomar aqui.
+- [x] **Item 9 — Nomes de seção inteligentes** — `lib/capture/section-name.ts` (puro: `deriveSectionName` por palavra-chave classe/id/aria → "Hero/Sobre/Serviços...", senão heading > tag semântica > id significativo; `disambiguate` para repetidos; rejeita ids genéricos/hash). `detect-sections` refatorado: `page.evaluate` só extrai pistas, nomes aplicados no Node. `test-section-name` 21/21. E2E em fixture: 8 seções nomeadas corretamente.
+
+---
+
+## v1.4 item 12 + v1.7 — fechamento
+
+- [x] **Mockups 3D em perspectiva** — `lib/mockup/render-3d.ts`: HTML+CSS 3D (device inclinado) fotografado pelo Playwright com fundo transparente; ângulos em `config.mockups3d`. Saem como `desktop-3d`/`mobile-3d` na mesma seção "Mockups" + ZIP. Verificado por screenshot.
+- [x] **Diff visual de recaptura (v1.7)** — `lib/diff/visual-diff.ts` (Sharp decodifica RGBA, `pixelmatch` compara, Sharp grava o PNG de diff) + `POST /api/diff/[slug]` (recaptura o viewport desktop e compara com o do catálogo) + seção "Monitoramento" (`VisualDiff`) na página do projeto (antes/agora/diferença + % mudado). E2E: 6.86% num cenário com cards novos, regiões destacadas em coral.
 
 ---
 

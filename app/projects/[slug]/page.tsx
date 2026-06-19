@@ -10,6 +10,7 @@ import { AssetDownloadItems } from "@/components/asset-downloads";
 import { CaseDraftSection } from "@/components/case-draft-section";
 import { PortfolioExport } from "@/components/portfolio-export";
 import { DeleteProject } from "@/components/delete-project";
+import { VisualDiff } from "@/components/visual-diff";
 import { ZoomImage } from "@/components/zoom-image";
 
 interface Props {
@@ -577,6 +578,11 @@ export default async function ProjectPage({ params }: Props) {
         {/* ── Export para o portfólio ── */}
         <div className="border-t border-line pt-16">
           <PortfolioExport manifest={portfolioManifest} />
+        </div>
+
+        {/* ── Monitoramento (diff visual) ── */}
+        <div className="border-t border-line pt-16">
+          <VisualDiff slug={project.slug} beforeImage={captures.desktop.screenshot} />
         </div>
 
         {/* ── Zona de risco ── */}

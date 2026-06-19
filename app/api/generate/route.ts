@@ -11,6 +11,7 @@ import { generateThumbnails } from "@/lib/capture/generate-thumbnails";
 import { generateCover } from "@/lib/capture/generate-cover";
 import { generateCompositions } from "@/lib/capture/generate-compositions";
 import { generateMockups } from "@/lib/capture/generate-mockups";
+import { generateMockups3D } from "@/lib/mockup/render-3d";
 import { captureExtraPage, resolvePageUrl } from "@/lib/capture/capture-page";
 import { captureState } from "@/lib/capture/capture-states";
 import { buildCatalog } from "@/lib/capture/build-catalog";
@@ -151,7 +152,11 @@ export async function POST(req: NextRequest): Promise<Response> {
           desktop.inspection?.ogImage
         ).catch(() => undefined);
         const compositions = await generateCompositions(input.slug, desktop, mobile).catch(() => []);
-        const mockups = await generateMockups(input.slug, desktop, mobile).catch(() => []);
+        const flatMockups = await generateMockups(input.slug, desktop, mobile).catch(() => []);
+        const mockups3d = await generateMockups3D(
+          browser, input.slug, desktop.screenshotAbsPath, mobile.screenshotAbsPath
+        ).catch(() => []);
+        const mockups = [...flatMockups, ...mockups3d];
 
         emit({ step: "writing-catalog", message: "Montando catálogo...", progress: 92 });
         const catalog = buildCatalog(input, { desktop, mobile }, thumbnails, cover, { compositions, mockups, pages, states }, startedAt);

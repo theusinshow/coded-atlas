@@ -42,6 +42,10 @@ export const pageScreenshotDir = (slug: string, pageSlug: string) =>
 export const stateScreenshotDir = (slug: string) =>
   path.join(screenshotDir(slug), "states");
 
+// v1.7 — diff visual de recaptura
+export const diffDir = (slug: string) =>
+  path.join(projectDir(slug), "diffs");
+
 export const caseDraftPath = (slug: string) =>
   path.join(projectDir(slug), "case-draft.mdx");
 

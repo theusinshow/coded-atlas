@@ -68,6 +68,14 @@ export const config = {
     },
   },
 
+  // ── Mockups 3D em perspectiva (v1.4 item 12) ───────────────────────────────
+  // Renderizados via HTML+CSS 3D, fotografados pelo Playwright (fundo transparente).
+  mockups3d: {
+    deviceScaleFactor: 2,
+    desktop: { sceneW: 1640, sceneH: 1180, windowW: 1120, rotateY: -20, rotateX: 6, perspective: 2200 },
+    mobile:  { sceneW: 880,  sceneH: 1340, phoneW: 380,   rotateY: 18,  rotateX: 5, perspective: 2000 },
+  },
+
   // ── Animação de scroll (vídeo) ─────────────────────────────────────────────
   // Mais passos + timing alinhado a 60fps → ~24 frames de animação por seção
   scrollSteps: Number(process.env.ATLAS_SCROLL_STEPS ?? 60),
