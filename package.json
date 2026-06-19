@@ -10,6 +10,7 @@
     "postinstall": "playwright install chromium"
   },
   "dependencies": {
+    "archiver": "^8.0.0",
     "next": "^15.3.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -17,10 +18,11 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
+    "@tailwindcss/postcss": "^4.1.10",
+    "@types/archiver": "^8.0.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@tailwindcss/postcss": "^4.1.10",
     "eslint": "^9.20.0",
     "eslint-config-next": "^15.3.3",
     "playwright": "^1.50.1",

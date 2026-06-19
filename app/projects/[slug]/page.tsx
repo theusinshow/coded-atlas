@@ -386,7 +386,26 @@ export default async function ProjectPage({ params }: Props) {
         )}
 
         {/* ── Downloads ── */}
-        <div className="border-t border-zinc-800 pt-16">
+        <div className="border-t border-zinc-800 pt-16 space-y-8">
+          {/* ZIP */}
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-1">
+                Exportar tudo
+              </p>
+              <p className="text-xs text-zinc-600">
+                Screenshots, thumbnails, catalog.json e case-draft.mdx em um único arquivo.
+              </p>
+            </div>
+            <a
+              href={`/api/zip/${slug}`}
+              className="shrink-0 px-5 py-2.5 border border-zinc-700 text-zinc-300 text-sm hover:border-zinc-500 hover:text-zinc-100 transition-colors cursor-pointer font-mono"
+            >
+              Baixar .zip ↓
+            </a>
+          </div>
+
+          {/* Assets individuais */}
           <AssetDownloads catalog={catalog} />
         </div>
 
