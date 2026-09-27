@@ -81,9 +81,13 @@ export const config = {
   scrollSteps: Number(process.env.ATLAS_SCROLL_STEPS ?? 60),
   scrollStepMs: Number(process.env.ATLAS_SCROLL_STEP_MS ?? 16),
 
-  // ── Features v0.2 (default ON; defina "false" via env para desabilitar) ────
+  // ── Perfil de captura padrão ("Rápido") ────────────────────────────────────
+  // Seções ON (são a matéria-prima das referências). Vídeo e peças de vitrine
+  // OFF: são lentos e pesados, e as peças podem ser geradas depois na página
+  // do projeto. Defina "true" via env para ligar por padrão.
   captureSections: process.env.ATLAS_CAPTURE_SECTIONS !== "false",
-  captureVideo:    process.env.ATLAS_CAPTURE_VIDEO    !== "false",
+  captureVideo:    process.env.ATLAS_CAPTURE_VIDEO    === "true",
+  captureShowcase: process.env.ATLAS_CAPTURE_SHOWCASE === "true",
 
   // ── Páginas extras (v1.5) ──────────────────────────────────────────────────
   // Cap de segurança: máximo de páginas adicionais por projeto.

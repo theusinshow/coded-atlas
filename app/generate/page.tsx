@@ -25,6 +25,8 @@ const ERROR_HELP: Partial<Record<AtlasErrorCode, string>> = {
   STORAGE_FAILED: "Não foi possível salvar os arquivos. Verifique a pasta public/generated.",
   SLUG_CONFLICT: "Já existe um projeto com esse slug. Escolha outro slug.",
   SERVER_DOWN: "O servidor de desenvolvimento não respondeu. Reinicie e tente novamente.",
+  VALIDATION: "Confira os campos do formulário e tente de novo.",
+  CANCELLED: "A geração foi interrompida. Nada foi alterado.",
   UNKNOWN: "Erro inesperado. Veja o terminal do servidor para detalhes.",
 };
 
@@ -152,7 +154,14 @@ export default function GeneratePage() {
         if (!res.ok) throw new Error(`catalog ${res.status}`);
         const catalog = (await res.json()) as Catalog;
         setReprocessName(catalog.project.name);
-        generate(catalog.project);
+        // Catálogos antigos não gravavam estas opções e os defaults mudaram
+        // (perfil Rápido): herda pelo que o catálogo de fato contém.
+        const opts = { ...catalog.project.options };
+        if (opts.video === undefined && catalog.videos) opts.video = true;
+        if (opts.showcase === undefined && (catalog.cover || catalog.compositions?.length || catalog.mockups?.length)) {
+          opts.showcase = true;
+        }
+        generate({ ...catalog.project, options: opts });
       } catch {
         setError({
           step: "error",
@@ -176,7 +185,7 @@ export default function GeneratePage() {
             <>
               Regerando as capturas de{" "}
               <span className="text-zinc-200 font-medium">{reprocessName}</span>. Os arquivos atuais
-              são substituídos; o rascunho de case é preservado.
+              só são substituídos se a geração terminar; o rascunho de case é preservado.
             </>
           ) : (
             "Cole a URL, confira os dados e gere o pacote visual completo."

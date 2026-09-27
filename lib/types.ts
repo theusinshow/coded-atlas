@@ -2,6 +2,7 @@
 export interface CaptureOptions {
   video?: boolean;    // gravar o vídeo de scroll
   sections?: boolean; // fotografar seções individuais
+  showcase?: boolean; // gerar peças de vitrine (capa, composições, mockups)
 }
 
 /** Entrada do formulário / corpo da requisição. */
@@ -143,6 +144,29 @@ export interface PortfolioManifest {
   atlasVersion: string;
 }
 
+/** Resumo de um projeto para listagens (biblioteca, paleta de comando). */
+export interface ProjectSummary {
+  slug: string;
+  name: string;
+  category: string;
+  client?: string;
+  url: string;
+  thumbnail: string;
+  createdAt: string;
+}
+
+/** Resultado do diff visual de recaptura (v1.7), gravado em diffs/result.json. */
+export interface VisualDiffResult {
+  percent: number;       // 0–100, 2 casas
+  changedPixels: number;
+  totalPixels: number;
+  url: string;
+  before: string;        // caminho público
+  after: string;         // caminho público
+  diff: string;          // caminho público
+  capturedAt: string;
+}
+
 /** Metadados da execução — útil para debug e reprocessamento. */
 export interface CatalogMeta {
   captureDelayMs: number;
@@ -195,6 +219,8 @@ export type AtlasErrorCode =
   | "STORAGE_FAILED"
   | "SLUG_CONFLICT"
   | "SERVER_DOWN"
+  | "VALIDATION"
+  | "CANCELLED"
   | "UNKNOWN";
 
 export interface AtlasErrorPayload {

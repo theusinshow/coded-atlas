@@ -105,6 +105,32 @@ npm run start
    persiste num toast mesmo se você trocar de aba.
 6. Ao concluir, abra o catálogo em `/projects/[slug]`.
 
+### Perfil Rápido e peças de vitrine
+
+Por padrão a geração captura screenshots, full page e seções — sem vídeo e sem peças de
+vitrine, que são as partes lentas. Ligue os toggles no formulário quando precisar, ou gere as
+peças depois com **Gerar peças de vitrine** na página do projeto (usa as capturas salvas, sem
+recapturar o site).
+
+### Cancelar e falhas
+
+**Cancelar** interrompe a captura no servidor. Se a geração falhar ou for cancelada, nada é
+alterado: um projeto novo não deixa pasta para trás e um reprocessamento restaura a versão
+anterior (guardada em `public/generated/.trash/` durante a geração).
+
+### Captura de páginas logadas
+
+Para capturar um app que exige login (inclusive com MFA/login social):
+
+```bash
+node scripts/login.mjs https://meu-app.com/login meu-app
+```
+
+Um navegador visível abre; faça login e aperte ENTER no terminal. A sessão fica em
+`auth/meu-app.json` (fora de `public/`, ignorada pelo git — contém cookies ativos). Gere ou
+reprocesse o projeto com **o mesmo slug** e as capturas e a verificação de mudanças entram
+logadas.
+
 ### Reprocessar
 
 Na página do projeto, **Reprocessar capturas** regenera tudo com os mesmos dados
@@ -153,8 +179,9 @@ Variáveis de ambiente sobrescrevem os defaults:
 | `ATLAS_HEADLESS` | `true` | Roda o Chromium sem janela. `false` para ver o navegador. |
 | `ATLAS_NAV_TIMEOUT_MS` | `30000` | Timeout de navegação (`page.goto`). |
 | `ATLAS_CAPTURE_DELAY_MS` | `3000` | Espera para animações/fontes antes do print. |
-| `ATLAS_CAPTURE_VIDEO` | `true` | Default global de gravação de vídeo. |
+| `ATLAS_CAPTURE_VIDEO` | `false` | Default global de gravação de vídeo. |
 | `ATLAS_CAPTURE_SECTIONS` | `true` | Default global de captura de seções. |
+| `ATLAS_CAPTURE_SHOWCASE` | `false` | Default global das peças de vitrine (capa, composições, mockups). |
 
 (Há mais ajustes finos em `lib/config.ts` — seções, capa, composições, mockups, etc.)
 

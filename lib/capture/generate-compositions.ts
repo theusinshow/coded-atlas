@@ -23,8 +23,8 @@ type FormatDef = (typeof config.compositions.formats)[number];
  */
 export async function generateCompositions(
   slug: string,
-  desktop: DeviceCaptureResult,
-  mobile: DeviceCaptureResult
+  desktop: Pick<DeviceCaptureResult, "screenshotAbsPath">,
+  mobile: Pick<DeviceCaptureResult, "screenshotAbsPath">
 ): Promise<CompositionResult[]> {
   const dir = compositionDir(slug);
   await fs.mkdir(dir, { recursive: true });

@@ -1,5 +1,9 @@
 # Coded Atlas — Produto
 
+> **Atualização 2026-09-27:** este documento descreve o job original (vitrine de portfólio), que
+> continua valendo como um modo do produto. A direção atual — biblioteca de referências visuais
+> ligada ao Claude Code — está em `docs/product/PRODUCT_VISION.md`.
+
 ## Objetivo
 
 **Coded Atlas** é uma ferramenta interna da **Coded by M** que recebe a URL de um projeto

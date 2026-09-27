@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { ProjectSummary } from "@/lib/storage/list-projects";
+import type { ProjectSummary } from "@/lib/types";
 import { ProjectCatalogCard } from "@/components/project-catalog-card";
 
 interface Props {

@@ -12,6 +12,7 @@ import { PortfolioExport } from "@/components/portfolio-export";
 import { DeleteProject } from "@/components/delete-project";
 import { VisualDiff } from "@/components/visual-diff";
 import { ZoomImage } from "@/components/zoom-image";
+import { ShowcaseGenerate } from "@/components/showcase-generate";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -138,6 +139,13 @@ export default async function ProjectPage({ params }: Props) {
             </div>
           </div>
         </section>
+
+        {/* ── Peças de vitrine sob demanda (perfil Rápido não as gera) ── */}
+        {!catalog.cover && !catalog.compositions?.length && !catalog.mockups?.length && (
+          <div className="border-t border-line pt-16">
+            <ShowcaseGenerate slug={project.slug} />
+          </div>
+        )}
 
         {/* ── Capa do catálogo ── */}
         {catalog.cover && (

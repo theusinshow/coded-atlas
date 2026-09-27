@@ -87,7 +87,7 @@ da Coded by M (ver `design.md` › "Sistema visual (v1.0)").
 > Maior alavanca de portfólio: transforma screenshot crua em peça apresentável. Reaproveita o
 > Sharp, que já está no pipeline (`generate-cover` / `generate-thumbnails`). Esforço baixo, valor alto.
 
-- [ ] **5. Composições para redes sociais** `P`
+- [x] **5. Composições para redes sociais** `P`
   _Objetivo:_ gerar a captura (ou capa) centralizada sobre um fundo da marca, nos formatos prontos
   para postar: 1:1 (Instagram), 9:16 (stories) e 16:9 (Behance/LinkedIn).
   _Escopo:_ `lib/capture/generate-compositions.ts` (Sharp: cria o canvas do formato, aplica o fundo
@@ -99,7 +99,7 @@ da Coded by M (ver `design.md` › "Sistema visual (v1.0)").
   _Depende de:_ Sharp (já no pipeline). _Esforço:_ `P`.
   _Aceite:_ cada projeto gera os 3 formatos com caminho público; baixáveis; aparecem na ZIP.
 
-- [ ] **6. Mockups com moldura (browser / device)** `P`–`M`
+- [x] **6. Mockups com moldura (browser / device)** `P`–`M`
   _Objetivo:_ a captura dentro de uma moldura realista (janela de browser e/ou device) com sombra,
   parecendo produto. Inclui uma variação inclinada usando uma moldura PNG pronta.
   _Escopo:_ assets de moldura versionados; `lib/capture/generate-mockups.ts` (Sharp compõe a

@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { ProjectSummary } from "@/lib/storage/list-projects";
+import type { ProjectSummary } from "@/lib/types";
 
 type Item = {
   id: string;
@@ -57,15 +57,18 @@ export function CommandPalette() {
     };
   }, []);
 
-  // Carrega projetos na primeira abertura; trava scroll; foca o input
+  // Recarrega projetos a cada abertura (a lista muda após gerar/excluir);
+  // trava scroll; foca o input
   useEffect(() => {
     if (!open) return;
-    if (projects === null) {
-      fetch("/api/projects")
-        .then((r) => r.json())
-        .then((d: { projects: ProjectSummary[] }) => setProjects(d.projects))
-        .catch(() => setProjects([]));
-    }
+    fetch("/api/projects", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d: { projects: ProjectSummary[] }) => setProjects(d.projects))
+      .catch(() => setProjects((p) => p ?? []));
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const id = requestAnimationFrame(() => inputRef.current?.focus());
@@ -73,7 +76,7 @@ export function CommandPalette() {
       document.body.style.overflow = prev;
       cancelAnimationFrame(id);
     };
-  }, [open, projects]);
+  }, [open]);
 
   const items: Item[] = useMemo(() => {
     const acts: Item[] = ACTIONS.filter((a) => matches(query, a.label)).map((a) => ({

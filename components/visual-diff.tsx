@@ -1,17 +1,7 @@
 "use client";
 import { useState } from "react";
 import { ZoomImage } from "@/components/zoom-image";
-
-interface DiffResult {
-  percent: number;
-  changedPixels: number;
-  totalPixels: number;
-  url: string;
-  before: string;
-  after: string;
-  diff: string;
-  capturedAt: string;
-}
+import type { VisualDiffResult } from "@/lib/types";
 
 interface Props {
   slug: string;
@@ -20,7 +10,7 @@ interface Props {
 
 export function VisualDiff({ slug, beforeImage }: Props) {
   const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
-  const [result, setResult] = useState<DiffResult | null>(null);
+  const [result, setResult] = useState<VisualDiffResult | null>(null);
   const [error, setError] = useState("");
 
   async function run() {
@@ -28,7 +18,7 @@ export function VisualDiff({ slug, beforeImage }: Props) {
     setError("");
     try {
       const res = await fetch(`/api/diff/${slug}`, { method: "POST" });
-      const data = (await res.json()) as DiffResult & { error?: string };
+      const data = (await res.json()) as VisualDiffResult & { error?: string };
       if (!res.ok) throw new Error(data.error ?? "Falha ao verificar.");
       // cache-busting nas imagens recém-escritas
       const bust = `?t=${Date.now()}`;

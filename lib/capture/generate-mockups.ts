@@ -20,8 +20,8 @@ const TRANSPARENT = { r: 0, g: 0, b: 0, alpha: 0 } as const;
  */
 export async function generateMockups(
   slug: string,
-  desktop: DeviceCaptureResult,
-  mobile: DeviceCaptureResult
+  desktop: Pick<DeviceCaptureResult, "screenshotAbsPath">,
+  mobile: Pick<DeviceCaptureResult, "screenshotAbsPath">
 ): Promise<MockupResult[]> {
   const dir = mockupDir(slug);
   await fs.mkdir(dir, { recursive: true });

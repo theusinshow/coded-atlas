@@ -3,6 +3,11 @@
 Ferramenta interna da **Coded by M**: recebe a URL de um projeto web e gera um catálogo
 visual (screenshots desktop/mobile, full page e thumbnails) para uso no portfólio.
 
+**Direção pós-MVP (decidida em 2026-09-27):** o Atlas vira também a **biblioteca de
+referências visuais** do Matheus e a ponte para o Claude Code. Visão em
+`docs/product/PRODUCT_VISION.md`; execução em `docs/implementation/MASTER_PLAN.md` (Fases 0–7,
+em ordem, parando ao fim de cada fase para teste). A vitrine atual continua como um modo.
+
 ## Fonte da verdade
 
 - `docs/product.md` → produto, escopo, MVP e roadmap (o "o quê" e o "porquê").
@@ -30,7 +35,10 @@ pode divergir das interfaces definidas lá.
 4. Fechar o navegador SEMPRE em `finally`, inclusive em erro.
 5. Viewports, delays e timeouts vivem só em `lib/config.ts` — nada hardcoded no meio do código.
 6. Nada de `any` solto. Todo erro vira `AtlasError` com um código conhecido.
-7. Nada de banco, login, cloud ou vídeo no MVP — apenas deixar os campos opcionais previstos.
+7. Nada de banco de dados servidor, login, multiusuário ou cloud. Arquivos no disco são a fonte
+   da verdade; um índice local derivado (reconstruível a partir dos arquivos) é permitido.
+   Nenhuma IA embutida obrigatória: a inteligência vem do agente (MCP/pack) ou de opção
+   desligada por padrão.
 8. Visual escuro, técnico e premium da Coded by M — nada com cara de SaaS genérico.
 
 ## Ordem de construção (build order)

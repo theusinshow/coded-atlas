@@ -13,6 +13,16 @@ export const thumbnailDir = (slug: string) =>
 export const catalogPath = (slug: string) =>
   path.join(projectDir(slug), "catalog.json");
 
+/** Screenshot de viewport de um device (ex.: screenshots/desktop-1440x900.png). */
+export const viewportShotPath = (
+  slug: string,
+  vp: { label: string; width: number; height: number }
+) => path.join(screenshotDir(slug), `${vp.label}-${vp.width}x${vp.height}.png`);
+
+// Backups de reprocessamento em andamento. Começa com "." e não tem
+// catalog.json na raiz, então nunca aparece na listagem de projetos.
+export const trashDir = () => path.join(config.outputDir, ".trash");
+
 // v0.2 — seções e vídeos
 export const sectionDir = (slug: string, device: string) =>
   path.join(screenshotDir(slug), `sections-${device}`);
@@ -51,3 +61,10 @@ export const caseDraftPath = (slug: string) =>
 
 export const publicPath = (slug: string, ...parts: string[]) =>
   "/" + path.posix.join("generated", slug, ...parts);
+
+// Sessão autenticada — vive FORA de public/ (contém cookies de login ativos,
+// que jamais podem ser servidos na web).
+export const authStateDir = () => path.join(process.cwd(), "auth");
+
+export const authStatePath = (slug: string) =>
+  path.join(authStateDir(), `${slug}.json`);

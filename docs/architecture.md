@@ -660,6 +660,8 @@ Tabela única que liga código técnico → status HTTP → mensagem ao usuário
 | `CAPTURE_FAILED` | 500 | Falha ao capturar a página. Tente novamente. |
 | `STORAGE_FAILED` | 500 | Não foi possível salvar os arquivos gerados. |
 | `SLUG_CONFLICT` | 409 | Já existe um projeto com este slug. |
+| `VALIDATION` | 400 | Campo obrigatório ausente ou inválido (nome, slug, categoria). |
+| `CANCELLED` | 499 | Geração cancelada. (Nada é alterado: a versão anterior é restaurada.) |
 | `UNKNOWN` | 500 | Algo deu errado ao gerar o catálogo. |
 
 ---

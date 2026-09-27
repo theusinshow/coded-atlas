@@ -1,8 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { slugify } from "@/lib/validation/slugify";
 import { PROJECT_CATEGORIES } from "@/lib/categories";
-import type { ProjectInput } from "@/lib/types";
+import type { ProjectInput, ProjectSummary } from "@/lib/types";
 
 const INPUT =
   "w-full bg-surface border border-line text-zinc-100 text-sm px-3 py-2.5 " +
@@ -13,6 +14,16 @@ const LABEL =
 
 interface Props {
   onSubmit: (input: ProjectInput) => void;
+}
+
+/** Chave de comparação de URL: ignora protocolo, www, barra final e hash. */
+function urlKey(url: string): string | null {
+  try {
+    const u = new URL(url.trim());
+    return u.host.replace(/^www\./, "") + u.pathname.replace(/\/+$/, "") + u.search;
+  } catch {
+    return null;
+  }
 }
 
 /** Deriva um nome inicial a partir do domínio (só sugestão, editável). */
@@ -36,14 +47,29 @@ export function UrlInput({ onSubmit }: Props) {
   const [description, setDescription] = useState("");
   const [pages, setPages] = useState("");
   const [states, setStates] = useState("");
-  const [video, setVideo] = useState(true);
+  const [video, setVideo] = useState(false);
   const [sections, setSections] = useState(true);
+  const [showcase, setShowcase] = useState(false);
+  const [existing, setExisting] = useState<ProjectSummary[]>([]);
   const [nameEdited, setNameEdited] = useState(false);
   const [slugEdited, setSlugEdited] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [urlError, setUrlError] = useState("");
 
   const isOther = category === "Outro";
+
+  // Projetos existentes — para avisar de URL já capturada e de slug que será substituído.
+  useEffect(() => {
+    fetch("/api/projects", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d: { projects: ProjectSummary[] }) => setExisting(d.projects))
+      .catch(() => {});
+  }, []);
+
+  const key = urlKey(url);
+  const sameUrl = key ? existing.filter((p) => urlKey(p.url) === key) : [];
+  const finalSlugPreview = slug.trim() || slugify(name);
+  const slugOwner = existing.find((p) => p.slug === finalSlugPreview);
 
   function setNameAndSlug(val: string) {
     setName(val);
@@ -107,7 +133,7 @@ export function UrlInput({ onSubmit }: Props) {
       category: finalCategory,
       client: client.trim() || undefined,
       description: description.trim() || undefined,
-      options: { video, sections },
+      options: { video, sections, showcase },
       pages: pageList.length ? pageList : undefined,
       states: stateList.length ? stateList : undefined,
     });
@@ -137,6 +163,27 @@ export function UrlInput({ onSubmit }: Props) {
           <p className="text-zinc-500 text-xs mt-1.5">
             O nome é sugerido a partir do domínio. Você pode ajustar.
           </p>
+        )}
+        {!urlError && sameUrl.length > 0 && (
+          <div className="mt-2 border border-warn/40 bg-warn/[0.06] px-3 py-2.5 text-[13px] text-zinc-200 space-y-1">
+            <p>Esta URL já foi capturada:</p>
+            <ul className="space-y-0.5">
+              {sameUrl.map((p) => (
+                <li key={p.slug} className="flex flex-wrap items-baseline gap-x-3">
+                  <span className="font-medium">{p.name}</span>
+                  <span className="font-mono text-[11px] text-zinc-500">
+                    {new Date(p.createdAt).toLocaleDateString("pt-BR")}
+                  </span>
+                  <Link href={`/projects/${p.slug}`} className="text-accent hover:text-accent-bright">
+                    Abrir
+                  </Link>
+                  <Link href={`/generate?reprocess=${p.slug}`} className="text-accent hover:text-accent-bright">
+                    Reprocessar
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
 
@@ -168,6 +215,12 @@ export function UrlInput({ onSubmit }: Props) {
           />
         </div>
       </div>
+      {slugOwner && !sameUrl.some((p) => p.slug === slugOwner.slug) && (
+        <p className="-mt-2 text-warn text-xs">
+          O slug <span className="font-mono">{slugOwner.slug}</span> já pertence a
+          “{slugOwner.name}”. Gerar vai substituir as capturas dele.
+        </p>
+      )}
 
       {/* Categoria (dropdown) */}
       <div>
@@ -213,6 +266,7 @@ export function UrlInput({ onSubmit }: Props) {
           {[
             { on: sections, set: setSections, label: "Seções", hint: "fotografa cada bloco" },
             { on: video, set: setVideo, label: "Vídeo de scroll", hint: "grava a navegação" },
+            { on: showcase, set: setShowcase, label: "Peças de vitrine", hint: "capa, composições e mockups" },
           ].map((t) => (
             <button
               key={t.label}
@@ -241,7 +295,8 @@ export function UrlInput({ onSubmit }: Props) {
           ))}
         </div>
         <p className="text-zinc-500 text-xs mt-1.5">
-          Desligar o vídeo deixa a geração bem mais rápida.
+          Vídeo e peças de vitrine deixam a geração lenta. As peças podem ser geradas depois,
+          na página do projeto.
         </p>
       </div>
 

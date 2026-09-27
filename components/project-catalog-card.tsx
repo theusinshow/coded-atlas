@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ProjectSummary } from "@/lib/storage/list-projects";
+import type { ProjectSummary } from "@/lib/types";
 
 interface Props {
   project: ProjectSummary;

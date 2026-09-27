@@ -24,6 +24,7 @@ import type { SectionCandidate } from "./detect-sections";
 import { dismissOverlays } from "./dismiss-overlays";
 import { waitForPageStability } from "./wait-for-stability";
 import { inspectSite } from "./inspect-site";
+import { authContextOptions } from "./auth-state";
 import type { SiteInspection } from "../types";
 
 // ─── Viewport-only result (Fase 3 — mantido para test-phase3) ────────────────
@@ -146,6 +147,7 @@ export async function captureViewport(
     viewport: { width: viewport.width, height: viewport.height },
     deviceScaleFactor: viewport.deviceScaleFactor,
     userAgent: config.userAgent,
+    ...(await authContextOptions(input.slug)), // entra logado se houver sessão
   });
   const page = await context.newPage();
 
@@ -212,6 +214,7 @@ export async function captureDevice(
     viewport: { width: viewport.width, height: viewport.height },
     deviceScaleFactor: viewport.deviceScaleFactor,
     userAgent: config.userAgent,
+    ...(await authContextOptions(input.slug)), // entra logado se houver sessão
     ...(vidTempDir
       ? {
           recordVideo: {
@@ -348,6 +351,8 @@ export async function captureDevice(
     } catch (err) {
       console.warn(`[atlas:${input.slug}] Não foi possível salvar vídeo: ${err}`);
     }
+    // O Playwright grava com nome aleatório em .tmp — nada mais a guardar ali.
+    if (vidTempDir) await fs.rm(vidTempDir, { recursive: true, force: true }).catch(() => {});
   }
 
   return { ...partial!, sections, videoPublicPath, videoAbsPath, inspection };

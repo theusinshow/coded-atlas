@@ -7,6 +7,8 @@ seção "Ordem de Implementação" do `docs/architecture.md`.
 **Status atual:** **Projeto fechado.** Todo o roadmap entregue (exceto v1.6, descartada). Software 100% determinístico, sem IA.
 **Última fase concluída:** Mockups 3D (v1.4 item 12) + Diff visual (v1.7). `next build` ✓. Mockups 3D verificados por screenshot; diff verificado e2e (6.86% mudança, regiões destacadas).
 **Sem frentes em aberto.** Detalhes em `docs/ROADMAP.md` (fechado).
+**2026-09-27 — Auditoria concluída e direção decidida** (biblioteca de referências; ver `docs/product/PRODUCT_VISION.md`). Execução segue `docs/implementation/MASTER_PLAN.md`.
+**Fase 0 (estabilidade) concluída — aguardando teste do Matheus.** Próxima: Fase 1 (fundação da biblioteca).
 
 ---
 
@@ -146,6 +148,12 @@ Sistema visual comprometido (ver `design.md` › "Sistema visual (v1.0)"): token
 - [x] **Diff visual de recaptura (v1.7)** — `lib/diff/visual-diff.ts` (Sharp decodifica RGBA, `pixelmatch` compara, Sharp grava o PNG de diff) + `POST /api/diff/[slug]` (recaptura o viewport desktop e compara com o do catálogo) + seção "Monitoramento" (`VisualDiff`) na página do projeto (antes/agora/diferença + % mudado). E2E: 6.86% num cenário com cards novos, regiões destacadas em coral.
 
 ---
+
+## Plano pós-auditoria (`docs/implementation/MASTER_PLAN.md`)
+
+- [x] **Fase 0 — Estabilidade e decisão**
+  0.1 direção registrada (`CLAUDE.md` guard rail 7, `product.md`) · 0.2 diff usa sessão autenticada + README de `scripts/login.mjs` (**commit do WIP pendente**) · 0.3 perfil Rápido padrão (vídeo e vitrine off; `options.showcase`; `lib/capture/generate-showcase.ts`; `POST /api/showcase/[slug]` + botão "Gerar peças de vitrine"; reprocess herda pelo conteúdo do catálogo) · 0.4 pasta com backup/commit/rollback — falha nunca deixa órfã nem destrói a versão anterior · 0.5 cancelamento real (`req.signal` + `cancel()` do stream fecham o Chromium) · 0.6 aviso de URL já capturada e de slug que será substituído · 0.7 `ProjectSummary`/`VisualDiffResult` em `types.ts`, códigos `VALIDATION`/`CANCELLED`, `.tmp` de vídeo removido, `start.bat` em 127.0.0.1.
+  _Status:_ `tsc` ✓, `next build` ✓ (13 rotas), `test-reprocess` 16/16, `test-phase2` 11/11, `test-phase1` 19/19, `test-capture-options` 7/7. E2E 17/17: Rápido em 10–14 s sem vitrine/vídeo; vitrine sob demanda em ~2 s; cancelar reprocess restaura o catálogo anterior; cancelar/falhar projeto novo não deixa pasta; `VALIDATION`; slugs inválidos → 400. Bug achado e corrigido no E2E: vídeo parcial travado (EBUSY) no rollback → `rm` com retry.
 
 ## Regras de atualização
 

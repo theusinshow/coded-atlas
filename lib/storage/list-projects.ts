@@ -1,17 +1,7 @@
 import { promises as fs } from "node:fs";
 import { config } from "../config";
 import { catalogPath } from "./paths";
-import type { Catalog } from "../types";
-
-export interface ProjectSummary {
-  slug: string;
-  name: string;
-  category: string;
-  client?: string;
-  url: string;
-  thumbnail: string;
-  createdAt: string;
-}
+import type { Catalog, ProjectSummary } from "../types";
 
 /**
  * Lista todos os projetos gerados lendo as subpastas de public/generated/.

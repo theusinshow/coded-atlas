@@ -7,11 +7,12 @@ import path from "node:path";
 import { chromium } from "playwright";
 import type { Browser } from "playwright";
 import { config } from "@/lib/config";
-import { catalogPath, screenshotDir, diffDir, publicPath as makePublicPath } from "@/lib/storage/paths";
+import { catalogPath, viewportShotPath, diffDir, publicPath as makePublicPath } from "@/lib/storage/paths";
 import { dismissOverlays } from "@/lib/capture/dismiss-overlays";
 import { waitForPageStability } from "@/lib/capture/wait-for-stability";
+import { authContextOptions } from "@/lib/capture/auth-state";
 import { computeVisualDiff } from "@/lib/diff/visual-diff";
-import type { Catalog } from "@/lib/types";
+import type { Catalog, VisualDiffResult } from "@/lib/types";
 
 interface Params {
   params: Promise<{ slug: string }>;
@@ -24,6 +25,9 @@ interface Params {
  */
 export async function POST(_req: NextRequest, { params }: Params): Promise<Response> {
   const { slug } = await params;
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+    return Response.json({ error: "Slug inválido." }, { status: 400 });
+  }
 
   let catalog: Catalog;
   try {
@@ -33,7 +37,7 @@ export async function POST(_req: NextRequest, { params }: Params): Promise<Respo
   }
 
   const vp = config.viewports.desktop;
-  const beforeAbs = path.join(screenshotDir(slug), `${vp.label}-${vp.width}x${vp.height}.png`);
+  const beforeAbs = viewportShotPath(slug, vp);
   try {
     await fs.access(beforeAbs);
   } catch {
@@ -55,6 +59,7 @@ export async function POST(_req: NextRequest, { params }: Params): Promise<Respo
       viewport: { width: vp.width, height: vp.height },
       deviceScaleFactor: vp.deviceScaleFactor,
       userAgent: config.userAgent,
+      ...(await authContextOptions(slug)), // entra logado se houver sessão
     });
     const page = await context.newPage();
     await page.goto(catalog.project.url, { waitUntil: "networkidle", timeout: config.navTimeoutMs });
@@ -78,7 +83,7 @@ export async function POST(_req: NextRequest, { params }: Params): Promise<Respo
     return Response.json({ error: "Falha ao comparar as imagens.", detail: String(err) }, { status: 500 });
   }
 
-  const result = {
+  const result: VisualDiffResult = {
     percent: Number(diff.percent.toFixed(2)),
     changedPixels: diff.changedPixels,
     totalPixels: diff.totalPixels,

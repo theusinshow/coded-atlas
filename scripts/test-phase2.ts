@@ -4,7 +4,7 @@
  */
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { ensureProjectFolder } from "../lib/storage/ensure-project-folder";
+import { ensureProjectFolder, commitProjectFolder } from "../lib/storage/ensure-project-folder";
 import { writeJson } from "../lib/storage/write-json";
 import {
   projectDir,
@@ -102,7 +102,7 @@ async function main() {
     // Deixa um arquivo "órfão" para provar que overwrite limpa
     const orphan = path.join(screenshotDir(TEST_SLUG), "orphan.txt");
     await fs.writeFile(orphan, "stale");
-    await ensureProjectFolder(TEST_SLUG);
+    await commitProjectFolder(await ensureProjectFolder(TEST_SLUG));
     // Após overwrite, o órfão não deve mais existir
     try {
       await fs.access(orphan);

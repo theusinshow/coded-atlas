@@ -5,13 +5,15 @@ import { NextRequest } from "next/server";
 import { chromium } from "playwright";
 import type { Browser } from "playwright";
 import { validateProjectInput } from "@/lib/validation/validate-project-input";
-import { ensureProjectFolder } from "@/lib/storage/ensure-project-folder";
+import {
+  ensureProjectFolder,
+  commitProjectFolder,
+  rollbackProjectFolder,
+  type ProjectFolderLease,
+} from "@/lib/storage/ensure-project-folder";
 import { captureDevice } from "@/lib/capture/capture-device";
 import { generateThumbnails } from "@/lib/capture/generate-thumbnails";
-import { generateCover } from "@/lib/capture/generate-cover";
-import { generateCompositions } from "@/lib/capture/generate-compositions";
-import { generateMockups } from "@/lib/capture/generate-mockups";
-import { generateMockups3D } from "@/lib/mockup/render-3d";
+import { generateShowcase, type ShowcaseResult } from "@/lib/capture/generate-showcase";
 import { captureExtraPage, resolvePageUrl } from "@/lib/capture/capture-page";
 import { captureState } from "@/lib/capture/capture-states";
 import { buildCatalog } from "@/lib/capture/build-catalog";
@@ -60,6 +62,22 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   const startedAt = Date.now();
 
+  // Cancelamento: o cliente abortar o fetch (botão Cancelar, aba fechada)
+  // encerra o trabalho no servidor — fecha o Chromium, o que derruba a
+  // operação em andamento, e a geração cai no rollback.
+  const cancel = new AbortController();
+  req.signal.addEventListener("abort", () => cancel.abort(), { once: true });
+  let browser: Browser | undefined;
+  cancel.signal.addEventListener("abort", () => {
+    browser?.close().catch(() => {});
+  }, { once: true });
+
+  function throwIfCancelled(): void {
+    if (cancel.signal.aborted) {
+      throw new AtlasError("CANCELLED", "Geração cancelada.", "Client aborted the request");
+    }
+  }
+
   const stream = new ReadableStream({
     async start(controller) {
       // Cliente pode fechar a conexão SSE antes do finally (ao receber done/error).
@@ -71,27 +89,31 @@ export async function POST(req: NextRequest): Promise<Response> {
       // Alias com tipo exato — passado a captureDevice como onProgress
       const emitProgress: (event: ProgressEvent) => void = emit;
 
-      let browser: Browser | undefined;
+      let lease: ProjectFolderLease | undefined;
+      let succeeded = false;
       try {
         emit({ step: "validating", message: "Validando URL...", progress: 5 });
         validateProjectInput(input);
 
         emit({ step: "launching", message: "Abrindo navegador...", progress: 10 });
-        await ensureProjectFolder(input.slug);
+        lease = await ensureProjectFolder(input.slug);
         browser = await chromium.launch({
           headless: config.headless,
           args: ["--no-sandbox", "--disable-dev-shm-usage"],
         });
+        throwIfCancelled();
 
         // Desktop: emite capturing-desktop (30%) e capturing-fullpage-desktop (40%)
         const desktop = await captureDevice(
           browser, input, config.viewports.desktop, emitProgress
         );
+        throwIfCancelled();
 
         // Mobile: emite capturing-mobile (50%) e capturing-fullpage-mobile (65%)
         const mobile = await captureDevice(
           browser, input, config.viewports.mobile, emitProgress
         );
+        throwIfCancelled();
 
         // Páginas extras (v1.5) — captura leve por página, falha por página é silenciosa.
         const pages: PageCapture[] = [];
@@ -112,6 +134,7 @@ export async function POST(req: NextRequest): Promise<Response> {
           .slice(0, config.maxExtraPages);
 
         for (let i = 0; i < pageEntries.length; i++) {
+          throwIfCancelled();
           emit({
             step: "capturing-pages",
             message: `Capturando página ${i + 1}/${pageEntries.length}: ${pageEntries[i]}`,
@@ -131,6 +154,7 @@ export async function POST(req: NextRequest): Promise<Response> {
           .slice(0, config.maxStates);
 
         for (let i = 0; i < stateInputs.length; i++) {
+          throwIfCancelled();
           emit({
             step: "capturing-states",
             message: `Capturando estado ${i + 1}/${stateInputs.length}: ${stateInputs[i].name}`,
@@ -142,25 +166,38 @@ export async function POST(req: NextRequest): Promise<Response> {
             console.warn(`[atlas:${input.slug}] estado "${stateInputs[i].name}" falhou: ${err}`);
           }
         }
+        throwIfCancelled();
 
-        emit({ step: "generating-thumbnails", message: "Gerando thumbnails, capa e composições...", progress: 80 });
+        // Peças de vitrine (capa, composições, mockups) só se pedidas — senão
+        // ficam para depois, sob demanda, na página do projeto.
+        const doShowcase = input.options?.showcase ?? config.captureShowcase;
+        emit({
+          step: "generating-thumbnails",
+          message: doShowcase ? "Gerando thumbnails, capa e composições..." : "Gerando thumbnails...",
+          progress: 80,
+        });
         const thumbnails = await generateThumbnails(input.slug, desktop, mobile);
-        const cover = await generateCover(
-          input.slug,
-          desktop.screenshotAbsPath,
-          input.url,
-          desktop.inspection?.ogImage
-        ).catch(() => undefined);
-        const compositions = await generateCompositions(input.slug, desktop, mobile).catch(() => []);
-        const flatMockups = await generateMockups(input.slug, desktop, mobile).catch(() => []);
-        const mockups3d = await generateMockups3D(
-          browser, input.slug, desktop.screenshotAbsPath, mobile.screenshotAbsPath
-        ).catch(() => []);
-        const mockups = [...flatMockups, ...mockups3d];
+        const showcase: ShowcaseResult = doShowcase
+          ? await generateShowcase(
+              browser,
+              input.slug,
+              { desktopAbs: desktop.screenshotAbsPath, mobileAbs: mobile.screenshotAbsPath },
+              { url: input.url, ogImage: desktop.inspection?.ogImage }
+            )
+          : { compositions: [], mockups: [] };
+        throwIfCancelled();
 
         emit({ step: "writing-catalog", message: "Montando catálogo...", progress: 92 });
-        const catalog = buildCatalog(input, { desktop, mobile }, thumbnails, cover, { compositions, mockups, pages, states }, startedAt);
+        const catalog = buildCatalog(
+          input,
+          { desktop, mobile },
+          thumbnails,
+          showcase.cover,
+          { compositions: showcase.compositions, mockups: showcase.mockups, pages, states },
+          startedAt
+        );
         await writeJson(catalogPath(input.slug), catalog);
+        succeeded = true;
 
         const result: ResultEvent = {
           step: "done",
@@ -171,27 +208,44 @@ export async function POST(req: NextRequest): Promise<Response> {
 
         console.log(`[atlas:${input.slug}] Concluído em ${Date.now() - startedAt}ms`);
       } catch (err) {
-        console.error(`[atlas:${input.slug}]`, err instanceof Error ? err.message : err);
-
-        if (err instanceof AtlasError) {
-          emit({
-            step: "error",
-            code: err.code,
-            message: err.userMessage,
-            detail: err.detail,
-          } satisfies AtlasErrorPayload);
+        if (cancel.signal.aborted) {
+          console.log(`[atlas:${input.slug}] Geração cancelada pelo cliente.`);
+          emit({ step: "error", code: "CANCELLED", message: "Geração cancelada." });
         } else {
-          emit({
-            step: "error",
-            code: "UNKNOWN",
-            message: "Algo deu errado ao gerar o catálogo.",
-            detail: String(err),
-          } satisfies AtlasErrorPayload);
+          console.error(`[atlas:${input.slug}]`, err instanceof Error ? err.message : err);
+          if (err instanceof AtlasError) {
+            emit({
+              step: "error",
+              code: err.code,
+              message: err.userMessage,
+              detail: err.detail,
+            } satisfies AtlasErrorPayload);
+          } else {
+            emit({
+              step: "error",
+              code: "UNKNOWN",
+              message: "Algo deu errado ao gerar o catálogo.",
+              detail: String(err),
+            } satisfies AtlasErrorPayload);
+          }
         }
       } finally {
-        await browser?.close();
+        await browser?.close().catch(() => {});
+        // Depois do browser fechado (vídeo finalizado, nenhum arquivo em uso):
+        // sucesso descarta a versão anterior; falha/cancelamento a restaura.
+        if (lease) {
+          try {
+            if (succeeded) await commitProjectFolder(lease);
+            else await rollbackProjectFolder(input.slug, lease);
+          } catch (err) {
+            console.error(`[atlas:${input.slug}] falha ao finalizar a pasta: ${err}`);
+          }
+        }
         try { controller.close(); } catch { /* já fechado pelo cliente */ }
       }
+    },
+    cancel() {
+      cancel.abort();
     },
   });
 

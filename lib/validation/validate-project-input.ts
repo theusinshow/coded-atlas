@@ -7,7 +7,7 @@ const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export function validateProjectInput(input: ProjectInput): void {
   if (!input.name?.trim()) {
     throw new AtlasError(
-      "UNKNOWN",
+      "VALIDATION",
       "Nome do projeto é obrigatório.",
       "Missing required field: name"
     );
@@ -15,7 +15,7 @@ export function validateProjectInput(input: ProjectInput): void {
 
   if (!input.slug?.trim()) {
     throw new AtlasError(
-      "UNKNOWN",
+      "VALIDATION",
       "Slug do projeto é obrigatório.",
       "Missing required field: slug"
     );
@@ -23,7 +23,7 @@ export function validateProjectInput(input: ProjectInput): void {
 
   if (!SLUG_PATTERN.test(input.slug)) {
     throw new AtlasError(
-      "UNKNOWN",
+      "VALIDATION",
       "Slug inválido. Use apenas letras minúsculas, números e hífens (ex: meu-projeto).",
       `Slug does not match pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$: "${input.slug}"`
     );
@@ -31,7 +31,7 @@ export function validateProjectInput(input: ProjectInput): void {
 
   if (!input.category?.trim()) {
     throw new AtlasError(
-      "UNKNOWN",
+      "VALIDATION",
       "Categoria é obrigatória.",
       "Missing required field: category"
     );
