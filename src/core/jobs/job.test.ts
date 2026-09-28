@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { isDomainError } from "../../shared/errors";
-import { canTransition, createJob, JobSchema, JobStatusSchema, transitionJob } from "./job";
+import { canTransition, createJob, JOB_TYPE_POLICY, JobSchema, JobStatusSchema, transitionJob } from "./job";
 
 describe("Job", () => {
   it("nasce queued, progresso 0, sem lock", () => {
@@ -9,6 +9,12 @@ describe("Job", () => {
     expect(job.status).toBe("queued");
     expect(job.progress).toBe(0);
     expect(job.lockedBy).toBeNull();
+  });
+
+  it("captura é destrutiva por política (substitui o estado do projeto)", () => {
+    expect(JOB_TYPE_POLICY.capture.destructive).toBe(true);
+    expect(createJob({ type: "capture" }).destructive).toBe(true);
+    expect(JobSchema.safeParse({ ...createJob({ type: "capture" }), destructive: "sim" }).success).toBe(false);
   });
 
   it("caminho feliz queued → preparing → running → completed", () => {

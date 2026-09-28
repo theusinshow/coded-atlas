@@ -97,3 +97,14 @@ Accepted (2026-09-27). `CURRENT.md` 2.1.A completion criteria required repositor
 ## ADR-024 — Legacy bridge is read-only, ID-less and type-locked to v1
 
 Accepted (2026-09-27). The adapter reads `public/generated` through a confined, read-only store and maps each `catalog.json` to a project draft + file descriptors. It mints no IDs (they would change on every scan) and writes nothing; persisting into SQLite happens per project in a later migration step, so rollback is deleting rows. The Zod `LegacyCatalogSchema` and `lib/types.ts` `Catalog` are kept identical by a compile-time equality assertion instead of rewriting v1 types. Compositions and mockups map to **Output** (rendered deliverables); screenshots, sections, videos, thumbnails and covers map to **Asset**. v1 data with no Foundation home (`description`, `inspection`, capture options) is carried in `unmapped`, never dropped.
+
+## ADR-025 — Local job queue semantics
+
+Accepted (2026-09-27).
+
+- **Atomic claim:** every queue write runs in a `BEGIN IMMEDIATE` transaction (write lock taken before reading), so claims are exclusive across processes, not only across connections. Verified with 4 real processes; a `deferred` transaction deadlocks on lock upgrade.
+- **Destructive exclusivity:** `JOB_TYPE_POLICY` marks types that replace project state. The claim skips them while the project has an active destructive job, and a partial unique index (`project_id WHERE destructive AND status IN (preparing, running)`) makes it impossible at the database level.
+- **Ownership:** a claim writes `lockedBy` + heartbeat. Only the owner may report progress or finish; a worker that lost the lock aborts its work and never overwrites the state someone else decided.
+- **Cancellation:** a persisted request (`cancelRequestedAt`). Queued jobs are cancelled immediately; active ones are aborted through the handler's `AbortSignal` when the worker sees the flag (heartbeat or progress). If the handler finishes anyway, the job is `completed` — the work was committed.
+- **Stale policy:** jobs whose heartbeat is older than `staleAfterMs` are marked `failed` (`STALE`), or `cancelled` if cancellation had been requested. No automatic requeue: capture is destructive and not assumed idempotent; retry is an explicit new job.
+- **Worker hosting** (separate process vs. inside the Next server) is decided in 2.1.F, when the first real handler exists. `JobWorker` has no dependency on either.

@@ -2,8 +2,8 @@
 
 The complete roadmap lives in `ROADMAP.md`. The currently authorized scope lives in `CURRENT.md`.
 
-> **Status (2026-09-27):** 2.1.A (com 2.1.B/C) e **2.1.D concluídos e verificados**.
-> Próximo: **2.1.E — Job foundation** (aguardando teste do Matheus).
+> **Status (2026-09-27):** 2.1.A (com 2.1.B/C), 2.1.D e **2.1.E concluídos e verificados**.
+> Próximo: **2.1.F — First migrated vertical slice** (aguardando teste do Matheus).
 > O Atlas v1 (captura, vitrine, diff, case, ZIP) segue funcionando sem alteração de comportamento.
 
 ## Baseline (antes de qualquer mudança — 2026-09-27, commit `ac93441`)
@@ -77,12 +77,12 @@ Não executados no baseline (dependem de sites reais/rede e demoram): `test-phas
 
 ### 2.1.E Job foundation
 
-- [ ] Persist job states. (tabela + transições prontas desde 2.1.A; falta o worker usar)
-- [ ] Implement safe claim/lock.
-- [ ] Implement cancellation signal contract.
-- [ ] Implement progress updates.
-- [ ] Prevent concurrent destructive jobs for same project.
-- [ ] Recover/mark stale jobs after abnormal shutdown.
+- [x] Persist job states. (lock, heartbeat, progresso, pedido de cancelamento, resultado/erro no SQLite; migration `0001_job_queue`)
+- [x] Implement safe claim/lock. (`claimNext` em `BEGIN IMMEDIATE`; corrida real entre 4 processos testada)
+- [x] Implement cancellation signal contract. (`requestCancel` persistido → heartbeat/progresso → `AbortSignal` do handler → `cancelled`)
+- [x] Implement progress updates. (`ctx.progress`, só o dono grava)
+- [x] Prevent concurrent destructive jobs for same project. (filtro no claim + índice único parcial no banco)
+- [x] Recover/mark stale jobs after abnormal shutdown. (`recoverStale` no start do worker: `failed/STALE`, ou `cancelled` se havia pedido)
 
 ### 2.1.F First migrated vertical slice
 
@@ -104,7 +104,7 @@ Não executados no baseline (dependem de sites reais/rede e demoram): `test-phas
 - [ ] Structured warnings.
 - [ ] Runtime schema validation for persisted JSON. (feito para o SQLite novo e para a leitura do `catalog.json` pelo adapter; as telas v1 ainda fazem `JSON.parse(...) as Catalog`)
 - [ ] Infinite-scroll guard.
-- [ ] Explicit timeouts for long external processes.
+- [ ] Explicit timeouts for long external processes. (parcial: `timeoutMs` por handler de job aborta o signal → `failed/TIMEOUT`; falta aplicar aos processos do pipeline)
 - [ ] Build/lint/type/tests clean.
 
 ## Verificação de 2.1.A (2026-09-27)
@@ -132,6 +132,20 @@ Não executados no baseline (dependem de sites reais/rede e demoram): `test-phas
 | `npm run legacy:scan` na biblioteca real | 9 pastas, 9 projetos legíveis (v0.1.0 e v0.2.0), 0 arquivos ausentes, 0 ressalvas |
 | `next start`: `/projects`, `/projects/good-fella`, `/projects/example-com`, `/api/projects`, `/api/export/mj`, `/lab/coded-atlas` | 200; 9 projetos listados |
 | scripts legados offline | mesmos resultados do baseline |
+
+## Verificação de 2.1.E (2026-09-27)
+
+| Comando | Resultado |
+|---|---|
+| `npm run typecheck` | OK |
+| `npm run lint` | OK, 0 warnings |
+| `npm test` | 10 arquivos, 219 testes OK; suíte rodada 3× seguidas sem falha intermitente |
+| corrida de claim (4 processos Node reais, 40 jobs) | cada job reservado 1×, ≥3 processos participando; 5 execuções OK |
+| mutação `immediate → deferred` | teste de corrida falha (`database is locked`) 3/3 |
+| upgrade de banco do 2.1.A (só `0000`) | recebe `0001`, dados preservados, jobs antigos com `destructive = false` |
+| `npm run build` | OK |
+| `npm run db:migrate` (ATLAS_HOME vazio) | 2 migrations aplicadas |
+| scripts legados offline, `npm run legacy:scan` | mesmos resultados; 9/9 projetos |
 
 ## Phase completion rule
 

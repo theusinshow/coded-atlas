@@ -1,0 +1,2 @@
+ALTER TABLE `jobs` ADD `destructive` integer DEFAULT false NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX `jobs_one_active_destructive_per_project` ON `jobs` (`project_id`) WHERE "jobs"."destructive" = 1 AND "jobs"."status" IN ('preparing', 'running');

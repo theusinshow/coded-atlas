@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { sqliteTable, text, integer, index, uniqueIndex, primaryKey, type AnySQLiteColumn } from "drizzle-orm/sqlite-core";
 import type { CaptureParams } from "../../core/assets/capture";
 import type { JobError } from "../../core/jobs/job";
@@ -52,6 +53,7 @@ export const jobs = sqliteTable(
     projectId: text("project_id").references(() => projects.id, { onDelete: "cascade" }),
     type: text("type").notNull(),
     status: text("status").notNull(),
+    destructive: integer("destructive", { mode: "boolean" }).notNull().default(false),
     progress: integer("progress").notNull(),
     message: text("message"),
     payload: text("payload", { mode: "json" }).$type<Record<string, unknown>>().notNull(),
@@ -67,7 +69,15 @@ export const jobs = sqliteTable(
     startedAt: text("started_at"),
     finishedAt: text("finished_at"),
   },
-  (t) => [index("jobs_status_idx").on(t.status, t.createdAt), index("jobs_project_idx").on(t.projectId)]
+  (t) => [
+    index("jobs_status_idx").on(t.status, t.createdAt),
+    index("jobs_project_idx").on(t.projectId),
+    // Rede de segurança do banco: no máximo um job destrutivo ativo por projeto,
+    // mesmo que dois processos tentem ao mesmo tempo.
+    uniqueIndex("jobs_one_active_destructive_per_project")
+      .on(t.projectId)
+      .where(sql`${t.destructive} = 1 AND ${t.status} IN ('preparing', 'running')`),
+  ]
 );
 
 export const captures = sqliteTable(

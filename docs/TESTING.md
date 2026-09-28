@@ -23,6 +23,8 @@ Test schemas, domain rules, slug/path validation, URL policy, composition compat
 
 Use temporary SQLite DBs for migrations, CRUD, transactions, JSON validation, foreign keys, job claiming and cancellation.
 
+Claim atomicity is tested with real concurrent Node processes (`src/infrastructure/db/__fixtures__/claim-race-worker.ts`, launched with `node --import tsx`), not only with multiple connections in one process.
+
 ## Storage integration
 
 Use temporary directories for confinement, put/get/stat/delete, hashing, dedupe, staging and cleanup.

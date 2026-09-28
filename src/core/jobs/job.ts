@@ -4,17 +4,27 @@ import { DomainError } from "../../shared/errors";
 import { TimestampSchema, nowIso, parseOrThrow } from "../../shared/validation";
 
 /**
- * Job: unidade de trabalho pesado executada fora da request HTTP.
- * Nesta fase o contrato e as transições existem; claim/lock/heartbeat e o
- * worker entram no milestone 2.1.E (as colunas já estão no schema).
+ * Job: unidade de trabalho pesado executada fora da request HTTP por um worker
+ * local (src/workers). Estado, lock, heartbeat, progresso e pedido de
+ * cancelamento são persistidos no SQLite — sobrevivem a reinício de processo.
  */
 export const JobTypeSchema = z.enum(["capture"]); // render/export entram com suas fases
 export type JobType = z.infer<typeof JobTypeSchema>;
+
+/**
+ * Destrutivo = substitui o estado válido de um projeto (ex.: recaptura). Dois jobs
+ * destrutivos do mesmo projeto nunca rodam ao mesmo tempo (claim + índice único parcial).
+ */
+export const JOB_TYPE_POLICY: Record<JobType, { destructive: boolean }> = {
+  capture: { destructive: true },
+};
 
 export const JobStatusSchema = z.enum(["queued", "preparing", "running", "completed", "failed", "cancelled"]);
 export type JobStatus = z.infer<typeof JobStatusSchema>;
 
 export const TERMINAL_JOB_STATUSES: readonly JobStatus[] = ["completed", "failed", "cancelled"];
+/** Estados em que um worker detém o job (lock + heartbeat). */
+export const ACTIVE_JOB_STATUSES = ["preparing", "running"] as const satisfies readonly JobStatus[];
 
 const TRANSITIONS: Record<JobStatus, readonly JobStatus[]> = {
   queued: ["preparing", "failed", "cancelled"],
@@ -46,6 +56,7 @@ export const JobSchema = z.strictObject({
   projectId: ProjectIdSchema.nullable(),
   type: JobTypeSchema,
   status: JobStatusSchema,
+  destructive: z.boolean(),
   progress: z.number().int().min(0).max(100),
   message: z.string().max(500).nullable(),
   payload: JsonObjectSchema,
@@ -78,6 +89,7 @@ export function createJob(input: NewJobInput): Job {
       projectId: input.projectId ?? null,
       type: input.type,
       status: "queued",
+      destructive: JOB_TYPE_POLICY[input.type].destructive,
       progress: 0,
       message: null,
       payload: input.payload ?? {},

@@ -13,7 +13,9 @@ export type DomainErrorCode =
   | "INVALID_STORAGE_KEY" // storage key fora do formato seguro
   | "PATH_OUTSIDE_ROOT"   // caminho resolvido escapa da raiz confinada
   | "STORAGE_FAILED"      // falha de I/O ao ler/gravar bytes
-  | "DB_SCHEMA_MISMATCH"; // banco criado por outra versão/migrations divergentes
+  | "DB_SCHEMA_MISMATCH"  // banco criado por outra versão/migrations divergentes
+  | "CANCELLED"           // trabalho interrompido por pedido de cancelamento
+  | "TIMEOUT";            // trabalho excedeu o tempo máximo configurado
 
 export class DomainError extends Error {
   constructor(

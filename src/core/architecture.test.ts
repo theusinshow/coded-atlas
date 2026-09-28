@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 
 /**
  * Regra de dependência (docs/ARCHITECTURE.md): o domínio não importa framework,
- * driver, engine de mídia, SDK de IA nem Node I/O. Este teste falha se alguém
- * acoplar src/core (ou src/shared, usado pelo domínio) a infraestrutura.
+ * driver, engine de mídia, SDK de IA nem Node I/O; a camada de aplicação
+ * (workers, módulos) depende das portas do domínio, nunca da infraestrutura.
  */
 const FORBIDDEN = [
   /^next(\/|$)/,
@@ -46,6 +46,27 @@ describe("fronteira do domínio", () => {
 
   it.each(files.map((f) => [path.relative(root, f), f]))("%s não importa infraestrutura", (_rel, file) => {
     const bad = imports(file).filter((spec) => FORBIDDEN.some((re) => re.test(spec)));
+    expect(bad).toEqual([]);
+  });
+});
+
+/** Aplicação: pode usar Node e o domínio, mas nunca infraestrutura concreta. */
+const APP_FORBIDDEN = [
+  /^drizzle-orm/,
+  /^better-sqlite3/,
+  /^playwright/,
+  /^sharp$/,
+  /^remotion/,
+  /^openai/,
+  /infrastructure\//,
+];
+
+describe("fronteira da aplicação", () => {
+  const root = path.resolve(__dirname, "..");
+  const files = [...sourceFiles(path.join(root, "workers")), ...sourceFiles(path.join(root, "modules"))];
+
+  it.each(files.map((f) => [path.relative(root, f), f]))("%s não importa infraestrutura", (_rel, file) => {
+    const bad = imports(file).filter((spec) => APP_FORBIDDEN.some((re) => re.test(spec)));
     expect(bad).toEqual([]);
   });
 });

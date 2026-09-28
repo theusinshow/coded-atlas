@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { cpSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -10,8 +10,9 @@ import { createJob } from "../../core/jobs/job";
 import { createProject } from "../../core/projects/project";
 import { createSource } from "../../core/projects/source";
 import { isDomainError, type DomainErrorCode } from "../../shared/errors";
-import { newId, type AssetId, type ProjectId } from "../../shared/id";
-import { openDatabase, type AtlasDatabase } from "./client";
+import { JobIdSchema, newId, type AssetId, type ProjectId } from "../../shared/id";
+import { DEFAULT_MIGRATIONS_FOLDER, openDatabase, type AtlasDatabase } from "./client";
+import journal from "./migrations/meta/_journal.json";
 import { createRepositories, type Repositories } from "./repositories";
 
 const SHA = "b".repeat(64);
@@ -67,7 +68,36 @@ describe("openDatabase", () => {
     repos = createRepositories(database.db);
     expect(await repos.projects.getById(project.id)).toEqual(project);
     const count = database.sqlite.prepare("SELECT COUNT(*) AS n FROM __drizzle_migrations").get() as { n: number };
-    expect(count.n).toBe(1);
+    expect(count.n).toBe(journal.entries.length);
+  });
+
+  it("banco de uma versão anterior recebe só as migrations novas, sem perder dados", async () => {
+    // Simula o Atlas de 2.1.A: pasta de migrations só com a primeira entrada.
+    const oldFolder = path.join(dir, "migrations-v0");
+    cpSync(DEFAULT_MIGRATIONS_FOLDER, oldFolder, { recursive: true });
+    writeFileSync(
+      path.join(oldFolder, "meta", "_journal.json"),
+      JSON.stringify({ ...journal, entries: journal.entries.slice(0, 1) })
+    );
+    const oldFile = path.join(dir, "antigo.db");
+    const old = openDatabase({ file: oldFile, migrationsFolder: oldFolder });
+    const oldRepos = createRepositories(old.db);
+    const project = await oldRepos.projects.create(createProject({ slug: "a", name: "A", category: "site" }));
+    old.sqlite.exec(
+      `INSERT INTO jobs (id, project_id, type, status, progress, payload, attempts, created_at, updated_at)
+       VALUES ('01J9ZZZZZZZZZZZZZZZZZZZZZZ', '${project.id}', 'capture', 'queued', 0, '{}', 0,
+               '2026-09-27T00:00:00.000Z', '2026-09-27T00:00:00.000Z')`
+    );
+    old.close();
+
+    const upgraded = openDatabase({ file: oldFile });
+    const upgradedRepos = createRepositories(upgraded.db);
+    expect(await upgradedRepos.projects.getById(project.id)).toEqual(project);
+    const legacyJob = await upgradedRepos.jobs.getById(JobIdSchema.parse("01J9ZZZZZZZZZZZZZZZZZZZZZZ"));
+    expect(legacyJob).toMatchObject({ status: "queued", destructive: false }); // default da coluna nova
+    const applied = upgraded.sqlite.prepare("SELECT COUNT(*) AS n FROM __drizzle_migrations").get() as { n: number };
+    expect(applied.n).toBe(journal.entries.length);
+    upgraded.close();
   });
 
   it("banco de versão mais nova → DB_SCHEMA_MISMATCH (sem tocar nos dados)", () => {
