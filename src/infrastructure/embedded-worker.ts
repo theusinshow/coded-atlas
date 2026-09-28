@@ -1,3 +1,4 @@
+import { ensureLegacyImportQueued } from "../modules/import/legacy/legacy-import-job";
 import { getAtlasRuntime } from "./runtime";
 
 const STARTED = Symbol.for("coded-atlas.embedded-worker");
@@ -17,6 +18,11 @@ export async function startEmbeddedWorker(options: { workerId?: string } = {}): 
   const worker = runtime.createWorker({ workerId: options.workerId ?? `worker-${process.pid}` });
   worker.start();
   runtime.logger.info("worker de jobs iniciado", { workerId: worker.workerId, home: runtime.home.root });
+
+  // Biblioteca v1 → modelo novo: importação idempotente e não destrutiva em segundo plano.
+  ensureLegacyImportQueued(runtime.legacyImportDeps)
+    .then((job) => job && runtime.logger.info("importação da biblioteca v1 enfileirada", { jobId: job.id }))
+    .catch((err: unknown) => runtime.logger.error("falha ao verificar a biblioteca v1", { error: err }));
 
   let stopping = false;
   const shutdown = (signal: string) => {

@@ -74,6 +74,13 @@ export class GeneratedDirStore implements LegacyStore {
     return info?.isFile() ? { byteSize: info.size } : null;
   }
 
+  async readPublicFile(publicPath: string): Promise<Uint8Array | null> {
+    if (!publicPath.startsWith(PUBLIC_PREFIX)) return null;
+    const relative = publicPath.slice(PUBLIC_PREFIX.length);
+    if (!(await this.statOrNull(relative))?.isFile()) return null;
+    return fs.readFile(await this.resolve(relative));
+  }
+
   async hasCaseDraft(slug: string): Promise<boolean> {
     return (await this.statOrNull(path.posix.join(slug, "case-draft.mdx")))?.isFile() ?? false;
   }

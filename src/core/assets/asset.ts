@@ -23,6 +23,25 @@ export const AssetKindSchema = z.enum([
 ]);
 export type AssetKind = z.infer<typeof AssetKindSchema>;
 
+/**
+ * Metadados descritivos do asset (JSON validado). Servem para filtrar e escolher
+ * material — nunca para localizar bytes (isso é a storageKey).
+ */
+export const AssetMetadataSchema = z.strictObject({
+  device: z.enum(["desktop", "mobile"]).optional(),
+  role: z.string().min(1).max(40).optional(),         // viewport | fullpage | section | page | state | thumbnail | cover | upload…
+  viewport: z.string().max(20).optional(),             // "1440x900"
+  sectionName: z.string().max(120).optional(),
+  sectionIndex: z.number().int().nonnegative().optional(),
+  scrollY: z.number().nonnegative().optional(),
+  pagePath: z.string().max(500).optional(),
+  stateName: z.string().max(120).optional(),
+  origin: z.enum(["capture", "upload", "legacy", "derived"]).optional(),
+  legacyPath: z.string().max(1024).optional(),         // /generated/... de onde veio (importação v1)
+  originalName: z.string().max(255).optional(),        // nome do arquivo enviado
+});
+export type AssetMetadata = z.infer<typeof AssetMetadataSchema>;
+
 const MimeTypeSchema = z.string().regex(/^[a-z]+\/[a-z0-9.+-]+$/, "MIME type inválido");
 const DimensionSchema = z.number().int().positive().max(100_000);
 
@@ -39,12 +58,13 @@ export const AssetSchema = z.strictObject({
   parentAssetId: AssetIdSchema.nullable(),
   captureId: CaptureIdSchema.nullable(),
   label: z.string().trim().min(1).max(200).nullable(),
+  metadata: AssetMetadataSchema,
   createdAt: TimestampSchema,
 });
 export type Asset = z.infer<typeof AssetSchema>;
 
-export type NewAssetInput = Omit<Asset, "id" | "createdAt" | "width" | "height" | "parentAssetId" | "captureId" | "label"> &
-  Partial<Pick<Asset, "width" | "height" | "parentAssetId" | "captureId" | "label">>;
+export type NewAssetInput = Omit<Asset, "id" | "createdAt" | "width" | "height" | "parentAssetId" | "captureId" | "label" | "metadata"> &
+  Partial<Pick<Asset, "width" | "height" | "parentAssetId" | "captureId" | "label" | "metadata">>;
 
 export function createAsset(input: NewAssetInput): Asset {
   return parseOrThrow(
@@ -55,6 +75,7 @@ export function createAsset(input: NewAssetInput): Asset {
       parentAssetId: null,
       captureId: null,
       label: null,
+      metadata: {},
       ...input,
       id: newId(),
       createdAt: nowIso(),

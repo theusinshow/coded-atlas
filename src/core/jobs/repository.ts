@@ -13,10 +13,19 @@ export type JobOutcome =
   | { status: "failed"; error: JobError }
   | { status: "cancelled"; error: JobError };
 
+export interface JobQuery {
+  types?: readonly JobType[];
+  statuses?: readonly JobStatus[];
+  projectId?: ProjectId;
+  limit?: number;
+}
+
 export interface JobRepository {
   create(job: Job): Promise<Job>;
   getById(id: JobId): Promise<Job | null>;
   listByProject(projectId: ProjectId): Promise<Job[]>;
+  /** Mais recentes primeiro. */
+  listRecent(query?: JobQuery): Promise<Job[]>;
   /**
    * Transição administrativa (sem checar dono). Lê, aplica `transitionJob` e grava
    * atomicamente. NOT_FOUND / INVALID_TRANSITION.

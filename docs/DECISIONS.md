@@ -127,3 +127,17 @@ Accepted (2026-09-27). 2.1.G hardened the v1 code in place (adapters and small h
 - **Warnings are data:** `catalog.json.warnings` (`CatalogWarning`, typed codes) — one entry per optional piece/step that failed or fell back, persisted and shown. The remaining silent `catch` blocks are only cleanup (closing browsers, removing temp files), best-effort waits (`wait-for-stability`, overlay dismissal), or catches that are the control flow itself (URL parse → invalid, file missing → not found).
 - **One catalog reader:** `readCatalog` validates with `LegacyCatalogSchema`; invalid catalogs are logged with the reason and treated as absent instead of crashing a page. No real catalog loses keys through the schema (verified on the 9 existing projects).
 - **Limits live in `lib/config.ts`** (env-overridable): `scrollMaxHeightPx`, `scrollMaxMs`, `maxFullPageHeightPx`, `actionTimeoutMs`, `generationTimeoutMs`.
+
+## ADR-028 — Continuous execution through Atlas 3.0
+
+Accepted (2026-09-27, owner). Phases 2.2–2.14 run back to back; the owner tests at the end. The phase discipline stays (one phase at a time, verification + docs + commit at each phase end); only the human stop between phases is waived. External credentials that do not exist in the repository (OpenAI API key, GitHub token) never block a phase: the feature ships behind its adapter with a deterministic/local fallback and is documented as "needs credential".
+
+## ADR-029 — Project System choices (2.2)
+
+Accepted (2026-09-27).
+
+- **v1 library import pulled forward from 2.3** and run as a background job at startup: projects, sources, captures, assets (with lineage) and outputs (compositions/mockups) land in SQLite; bytes go to content-addressed keys (`assets/…`, `outputs/…`). Never writes to `public/generated`. `legacy_imports` makes it idempotent, remembers dismissals (deleting an imported project) and turns a v1 recapture into a new Capture. Failed imports are retried only when the catalog changes or on explicit sync.
+- **Search** uses a derived, accent-free `search_text` column with escaped `LIKE` — no FTS engine needed at this scale.
+- **Mutations from the UI are Server Actions** that call application services; every ID from the client is parsed with its Zod schema. Server Action body limit raised to 200 MB for uploads (per-file limit enforced by the service).
+- **Local sources are dev-server URLs**, never filesystem paths (no machine paths in domain records).
+- **Thumbnails** are generated on demand (fixed widths 320/640/1280, WebP) and cached in the storage `cache/` namespace, keyed by the original's SHA-256; deleting the last reference to bytes also deletes their thumbnails.

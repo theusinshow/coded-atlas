@@ -174,7 +174,7 @@ export function UrlInput({ onSubmit }: Props) {
                   <span className="font-mono text-[11px] text-zinc-500">
                     {new Date(p.createdAt).toLocaleDateString("pt-BR")}
                   </span>
-                  <Link href={`/projects/${p.slug}`} className="text-accent hover:text-accent-bright">
+                  <Link href={`/legacy/${p.slug}`} className="text-accent hover:text-accent-bright">
                     Abrir
                   </Link>
                   <Link href={`/generate?reprocess=${p.slug}`} className="text-accent hover:text-accent-bright">

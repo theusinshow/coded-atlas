@@ -2,9 +2,8 @@
 
 The complete roadmap lives in `ROADMAP.md`. The currently authorized scope lives in `CURRENT.md`.
 
-> **Status (2026-09-27):** **fase 2.1 — Foundation concluída** (2.1.A–2.1.G verificados; critério
-> de saída do ROADMAP passa de ponta a ponta). Próxima fase: **2.2 — Project System** — não
-> iniciada, aguardando teste e autorização do Matheus.
+> **Status (2026-09-27):** fases **2.1 e 2.2 concluídas**. Execução contínua até o Atlas 3.0
+> autorizada pelo Matheus (ADR-028) — ele testa só no final. Próxima: **2.3 — Asset & Capture System**.
 > O Atlas v1 (captura, vitrine, diff, case, ZIP) segue funcionando sem alteração de comportamento.
 
 ## Baseline (antes de qualquer mudança — 2026-09-27, commit `ac93441`)
@@ -178,6 +177,22 @@ Não executados no baseline (dependem de sites reais/rede e demoram): `test-phas
 
 Projetos de teste criados nos E2E foram removidos pela API; `public/generated` ficou com os 9
 projetos originais.
+
+## Atlas 2.2 — Project System (concluída 2026-09-27)
+
+- [x] Project Library do banco: busca sem acento/caixa (texto normalizado), filtros (categoria, ativos/arquivados), ordenação.
+- [x] Project Overview: capa, origens, contagem de material, prontidão, recomendações, atividade recente.
+- [x] Navegação do projeto: Visão geral · Captura · Assets (+ Ajustes do projeto).
+- [x] Ciclo de vida: editar, arquivar/restaurar, excluir definitivo com confirmação digitada, sem job ativo, com GC de bytes órfãos (preserva compartilhados, apaga miniaturas).
+- [x] Sources: site (URL), dev local (URL http do servidor de dev — nunca caminho de disco), GitHub (`owner/repo` normalizado; base para leitura futura), uploads.
+- [x] Importação manual (upload) com formato decidido pelos bytes, dedupe por SHA-256, staging tudo-ou-nada.
+- [x] Biblioteca v1 importada automaticamente como job (`import`), não destrutiva, idempotente, com ledger (dispensados não voltam; recaptura v1 vira nova Capture). Arquivos em chaves endereçadas por conteúdo.
+- [x] Miniaturas WebP sob demanda (320/640/1280) cacheadas no AssetStorage.
+- [x] Telas globais: Jobs (cancelar, auto-atualização) e Ajustes (instalação, sincronizar v1).
+- [x] v1 movido para `/legacy` (+ `/generate`), link discreto "v1" na navegação; `/` → `/projects`.
+- [x] Migration `0002_project_system`.
+
+Verificação 2.2: typecheck/lint OK; `npm test` 319 testes (17 arquivos); build OK; servidor com `ATLAS_HOME` vazio importou a biblioteca v1 real em ~3 s (9 projetos, 214 arquivos, 0 faltando, capas definidas); todas as rotas 200 e 404 para projeto inexistente; `npm run e2e` (Chromium na UI real: criar projeto com captura imediata, upload, editar, arquivar/restaurar, excluir) — 7/7 passos.
 
 ## Phase completion rule
 

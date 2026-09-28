@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { AssetKind } from "../../../core/assets/asset";
 import type { OutputFormat } from "../../../core/assets/output";
-import { parseStorageKey, type StorageKey } from "../../../core/assets/storage-key";
+import { parseStorageKey } from "../../../core/assets/storage-key";
 import { NewProjectInputSchema, type NewProjectInput, type Slug } from "../../../core/projects/project";
 import { isHttpUrl } from "../../../core/projects/source";
 import { LegacyCatalogSchema, type LegacyCatalog } from "./catalog-schema";
@@ -56,8 +56,13 @@ export type LegacyAssetRole =
 export type LegacyFileDescriptor = {
   role: LegacyAssetRole;
   publicPath: string;
-  /** Chave que o arquivo terá no AssetStorage quando importado: `legacy/<slug>/<resto>`. */
-  targetStorageKey: StorageKey;
+  /**
+   * Caminho relativo à pasta do projeto, já validado com as regras de storage key
+   * (sem "..", "%", "\", maiúsculas…). Na importação os bytes vão para uma chave
+   * endereçada por conteúdo — uma recaptura v1 reescreve o mesmo caminho com bytes
+   * novos, e o AssetStorage é imutável.
+   */
+  relativePath: string;
   mimeType: string;
   label: string | null;
   device: "desktop" | "mobile" | null;
@@ -249,10 +254,9 @@ function describeFile(folder: Slug, ref: FileRef, issue: ReportIssue): LegacyFil
   }
 
   const relative = ref.publicPath.slice(prefix.length);
-  let targetStorageKey: StorageKey;
   try {
     // A validação da storage key barra "..", "%2e", "\", maiúsculas etc.
-    targetStorageKey = parseStorageKey(`legacy/${folder}/${relative}`);
+    parseStorageKey(`legacy/${folder}/${relative}`);
   } catch {
     issue("warning", "UNMAPPABLE_PATH", `Caminho não vira storage key segura: ${ref.publicPath}`, { role: ref.role });
     return null;
@@ -268,7 +272,7 @@ function describeFile(folder: Slug, ref: FileRef, issue: ReportIssue): LegacyFil
   const common = {
     role: ref.role,
     publicPath: ref.publicPath,
-    targetStorageKey,
+    relativePath: relative,
     mimeType: type.mimeType,
     label: ref.label ?? null,
     device: ref.device ?? null,

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { newId, ProjectIdSchema, AssetIdSchema } from "../../shared/id";
+import { DomainError } from "../../shared/errors";
 import { TimestampSchema, nowIso, parseOrThrow } from "../../shared/validation";
 
 /**
@@ -14,6 +15,10 @@ export type Slug = z.infer<typeof SlugSchema>;
 export const ProjectStatusSchema = z.enum(["active", "archived"]);
 export type ProjectStatus = z.infer<typeof ProjectStatusSchema>;
 
+/** De onde o projeto veio: criado no Atlas 2.x ou importado da biblioteca v1. */
+export const ProjectOriginSchema = z.enum(["atlas", "legacy"]);
+export type ProjectOrigin = z.infer<typeof ProjectOriginSchema>;
+
 export const PROJECT_SCHEMA_VERSION = 1;
 
 export const ProjectSchema = z.strictObject({
@@ -22,7 +27,9 @@ export const ProjectSchema = z.strictObject({
   name: z.string().trim().min(1).max(200),
   client: z.string().trim().min(1).max(200).nullable(),
   category: z.string().trim().min(1).max(80),
+  description: z.string().trim().min(1).max(2000).nullable(),
   status: ProjectStatusSchema,
+  origin: ProjectOriginSchema,
   coverAssetId: AssetIdSchema.nullable(),
   schemaVersion: z.literal(PROJECT_SCHEMA_VERSION),
   createdAt: TimestampSchema,
@@ -30,11 +37,21 @@ export const ProjectSchema = z.strictObject({
 });
 export type Project = z.infer<typeof ProjectSchema>;
 
+const optionalText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .optional()
+    .transform((v) => (v ? v : undefined));
+
 export const NewProjectInputSchema = z.strictObject({
   slug: SlugSchema,
   name: ProjectSchema.shape.name,
   category: ProjectSchema.shape.category,
-  client: ProjectSchema.shape.client.optional(),
+  client: optionalText(200),
+  description: optionalText(2000),
+  origin: ProjectOriginSchema.optional(),
 });
 export type NewProjectInput = z.input<typeof NewProjectInputSchema>;
 
@@ -50,7 +67,9 @@ export function createProject(input: NewProjectInput): Project {
       name: data.name,
       client: data.client ?? null,
       category: data.category,
+      description: data.description ?? null,
       status: "active",
+      origin: data.origin ?? "atlas",
       coverAssetId: null,
       schemaVersion: PROJECT_SCHEMA_VERSION,
       createdAt: now,
@@ -58,4 +77,50 @@ export function createProject(input: NewProjectInput): Project {
     },
     "Projeto"
   );
+}
+
+export const ProjectPatchSchema = z.strictObject({
+  name: ProjectSchema.shape.name.optional(),
+  category: ProjectSchema.shape.category.optional(),
+  client: optionalText(200),
+  description: optionalText(2000),
+});
+export type ProjectPatch = z.input<typeof ProjectPatchSchema>;
+
+/** Edição de metadados (slug e origem não mudam por aqui). Campos vazios limpam o valor. */
+export function editProject(project: Project, patch: ProjectPatch): Project {
+  const data = parseOrThrow(ProjectPatchSchema, patch, "Edição de projeto");
+  return parseOrThrow(
+    ProjectSchema,
+    {
+      ...project,
+      ...(data.name !== undefined ? { name: data.name } : {}),
+      ...(data.category !== undefined ? { category: data.category } : {}),
+      ...("client" in patch ? { client: data.client ?? null } : {}),
+      ...("description" in patch ? { description: data.description ?? null } : {}),
+    },
+    "Projeto"
+  );
+}
+
+/** Ciclo de vida: arquivar esconde da biblioteca sem apagar nada. */
+export function setProjectStatus(project: Project, status: ProjectStatus): Project {
+  if (project.status === status) {
+    throw new DomainError("INVALID_TRANSITION", `Projeto já está ${status === "archived" ? "arquivado" : "ativo"}.`);
+  }
+  return { ...project, status };
+}
+
+/** Texto normalizado para busca: minúsculas, sem acentos, campos pesquisáveis juntos. */
+export function normalizeSearch(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function projectSearchText(project: Pick<Project, "name" | "slug" | "client" | "category" | "description">): string {
+  return normalizeSearch([project.name, project.slug, project.client, project.category, project.description].filter(Boolean).join(" "));
 }

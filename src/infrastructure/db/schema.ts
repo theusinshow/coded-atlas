@@ -21,8 +21,12 @@ export const projects = sqliteTable(
     name: text("name").notNull(),
     client: text("client"),
     category: text("category").notNull(),
+    description: text("description"),
     status: text("status").notNull(),
+    origin: text("origin").notNull().default("atlas"),
     coverAssetId: text("cover_asset_id"), // sem FK: assets referenciam projects (evita ciclo)
+    // Derivado (nome, slug, cliente, categoria, descrição normalizados) — só para busca.
+    searchText: text("search_text").notNull().default(""),
     schemaVersion: integer("schema_version").notNull(),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
@@ -121,6 +125,7 @@ export const assets = sqliteTable(
     }),
     captureId: text("capture_id").references(() => captures.id, { onDelete: "set null" }),
     label: text("label"),
+    metadata: text("metadata", { mode: "json" }).$type<Record<string, unknown>>().notNull().default({}),
     createdAt: text("created_at").notNull(),
   },
   (t) => [
@@ -167,3 +172,18 @@ export const outputs = sqliteTable(
   },
   (t) => [index("outputs_project_idx").on(t.projectId)]
 );
+
+/**
+ * Registro da importação da biblioteca v1 (um por pasta/slug). Torna a
+ * importação idempotente, lembra projetos que o usuário dispensou e detecta
+ * recapturas feitas no v1 depois da importação (catalog_created_at mudou).
+ */
+export const legacyImports = sqliteTable("legacy_imports", {
+  slug: text("slug").primaryKey(),
+  projectId: text("project_id").references(() => projects.id, { onDelete: "set null" }),
+  status: text("status").notNull(), // imported | dismissed | failed
+  catalogCreatedAt: text("catalog_created_at"),
+  error: text("error"),
+  importedAt: text("imported_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});

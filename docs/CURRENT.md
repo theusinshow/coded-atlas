@@ -2,7 +2,9 @@
 
 ## Active phase
 
-**Atlas 2.1 — Foundation — COMPLETED (2026-09-27).** Next phase: **Atlas 2.2 — Project System** (not started; needs the owner's test and go-ahead).
+**Atlas 2.3 — Asset & Capture System** (in progress). 2.1 Foundation and 2.2 Project System completed 2026-09-27.
+
+**Owner authorization (2026-09-27):** execute the roadmap continuously from 2.2 through 2.14 (Atlas 3.0) without stopping between phases; the owner tests only at the end. Each phase still ends with typecheck/lint/test/build, `BUILD-PLAN.md` + this file updated and a commit.
 
 ## Objective
 
@@ -10,7 +12,7 @@ Introduce the new persistence/domain/job foundation while preserving useful beha
 
 ## Current milestone
 
-None active. 2.1.A–2.1.G are done and verified (see `BUILD-PLAN.md`). The next milestone is the first one of **2.2 — Project System**, to be planned when the owner authorizes the phase.
+**2.3 — Asset & Capture System**: formal Asset Library (global and per project), full capture pipeline as jobs (desktop/mobile viewport, full page, sections, extra pages, interaction states, optional scroll video, inspection → VisualProfile), lineage, dedupe, derived thumbnails/cover. After 2.3 the new capture replaces v1 `/generate` in the main flow.
 
 ## State of the code (2026-09-27)
 
@@ -53,7 +55,12 @@ Delivered in 2.1.G (hardening, mostly on the v1 pipeline the product still runs 
 - `lib/storage/read-catalog.ts` is the only v1 catalog reader and validates at runtime.
 - Infinite-scroll guard and full-page height cap; explicit Playwright action timeouts.
 
-The v1 pipeline (`/generate`, `/projects`, `catalog.json`, `public/generated`) is still the main flow and keeps working; the 2.x path runs beside it.
+Delivered in 2.2 (Project System):
+
+- DB-backed `/projects` library (search, filters, archive), `/projects/new`, project pages (Overview · Capture · Assets · Settings), global `/jobs` and `/settings`; v1 screens at `/legacy` and `/generate`.
+- Project lifecycle with storage GC on delete; sources (site, local dev URL, GitHub, uploads); manual upload with byte-level format detection.
+- The v1 library is imported automatically into SQLite/AssetStorage by a background `import` job (non-destructive, idempotent, ledger in `legacy_imports`).
+- `npm run e2e` drives the real UI against a server with a temporary `ATLAS_HOME`.
 
 ## Work allowed now
 

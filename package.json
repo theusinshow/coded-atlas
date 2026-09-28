@@ -14,7 +14,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/atlas-db-migrate.ts",
     "legacy:scan": "tsx scripts/legacy-scan.ts",
-    "worker": "tsx scripts/atlas-worker.ts"
+    "worker": "tsx scripts/atlas-worker.ts",
+    "e2e": "tsx e2e/smoke.ts"
   },
   "dependencies": {
     "archiver": "^8.0.0",

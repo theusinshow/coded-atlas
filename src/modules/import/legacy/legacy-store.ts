@@ -25,4 +25,6 @@ export interface LegacyStore {
   /** `null` se o arquivo não existir. Só é chamado com caminhos já validados. */
   statPublicPath(publicPath: string): Promise<{ byteSize: number } | null>;
   hasCaseDraft(slug: string): Promise<boolean>;
+  /** Bytes de um arquivo referenciado pelo catálogo. `null` se ausente. */
+  readPublicFile(publicPath: string): Promise<Uint8Array | null>;
 }

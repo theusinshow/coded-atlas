@@ -1,18 +1,24 @@
 import { config as legacyConfig } from "../../lib/config";
 import { createCaptureJobHandler } from "../modules/capture/capture-job";
 import type { ViewportSpec } from "../modules/capture/capture-engine";
+import { createLegacyImportJobHandler, type LegacyImportDeps } from "../modules/import/legacy/legacy-import-job";
+import type { UploadDeps } from "../modules/import/upload";
+import type { ProjectServiceDeps } from "../modules/projects/project-service";
 import { createLogger, type Logger } from "../shared/logger";
 import { JobWorker } from "../workers/job-worker";
 import { resolveAtlasHome, type AtlasHome } from "./atlas-home";
 import { openDatabase, type AtlasDatabase } from "./db/client";
 import { createRepositories, type Repositories } from "./db/repositories";
-import { PlaywrightCaptureEngine } from "./playwright/playwright-capture-engine";
+import { GeneratedDirStore } from "./legacy/generated-dir-store";
 import { createUrlPolicy, resolveUrlPolicyMode, type UrlPolicy } from "./net/url-policy";
+import { PlaywrightCaptureEngine } from "./playwright/playwright-capture-engine";
+import { SharpMediaProbe } from "./sharp/media-probe";
+import { thumbCacheKeys, ThumbnailService } from "./sharp/thumbnails";
 import { LocalAssetStorage } from "./storage/local-asset-storage";
 
 /**
  * Composition root do Atlas 2.x: o único lugar que conhece as implementações
- * concretas (SQLite, disco local, Playwright) e as liga às portas.
+ * concretas (SQLite, disco local, Playwright, Sharp) e as liga às portas.
  *
  * Um runtime por processo. Guardado em `globalThis` porque o Next em dev
  * recarrega módulos (HMR) — sem isso cada recarga abriria outra conexão e
@@ -24,7 +30,12 @@ export interface AtlasRuntime {
   repos: Repositories;
   storage: LocalAssetStorage;
   urlPolicy: UrlPolicy;
+  thumbnails: ThumbnailService;
   logger: Logger;
+  /** Dependências prontas para os casos de uso (UI/API só chamam serviços). */
+  projectDeps: ProjectServiceDeps;
+  uploadDeps: UploadDeps;
+  legacyImportDeps: LegacyImportDeps;
   createWorker(options?: { workerId?: string }): JobWorker;
 }
 
@@ -54,6 +65,8 @@ async function createRuntime(): Promise<AtlasRuntime> {
   const repos = createRepositories(database.db);
   const storage = await LocalAssetStorage.open(home.storageRoot, { logger });
   const urlPolicy = createUrlPolicy(resolveUrlPolicyMode());
+  const probe = new SharpMediaProbe();
+  const legacyStore = await GeneratedDirStore.open(legacyConfig.outputDir);
   const engine = new PlaywrightCaptureEngine({
     headless: legacyConfig.headless,
     navTimeoutMs: legacyConfig.navTimeoutMs,
@@ -62,13 +75,26 @@ async function createRuntime(): Promise<AtlasRuntime> {
     ...(urlPolicy.mode === "hosted-safe" ? { urlGuard: urlPolicy.assertAllowed } : {}),
   });
 
+  const projectDeps: ProjectServiceDeps = {
+    ...repos,
+    storage,
+    assertUrlAllowed: urlPolicy.assertAllowed,
+    derivedCacheKeys: thumbCacheKeys,
+  };
+  const uploadDeps: UploadDeps = { ...repos, storage, probe };
+  const legacyImportDeps: LegacyImportDeps = { ...repos, ledger: repos.legacyImports, store: legacyStore, storage, probe };
+
   return {
     home,
     database,
     repos,
     storage,
     urlPolicy,
+    thumbnails: new ThumbnailService(storage),
     logger,
+    projectDeps,
+    uploadDeps,
+    legacyImportDeps,
     createWorker: (options = {}) =>
       new JobWorker({
         jobs: repos.jobs,
@@ -82,6 +108,7 @@ async function createRuntime(): Promise<AtlasRuntime> {
             viewport: RUNTIME_SETTINGS.captureViewport,
             timeoutMs: RUNTIME_SETTINGS.captureJobTimeoutMs,
           }),
+          import: createLegacyImportJobHandler(legacyImportDeps),
         },
       }),
   };

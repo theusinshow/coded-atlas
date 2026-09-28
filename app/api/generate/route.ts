@@ -221,7 +221,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         const result: ResultEvent = {
           step: "done",
           catalog,
-          projectUrl: `/projects/${input.slug}`,
+          projectUrl: `/legacy/${input.slug}`,
         };
         emit(result);
 

@@ -4,8 +4,9 @@ import { TimestampSchema, nowIso, parseOrThrow } from "../../shared/validation";
 
 /**
  * Source: origem do material de um projeto. Um projeto pode ter várias.
- * Nesta fase só `url` é produzida pelo fluxo; os demais tipos existem no
- * contrato porque fazem parte do modelo (docs/DOMAIN-MODEL.md).
+ * - url: site publicado; local: servidor de desenvolvimento (http://localhost:3000),
+ *   nunca um caminho de disco; github: "owner/repo" (base para leitura futura);
+ *   upload: arquivos enviados manualmente.
  */
 export const SourceTypeSchema = z.enum(["url", "github", "local", "upload"]);
 export type SourceType = z.infer<typeof SourceTypeSchema>;
@@ -31,8 +32,8 @@ export const SourceSchema = z
     createdAt: TimestampSchema,
     updatedAt: TimestampSchema,
   })
-  .refine((s) => s.type !== "url" || isHttpUrl(s.locator), {
-    message: "Source do tipo url exige URL http(s) válida",
+  .refine((s) => (s.type !== "url" && s.type !== "local") || isHttpUrl(s.locator), {
+    message: "Sources url/local exigem URL http(s) válida (local = servidor de desenvolvimento)",
     path: ["locator"],
   });
 export type Source = z.infer<typeof SourceSchema>;

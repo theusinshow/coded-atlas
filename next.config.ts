@@ -7,6 +7,12 @@ const nextConfig: NextConfig = {
   // que o build trace os arquivos certos.
   outputFileTracingRoot: path.resolve(process.cwd()),
 
+  // Upload manual de assets passa por server action: o limite padrão (1 MB) não
+  // cabe um screenshot em alta. O teto por arquivo é validado no serviço.
+  experimental: {
+    serverActions: { bodySizeLimit: "200mb" },
+  },
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   webpack(config: any, { dev }: { dev: boolean }) {
     if (dev) {

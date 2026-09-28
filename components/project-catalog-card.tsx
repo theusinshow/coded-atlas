@@ -85,7 +85,7 @@ export function ProjectCatalogCard({ project, selectable = false, selected = fal
   // ── Modo normal: navega para o projeto ──
   return (
     <div className="group relative border border-line hover:border-line-soft hover:bg-surface/40 transition-colors">
-      <Link href={`/projects/${project.slug}`} className="block">
+      <Link href={`/legacy/${project.slug}`} className="block">
         {inner}
       </Link>
       <Link

@@ -43,7 +43,9 @@ export function createCaptureJobHandler(deps: CaptureJobDeps): JobHandler {
       const payload = parseOrThrow(CaptureJobPayloadSchema, ctx.job.payload, "Payload do job de captura");
       const source = await deps.sources.getById(payload.sourceId);
       if (!source) throw new DomainError("NOT_FOUND", `Source ${payload.sourceId} não existe.`);
-      if (source.type !== "url") throw new DomainError("VALIDATION", "A captura exige uma Source do tipo url.");
+      if (source.type !== "url" && source.type !== "local") {
+        throw new DomainError("VALIDATION", "A captura exige uma Source de URL (ou servidor de dev local).");
+      }
       const project = await deps.projects.getById(source.projectId);
       if (!project) throw new DomainError("NOT_FOUND", `Projeto ${source.projectId} não existe.`);
 

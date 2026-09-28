@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull, lt, notExists, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, lt, notExists, or, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import {
   ACTIVE_JOB_STATUSES,
@@ -9,7 +9,7 @@ import {
   type JobTransitionPatch,
   type JobType,
 } from "../../../core/jobs/job";
-import type { JobOutcome, JobPulse, JobRepository } from "../../../core/jobs/repository";
+import type { JobOutcome, JobPulse, JobQuery, JobRepository } from "../../../core/jobs/repository";
 import { DomainError } from "../../../shared/errors";
 import type { JobId, ProjectId } from "../../../shared/id";
 import { nowIso, parseOrThrow, type Timestamp } from "../../../shared/validation";
@@ -39,6 +39,23 @@ export class SqliteJobRepository implements JobRepository {
   async listByProject(projectId: ProjectId): Promise<Job[]> {
     const rows = run("Job", () =>
       this.db.select().from(jobs).where(eq(jobs.projectId, projectId)).orderBy(asc(jobs.id)).all()
+    );
+    return rows.map((row) => toDomain(JobSchema, row, "Job"));
+  }
+
+  async listRecent(query: JobQuery = {}): Promise<Job[]> {
+    const conditions: SQL[] = [];
+    if (query.types?.length) conditions.push(inArray(jobs.type, [...query.types]));
+    if (query.statuses?.length) conditions.push(inArray(jobs.status, [...query.statuses]));
+    if (query.projectId) conditions.push(eq(jobs.projectId, query.projectId));
+    const rows = run("Job", () =>
+      this.db
+        .select()
+        .from(jobs)
+        .where(conditions.length ? and(...conditions) : undefined)
+        .orderBy(desc(jobs.createdAt), desc(jobs.id))
+        .limit(Math.min(query.limit ?? 100, 500))
+        .all()
     );
     return rows.map((row) => toDomain(JobSchema, row, "Job"));
   }

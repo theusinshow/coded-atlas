@@ -1,7 +1,13 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { ProjectSummary } from "@/lib/types";
+/** O mínimo que a paleta usa de um projeto do banco (GET /api/atlas/projects). */
+interface ProjectItem {
+  slug: string;
+  name: string;
+  category: string;
+  client: string | null;
+}
 
 type Item = {
   id: string;
@@ -12,10 +18,12 @@ type Item = {
 };
 
 const ACTIONS = [
-  { id: "go-generate", label: "Gerar catálogo", href: "/generate", hint: "Ação" },
+  { id: "go-new", label: "Novo projeto", href: "/projects/new", hint: "Ação" },
   { id: "go-projects", label: "Biblioteca de projetos", href: "/projects", hint: "Ação" },
-  { id: "go-home", label: "Início", href: "/", hint: "Ação" },
-  { id: "go-lab", label: "Laboratório", href: "/lab/coded-atlas", hint: "Ação" },
+  { id: "go-jobs", label: "Jobs", href: "/jobs", hint: "Ação" },
+  { id: "go-settings", label: "Ajustes", href: "/settings", hint: "Ação" },
+  { id: "go-legacy", label: "Catálogos v1", href: "/legacy", hint: "v1" },
+  { id: "go-generate", label: "Geração v1", href: "/generate", hint: "v1" },
 ];
 
 function matches(q: string, ...fields: (string | undefined)[]) {
@@ -29,7 +37,7 @@ export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
-  const [projects, setProjects] = useState<ProjectSummary[] | null>(null);
+  const [projects, setProjects] = useState<ProjectItem[] | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const close = useCallback(() => {
@@ -61,9 +69,9 @@ export function CommandPalette() {
   // trava scroll; foca o input
   useEffect(() => {
     if (!open) return;
-    fetch("/api/projects", { cache: "no-store" })
+    fetch("/api/atlas/projects", { cache: "no-store" })
       .then((r) => r.json())
-      .then((d: { projects: ProjectSummary[] }) => setProjects(d.projects))
+      .then((d: { projects: ProjectItem[] }) => setProjects(d.projects))
       .catch(() => setProjects((p) => p ?? []));
   }, [open]);
 
@@ -90,7 +98,7 @@ export function CommandPalette() {
     }));
 
     const projs: Item[] = (projects ?? [])
-      .filter((p) => matches(query, p.name, p.category, p.url, p.client, p.slug))
+      .filter((p) => matches(query, p.name, p.category, p.client ?? undefined, p.slug))
       .slice(0, 8)
       .map((p) => ({
         id: `proj-${p.slug}`,

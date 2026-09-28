@@ -229,7 +229,7 @@ export interface ProgressEvent {
 export interface ResultEvent {
   step: "done";
   catalog: Catalog;
-  projectUrl: string; // /projects/[slug]
+  projectUrl: string; // /legacy/[slug] (catálogo v1)
 }
 
 /** Código de erro estruturado da aplicação. */

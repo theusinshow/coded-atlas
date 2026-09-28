@@ -75,8 +75,8 @@ describe("mapLegacyCatalog", () => {
     expect(byRole("thumbnail")[0].derivedFrom).toBe(desktopShot);
     expect(byRole("cover")[0]).toMatchObject({ derivedFrom: desktopShot, mimeType: "image/webp", label: "smart-crop" });
 
-    expect(snapshot!.files.every((f) => f.targetStorageKey.startsWith("legacy/acme-studio/"))).toBe(true);
-    expect(snapshot!.files.some((f) => /^[a-zA-Z]:|^\//.test(f.targetStorageKey))).toBe(false);
+    expect(snapshot!.files.every((f) => f.publicPath === `/generated/acme-studio/${f.relativePath}`)).toBe(true);
+    expect(snapshot!.files.some((f) => /^[a-zA-Z]:|^\/|\.\./.test(f.relativePath))).toBe(false);
     expect(snapshot!.unmapped).toMatchObject({
       inspection: { techStack: ["Next.js"] },
       extraPageInputs: ["/sobre"],

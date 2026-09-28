@@ -1,6 +1,7 @@
 import { asc, eq } from "drizzle-orm";
 import { SourceSchema, type Source } from "../../../core/projects/source";
 import type { SourceRepository } from "../../../core/projects/repositories";
+import { DomainError } from "../../../shared/errors";
 import type { ProjectId, SourceId } from "../../../shared/id";
 import { parseOrThrow } from "../../../shared/validation";
 import type { AtlasDb } from "../client";
@@ -26,5 +27,11 @@ export class SqliteSourceRepository implements SourceRepository {
       this.db.select().from(sources).where(eq(sources.projectId, projectId)).orderBy(asc(sources.id)).all()
     );
     return rows.map((row) => toDomain(SourceSchema, row, "Source"));
+  }
+
+  async delete(id: SourceId): Promise<void> {
+    // Captures da source caem em cascata; os Assets ficam (captureId vira null).
+    const result = run("Source", () => this.db.delete(sources).where(eq(sources.id, id)).run());
+    if (result.changes === 0) throw new DomainError("NOT_FOUND", `Source ${id} não existe.`, { id });
   }
 }

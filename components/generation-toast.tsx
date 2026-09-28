@@ -137,7 +137,7 @@ export function GenerationToast() {
                 {isStale ? "Pode ter sido interrompido" : `há ${elapsed}`}
               </span>
               <Link
-                href="/projects"
+                href="/legacy"
                 className="text-[11px] font-medium text-zinc-300 hover:text-zinc-100 transition-colors"
               >
                 projetos →

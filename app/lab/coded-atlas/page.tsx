@@ -66,7 +66,7 @@ export default async function LabAtlasPage() {
             >
               Gerar Catálogo →
             </Link>
-            <Link href="/projects" className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">
+            <Link href="/legacy" className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">
               Ver projetos
             </Link>
           </div>
@@ -119,7 +119,7 @@ export default async function LabAtlasPage() {
               </span>
             </div>
             <Link
-              href={`/projects/${featured.slug}`}
+              href={`/legacy/${featured.slug}`}
               className="group block border border-line hover:border-accent transition-colors"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}

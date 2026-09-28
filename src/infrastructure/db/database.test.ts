@@ -10,7 +10,7 @@ import { createJob } from "../../core/jobs/job";
 import { createProject } from "../../core/projects/project";
 import { createSource } from "../../core/projects/source";
 import { isDomainError, type DomainErrorCode } from "../../shared/errors";
-import { JobIdSchema, newId, type AssetId, type ProjectId } from "../../shared/id";
+import { JobIdSchema, newId, ProjectIdSchema, type AssetId, type ProjectId } from "../../shared/id";
 import { DEFAULT_MIGRATIONS_FOLDER, openDatabase, type AtlasDatabase } from "./client";
 import journal from "./migrations/meta/_journal.json";
 import { createRepositories, type Repositories } from "./repositories";
@@ -53,6 +53,7 @@ describe("openDatabase", () => {
       "assets",
       "captures",
       "jobs",
+      "legacy_imports",
       "outputs",
       "projects",
       "sources",
@@ -81,18 +82,25 @@ describe("openDatabase", () => {
     );
     const oldFile = path.join(dir, "antigo.db");
     const old = openDatabase({ file: oldFile, migrationsFolder: oldFolder });
-    const oldRepos = createRepositories(old.db);
-    const project = await oldRepos.projects.create(createProject({ slug: "a", name: "A", category: "site" }));
+    // Linhas gravadas como o Atlas 2.1.A gravava (colunas daquela época).
+    const projectId = "01J9YYYYYYYYYYYYYYYYYYYYYY";
     old.sqlite.exec(
-      `INSERT INTO jobs (id, project_id, type, status, progress, payload, attempts, created_at, updated_at)
-       VALUES ('01J9ZZZZZZZZZZZZZZZZZZZZZZ', '${project.id}', 'capture', 'queued', 0, '{}', 0,
-               '2026-09-27T00:00:00.000Z', '2026-09-27T00:00:00.000Z')`
+      `INSERT INTO projects (id, slug, name, client, category, status, cover_asset_id, schema_version, created_at, updated_at)
+       VALUES ('${projectId}', 'a', 'A', NULL, 'site', 'active', NULL, 1, '2026-09-27T00:00:00.000Z', '2026-09-27T00:00:00.000Z');
+       INSERT INTO jobs (id, project_id, type, status, progress, payload, attempts, created_at, updated_at)
+       VALUES ('01J9ZZZZZZZZZZZZZZZZZZZZZZ', '${projectId}', 'capture', 'queued', 0, '{}', 0,
+               '2026-09-27T00:00:00.000Z', '2026-09-27T00:00:00.000Z');`
     );
     old.close();
 
     const upgraded = openDatabase({ file: oldFile });
     const upgradedRepos = createRepositories(upgraded.db);
-    expect(await upgradedRepos.projects.getById(project.id)).toEqual(project);
+    // Colunas novas recebem os defaults: origem "atlas", sem descrição.
+    expect(await upgradedRepos.projects.getById(ProjectIdSchema.parse(projectId))).toMatchObject({
+      slug: "a",
+      origin: "atlas",
+      description: null,
+    });
     const legacyJob = await upgradedRepos.jobs.getById(JobIdSchema.parse("01J9ZZZZZZZZZZZZZZZZZZZZZZ"));
     expect(legacyJob).toMatchObject({ status: "queued", destructive: false }); // default da coluna nova
     const applied = upgraded.sqlite.prepare("SELECT COUNT(*) AS n FROM __drizzle_migrations").get() as { n: number };

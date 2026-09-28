@@ -22,7 +22,7 @@ export function DeleteProject({ slug, name }: Props) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(data.error ?? "Falha ao remover.");
       }
-      router.push("/projects");
+      router.push("/legacy");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao remover.");

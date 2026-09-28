@@ -1,4 +1,5 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, count, eq } from "drizzle-orm";
+import type { StorageKey } from "../../../core/assets/storage-key";
 import { OutputSchema, type Output } from "../../../core/assets/output";
 import type { OutputRepository } from "../../../core/assets/repositories";
 import type { OutputId, ProjectId } from "../../../shared/id";
@@ -26,5 +27,10 @@ export class SqliteOutputRepository implements OutputRepository {
       this.db.select().from(outputs).where(eq(outputs.projectId, projectId)).orderBy(asc(outputs.id)).all()
     );
     return rows.map((row) => toDomain(OutputSchema, row, "Output"));
+  }
+
+  async countByStorageKey(key: StorageKey): Promise<number> {
+    const row = run("Output", () => this.db.select({ n: count() }).from(outputs).where(eq(outputs.storageKey, key)).get());
+    return row?.n ?? 0;
   }
 }
