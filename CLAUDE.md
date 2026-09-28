@@ -1,58 +1,138 @@
 # CLAUDE.md — Coded Atlas
 
-Ferramenta interna da **Coded by M**: recebe a URL de um projeto web e gera um catálogo
-visual (screenshots desktop/mobile, full page e thumbnails) para uso no portfólio.
+## Missão
 
-**Direção pós-MVP (decidida em 2026-09-27):** o Atlas vira também a **biblioteca de
-referências visuais** do Matheus e a ponte para o Claude Code. Visão em
-`docs/product/PRODUCT_VISION.md`; execução em `docs/implementation/MASTER_PLAN.md` (Fases 0–7,
-em ordem, parando ao fim de cada fase para teste). A vitrine atual continua como um modo.
+O **Coded Atlas** é uma ferramenta interna da **Coded by M** para transformar sites, softwares e produtos digitais em mídia de apresentação de alto nível.
 
-## Fonte da verdade
+O Atlas não é um code reviewer, IDE, auditor de front-end, gerenciador de projeto ou SaaS genérico. Seu foco é:
 
-- `docs/product.md` → produto, escopo, MVP e roadmap (o "o quê" e o "porquê").
-- `docs/design.md` → linguagem visual, fluxos de tela e estados de interface (a experiência).
-- `docs/architecture.md` → especificação técnica e contratos de implementação (o "como").
+**Import → Capture → Understand → Create → Render → Publish**
 
-Em qualquer conflito técnico, **o `architecture.md` prevalece**.
-SEMPRE leia os três por completo antes de implementar qualquer coisa.
+Saídas-alvo: screenshots, mockups, social posts, carrosséis, stories, reels, showcase videos, motion, apresentações, case studies, assets para portfólio e pacotes para cliente.
 
-## Stack
+## Fonte da verdade e precedência
 
-Next.js (App Router) · TypeScript · Tailwind CSS · Playwright · Sharp.
-Sem banco de dados, sem login, sem cloud no MVP.
+Antes de implementar qualquer alteração, leia nesta ordem:
 
-## Fonte única de tipos
+1. `docs/CURRENT.md`
+2. `docs/ROADMAP.md`
+3. `docs/PRODUCT.md`
+4. `docs/ARCHITECTURE.md`
+5. documento específico do domínio afetado.
 
-`lib/types.ts` é a fonte única. Nenhuma estrutura de dados — em especial o `catalog.json` —
-pode divergir das interfaces definidas lá.
+Em conflito:
 
-## Guard rails (nunca violar)
+1. `CURRENT.md` define o que pode ser implementado agora.
+2. `ARCHITECTURE.md` prevalece em decisões técnicas.
+3. `PRODUCT.md` prevalece em decisões de escopo.
+4. `DESIGN-SYSTEM.md` e `UX-ARCHITECTURE.md` prevalecem em UI/UX.
+5. `DECISIONS.md` registra decisões de alto impacto.
 
-1. A rota de captura usa `runtime = "nodejs"` — nunca Edge.
-2. Nenhum caminho absoluto no `catalog.json` nem na UI (sempre `/generated/...`).
-3. Playwright e `fs` só no servidor — nunca dentro de Client Component.
-4. Fechar o navegador SEMPRE em `finally`, inclusive em erro.
-5. Viewports, delays e timeouts vivem só em `lib/config.ts` — nada hardcoded no meio do código.
-6. Nada de `any` solto. Todo erro vira `AtlasError` com um código conhecido.
-7. Nada de banco de dados servidor, login, multiusuário ou cloud. Arquivos no disco são a fonte
-   da verdade; um índice local derivado (reconstruível a partir dos arquivos) é permitido.
-   Nenhuma IA embutida obrigatória: a inteligência vem do agente (MCP/pack) ou de opção
-   desligada por padrão.
-8. Visual escuro, técnico e premium da Coded by M — nada com cara de SaaS genérico.
+## Regra de fase
 
-## Ordem de construção (build order)
+NUNCA implemente features de uma fase futura apenas porque aparecem na documentação.
 
-Seguir a seção "Ordem de Implementação" do `architecture.md`, da **Fase 0 à Fase 11**.
-NÃO pular fases. Ao terminar cada fase: descreva o que foi feito, como verificar, e
-**pare para eu testar** antes de seguir para a próxima.
-Manter `docs/BUILD-PLAN.md` atualizado: marcar cada fase concluída e a nota de status no topo.
+Ao terminar uma tarefa:
 
-## Verificação
+1. executar type-check;
+2. executar lint;
+3. executar testes relevantes;
+4. executar build quando aplicável;
+5. registrar o que foi alterado em `docs/BUILD-PLAN.md`;
+6. atualizar `docs/CURRENT.md`;
+7. listar como verificar;
+8. parar antes de iniciar a próxima fase.
 
-- A Fase 3 precisa produzir um PNG real em `public/generated/` antes de existir qualquer tela.
-- Critérios finais de aceite: a checklist "Definition of Done — MVP" do `architecture.md`.
+## Princípios obrigatórios
 
-## Saída no Git
+- Local-first.
+- TypeScript strict.
+- Sem `any` solto.
+- Contratos de domínio validados em runtime com Zod.
+- SQLite é a fonte persistente de verdade.
+- Filesystem guarda arquivos pesados; nunca BLOBs de mídia no SQLite.
+- Toda escrita de arquivo passa por `AssetStorage`.
+- IDs internos são estáveis; slug nunca é identidade.
+- Assets e Outputs são imutáveis.
+- Jobs pesados não rodam dentro de request longa de UI.
+- Playwright, Sharp, FFmpeg e Remotion são infraestrutura, nunca domínio.
+- IA nunca escreve direto em banco, filesystem, shell ou Git.
+- Atlas Brain produz estruturas validadas; application services executam.
+- Render nunca depende da UI estar aberta.
+- Preview e render final são conceitos separados.
+- O software continua utilizável sem IA.
+- Não criar infraestrutura cloud sem necessidade real.
+- Não criar abstrações especulativas fora do roadmap ativo.
 
-Adicionar `/public/generated/*` ao `.gitignore` (manter a pasta versionada com um `.gitkeep`).
+## Design
+
+A interface deriva do design system da **Coded by M**. Nunca invente uma linguagem visual paralela.
+
+Se um padrão existir na Coded by M, reutilize-o. Se um componente novo for necessário para o Atlas, ele deve usar foundation tokens da Coded by M, criar semantic tokens do Atlas quando necessário, ser reutilizável e documentado.
+
+## Anti-AI-slop
+
+A IA seleciona e combina sistemas visuais curados. Ela não inventa HTML/CSS arbitrário para cada geração.
+
+Correto:
+
+`CreativeRequest → CreativePlan → CompositionDefinition → CompositionInstance → Render`
+
+Errado:
+
+`prompt → HTML aleatório → render`
+
+## Limites de produto
+
+Fora do Atlas: code review, auditoria de qualidade de código, performance audit como produto, correção automática de código, PR review, IDE agent, CRM e gestão comercial.
+
+## Stack alvo
+
+- Next.js + React + TypeScript
+- Tailwind CSS
+- Zustand para estado efêmero de UI/editor
+- Zod
+- SQLite + Drizzle ORM + `better-sqlite3`
+- Playwright
+- Sharp
+- Remotion + FFmpeg
+- OpenAI Responses API atrás de `ModelGateway`
+- Vitest + Playwright Test
+- Node workers locais + SSE
+
+Veja `docs/STACK.md`.
+
+## Guard rails críticos
+
+1. Não usar `catalog.json` como nova fonte de verdade.
+2. Não gravar paths absolutos em objetos de domínio.
+3. Não acessar filesystem diretamente fora da infraestrutura de storage.
+4. Não deixar request HTTP segurar render/capture de longa duração.
+5. Não sobrescrever asset existente para representar uma nova versão.
+6. Não usar slug para construir paths sem validação/confinamento.
+7. Não expor shell, SQL ou filesystem ao Atlas Brain.
+8. Não publicar conteúdo automaticamente sem ação explícita do usuário.
+9. Não criar editor gráfico generalista.
+10. Não transformar Motion Studio em After Effects.
+11. Não duplicar contratos TypeScript/Zod.
+12. Não quebrar funcionalidades legadas durante migração sem adapter ou migração explícita.
+
+## Código legado durante a migração
+
+O Atlas v1 (em `app/`, `components/`, `lib/`) continua em produção enquanto a nova
+fundação cresce em `src/`. Regras que seguem valendo para o código legado até ele ser
+migrado (ver `docs/MIGRATION.md` e `docs/legacy/`):
+
+- rotas que usam Playwright/`fs` declaram `runtime = "nodejs"` — nunca Edge;
+- Playwright e `fs` só no servidor, nunca em Client Component;
+- navegador fecha SEMPRE em `finally`;
+- viewports, delays e timeouts do pipeline legado vivem em `lib/config.ts`;
+- `catalog.json` e a UI usam só caminhos públicos (`/generated/...`), nunca absolutos;
+- visual escuro, técnico e premium da Coded by M.
+
+Código novo vai para `src/` e depende de `src/core` (domínio) — nunca o contrário.
+Testes novos: `npm test` (Vitest). Scripts legados: `npx tsx scripts/test-*.ts`.
+
+## Regra final
+
+Sempre prefira **sistema pequeno, explícito, tipado, testável e evolutivo** a feature impressionante acoplada, implícita e difícil de manter.

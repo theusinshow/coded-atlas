@@ -5,15 +5,17 @@ import { promises as fs } from "node:fs";
 import { catalogPath, caseDraftPath } from "@/lib/storage/paths";
 import { generateCaseDraft } from "@/lib/capture/generate-case";
 import type { Catalog } from "@/lib/types";
+import { SlugSchema } from "@/src/core/projects/project";
 
 export async function POST(req: NextRequest): Promise<Response> {
   let slug: string;
   try {
     const body = (await req.json()) as { slug: unknown };
-    if (typeof body.slug !== "string" || !body.slug.trim()) {
+    const parsed = SlugSchema.safeParse(typeof body.slug === "string" ? body.slug.trim() : body.slug);
+    if (!parsed.success) {
       return Response.json({ error: "slug inválido" }, { status: 400 });
     }
-    slug = body.slug.trim();
+    slug = parsed.data;
   } catch {
     return Response.json({ error: "corpo da requisição inválido" }, { status: 400 });
   }

@@ -1,0 +1,94 @@
+# MIGRATION — Current Atlas → New Architecture
+
+## Strategy
+
+Incremental migration. Do not rewrite the product from zero.
+
+## Current valuable capabilities to preserve
+
+The existing repository already contains working concepts including desktop/mobile/full-page capture, sections, pages, states, thumbnails, cover, inspection, videos, mockups, 3D-style mockups, social kit, case draft, portfolio manifest, visual diff, project library, command palette and ZIP export.
+
+These are assets, not technical debt to discard wholesale.
+
+## Legacy model
+
+```text
+ProjectInput
+↓
+capture pipeline
+↓
+catalog.json
+↓
+public/generated/[slug]
+```
+
+## Target model
+
+```text
+Project + Sources
+↓
+Captures
+↓
+Assets
+↓
+Jobs
+↓
+Outputs
+```
+
+Persistent metadata: SQLite. Bytes: AssetStorage.
+
+## Superseded legacy decisions
+
+The following old rules are explicitly superseded:
+
+- “no database”
+- “no AI”
+- “catalog.json is source of truth”
+- “all generation occurs in one request”
+- “public/generated is persistent application database”
+
+They were correct for the original MVP, not for the new product.
+
+## Legacy adapter
+
+Implement a read adapter capable of mapping old `catalog.json` projects into the new application model without immediately rewriting their files.
+
+Goals: existing projects remain visible, no destructive batch migration, migration per project and rollback possibility.
+
+## Suggested migration order
+
+1. introduce DB without changing current capture;
+2. create Project/Source records for new runs;
+3. register current generated files as Assets;
+4. serve project library from new repositories;
+5. migrate capture orchestration to Jobs;
+6. move persistent bytes behind AssetStorage;
+7. retire legacy writes only after equivalent functionality passes tests.
+
+## Transactional recapture
+
+Replace destructive recapture with stage → capture → validate → commit.
+
+## Legacy `catalog.json`
+
+May continue temporarily for compatibility/export/debugging, but must not remain authoritative.
+
+## Foundation scope
+
+Do not redesign Social Kit, Case, Motion or Mockups during 2.1 unless necessary to route them safely through the new foundation.
+
+## Compatibility details found in the v1 code (2026-09-27)
+
+Relevant for the legacy adapter (2.1.D) and the first migrated slice (2.1.F):
+
+- **Identity is the slug.** v1 has no IDs: the folder name under `public/generated/` *is* the project. The adapter must mint a ULID per legacy project and keep the slug as a property; `/projects/[slug]` URLs must keep working.
+- **`catalog.json` shape grew by version** (`version` field: `0.1.0` → `0.2.0`). Fields like `videos`, `pages`, `states`, `inspection`, `cover`, `compositions`, `mockups` are optional and absent in older catalogs. `list-projects.ts` currently skips unreadable catalogs silently — the adapter must report them instead.
+- **Paths in `catalog.json` are public URLs** (`/generated/<slug>/...`). Mapping to storage keys means stripping `/generated/` and validating each segment; legacy file names contain uppercase-free, hyphenated names today, but that must be validated, not assumed.
+- **Authored content lives next to generated files:** `case-draft.mdx` is user-written and survives reprocessing (`ensure-project-folder.ts` copies it forward). It is not a capture artifact and must never be deleted by a migration.
+- **Reprocessing already uses a backup lease:** `ensure-project-folder.ts` moves the previous version to `public/generated/.trash/<slug>-<ts>` and restores it on failure/cancel. Folders starting with `.` are not projects.
+- **Visual diff results** live in `public/generated/<slug>/diffs/` and depend on the previous capture existing on disk.
+- **Authenticated capture state** (`auth/<slug>.json`) holds live cookies, lives outside `public/`, is git-ignored and must never be copied into `.atlas/` or exported.
+- **Slug validation was inconsistent:** `/api/case`, `/api/export/[slug]`, `/api/zip/[slug]` and `DELETE /api/projects/[slug]` accepted any string (traversal-capable). Fixed in 2.1.A by validating with the domain `SlugSchema`; `lib/storage/paths.ts` still builds paths without `resolveWithin` (2.1.G).
+- **Silent optional failures:** `generate-showcase.ts`, `inspect-site.ts` and `capture-device.ts` use `.catch(() => [])` / `.catch(() => undefined)`; extra pages/states failures only `console.warn`. These become structured warnings in 2.1.G.
+- **Cancellation today** aborts the SSE request and closes Chromium, then rolls back the folder. It is not a persisted job; a server restart mid-generation leaves a `.trash` backup behind.

@@ -3,6 +3,7 @@ export const runtime = "nodejs";
 import { NextRequest } from "next/server";
 import { promises as fs } from "node:fs";
 import { ZipArchive } from "archiver";
+import { SlugSchema } from "@/src/core/projects/project";
 import {
   projectDir,
   catalogPath,
@@ -16,7 +17,7 @@ interface Params {
 export async function GET(_req: NextRequest, { params }: Params): Promise<Response> {
   const { slug } = await params;
 
-  if (!slug || typeof slug !== "string") {
+  if (!SlugSchema.safeParse(slug).success) {
     return new Response("slug inválido", { status: 400 });
   }
 

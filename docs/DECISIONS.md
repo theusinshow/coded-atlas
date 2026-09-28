@@ -1,0 +1,95 @@
+# DECISIONS — Coded Atlas
+
+Architecture Decision Log.
+
+## ADR-001 — Product is media-first
+
+Accepted. Atlas transforms digital products into media. Code review/front-end engineering belong elsewhere.
+
+## ADR-002 — Local-first
+
+Accepted. Primary runtime is local Node application. Cloud is not a current requirement.
+
+## ADR-003 — SQLite as persistent source of truth
+
+Accepted. SQLite replaces `catalog.json` as authoritative application state. `catalog.json` may remain as legacy/export format.
+
+## ADR-004 — Filesystem for media bytes
+
+Accepted. No large media BLOBs in SQLite.
+
+## ADR-005 — Drizzle ORM
+
+Accepted. Typed SQLite access and migrations without heavy external engine.
+
+## ADR-006 — AssetStorage abstraction
+
+Accepted. Domain/application code never depends on raw filesystem layout.
+
+## ADR-007 — Hybrid Composition Engine
+
+Accepted. Three levels: Composition → Canvas → Motion. Default path remains composition-first.
+
+## ADR-008 — Constrained Canvas
+
+Accepted. Atlas is not Figma. No general vector editor/plugin/prototyping scope initially.
+
+## ADR-009 — Motion is scene/preset-first
+
+Accepted. Motion V1 is not keyframe-first and not an After Effects replacement.
+
+## ADR-010 — Atlas Brain is Creative Director
+
+Accepted. AI performs judgment/planning. Deterministic engines execute.
+
+## ADR-011 — ModelGateway abstraction
+
+Accepted. GPT-6 Luna is initial default, but domain logic is model/vendor-independent.
+
+## ADR-012 — Structured AI outputs
+
+Accepted. Operational AI output must be schema-validated.
+
+## ADR-013 — Design derives from Coded by M
+
+Accepted. Atlas adds product semantic tokens/components without creating a separate brand.
+
+## ADR-014 — Background jobs
+
+Accepted. Capture/render/export are jobs; long work does not live inside long UI requests.
+
+## ADR-015 — SQLite-backed local queue
+
+Accepted for local architecture. No Redis/BullMQ without distributed-worker need.
+
+## ADR-016 — Remotion + FFmpeg behind adapter
+
+Accepted for future Motion phase. Atlas MotionDocument remains vendor-neutral.
+
+## ADR-017 — Migration over rewrite
+
+Accepted. Preserve current working capabilities and replace foundations incrementally.
+
+## ADR-018 — Current phase is authoritative
+
+Accepted. `CURRENT.md` prevents agents from implementing future architecture prematurely.
+
+## ADR-019 — `DomainError` coexists with legacy `AtlasError`
+
+Accepted (2026-09-27). New code in `src/` throws `DomainError` (`src/shared/errors.ts`) with a closed code set. The v1 pipeline keeps `AtlasError` (`lib/errors.ts`) until each flow is migrated; bridging happens at the adapter that routes a legacy flow through the new foundation. No mass rewrite of legacy error handling.
+
+## ADR-020 — New foundation lives in `src/` beside the v1 tree
+
+Accepted (2026-09-27). `src/{core,infrastructure,shared}` grows incrementally; `app/`, `components/` and `lib/` are not moved (Next.js keeps using root `app/`). Inside `src/`, imports are relative; legacy code may import from `src/core` (e.g. `SlugSchema`), never the reverse. The domain boundary is enforced by `src/core/architecture.test.ts`.
+
+## ADR-021 — Storage keys are lowercase, validated, and published without overwrite
+
+Accepted (2026-09-27). `StorageKey` segments are `[a-z0-9._-]` with alphanumeric ends: no `..`, `\`, `:`, `%`, leading dot or Windows reserved names. Lowercase only because NTFS is case-insensitive (`A.png` = `a.png`). `LocalAssetStorage` writes to a temp file and publishes with a hard link (atomic, fails if the target exists; falls back to exclusive copy where links are unsupported). Same bytes at an existing key = dedupe; different bytes = `CONFLICT`. Internal work areas start with `.` so they can never collide with a key.
+
+## ADR-022 — Migrations run on open; schema mismatch fails loudly
+
+Accepted (2026-09-27). `openDatabase` applies pending Drizzle migrations and refuses (`DB_SCHEMA_MISMATCH`) a database that contains migrations unknown to the code (newer Atlas) or whose applied migration hash differs (edited migration). Migration files are forced to LF via `.gitattributes`, since the hash covers the raw SQL text and `core.autocrlf` would otherwise change it.
+
+## ADR-023 — 2.1.A delivered DB and storage together
+
+Accepted (2026-09-27). `CURRENT.md` 2.1.A completion criteria required repository round-trips and safe storage, which are 2.1.B/2.1.C items in `BUILD-PLAN.md`. `CURRENT.md` has precedence, so those were delivered in the same milestone; next milestone is 2.1.D.

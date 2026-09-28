@@ -5,6 +5,7 @@ import { promises as fs } from "node:fs";
 import { catalogPath } from "@/lib/storage/paths";
 import { deleteProject } from "@/lib/storage/delete-project";
 import { AtlasError } from "@/lib/errors";
+import { SlugSchema } from "@/src/core/projects/project";
 
 interface Params {
   params: Promise<{ slug: string }>;
@@ -13,6 +14,9 @@ interface Params {
 /** Remove um projeto gerado (pasta inteira em public/generated/[slug]). */
 export async function DELETE(_req: NextRequest, { params }: Params): Promise<Response> {
   const { slug } = await params;
+  if (!SlugSchema.safeParse(slug).success) {
+    return Response.json({ error: "Slug inválido." }, { status: 400 });
+  }
 
   try {
     await fs.access(catalogPath(slug));

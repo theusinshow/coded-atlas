@@ -5,6 +5,7 @@ import { promises as fs } from "node:fs";
 import { catalogPath } from "@/lib/storage/paths";
 import { buildPortfolioManifest } from "@/lib/capture/build-portfolio-manifest";
 import type { Catalog } from "@/lib/types";
+import { SlugSchema } from "@/src/core/projects/project";
 
 interface Params {
   params: Promise<{ slug: string }>;
@@ -18,7 +19,7 @@ interface Params {
 export async function GET(req: NextRequest, { params }: Params): Promise<Response> {
   const { slug } = await params;
 
-  if (!slug || typeof slug !== "string") {
+  if (!SlugSchema.safeParse(slug).success) {
     return Response.json({ error: "slug inválido" }, { status: 400 });
   }
 

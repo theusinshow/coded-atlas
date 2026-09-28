@@ -1,0 +1,159 @@
+import { sqliteTable, text, integer, index, uniqueIndex, primaryKey, type AnySQLiteColumn } from "drizzle-orm/sqlite-core";
+import type { CaptureParams } from "../../core/assets/capture";
+import type { JobError } from "../../core/jobs/job";
+
+/**
+ * Schema SQLite da fundação (docs/DATABASE.md — só as tabelas da fase ativa).
+ * Colunas normais para identidade, FKs, status, timestamps e filtros; JSON só
+ * para estruturas aninhadas — e todo JSON é revalidado com Zod ao ser lido.
+ * Timestamps: TEXT ISO-8601 UTC. Nada de BLOB de mídia: bytes ficam no AssetStorage.
+ *
+ * Nomes de campo = nomes do domínio, para que a linha lida seja validada
+ * diretamente pelo schema Zod da entidade.
+ */
+
+export const projects = sqliteTable(
+  "projects",
+  {
+    id: text("id").primaryKey(),
+    slug: text("slug").notNull(),
+    name: text("name").notNull(),
+    client: text("client"),
+    category: text("category").notNull(),
+    status: text("status").notNull(),
+    coverAssetId: text("cover_asset_id"), // sem FK: assets referenciam projects (evita ciclo)
+    schemaVersion: integer("schema_version").notNull(),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => [uniqueIndex("projects_slug_unique").on(t.slug), index("projects_status_idx").on(t.status)]
+);
+
+export const sources = sqliteTable(
+  "sources",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    locator: text("locator").notNull(),
+    label: text("label"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => [index("sources_project_idx").on(t.projectId)]
+);
+
+export const jobs = sqliteTable(
+  "jobs",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id").references(() => projects.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    status: text("status").notNull(),
+    progress: integer("progress").notNull(),
+    message: text("message"),
+    payload: text("payload", { mode: "json" }).$type<Record<string, unknown>>().notNull(),
+    result: text("result", { mode: "json" }).$type<Record<string, unknown>>(),
+    error: text("error", { mode: "json" }).$type<JobError>(),
+    attempts: integer("attempts").notNull(),
+    cancelRequestedAt: text("cancel_requested_at"),
+    lockedBy: text("locked_by"),
+    lockedAt: text("locked_at"),
+    heartbeatAt: text("heartbeat_at"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+    startedAt: text("started_at"),
+    finishedAt: text("finished_at"),
+  },
+  (t) => [index("jobs_status_idx").on(t.status, t.createdAt), index("jobs_project_idx").on(t.projectId)]
+);
+
+export const captures = sqliteTable(
+  "captures",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    sourceId: text("source_id")
+      .notNull()
+      .references(() => sources.id, { onDelete: "cascade" }),
+    jobId: text("job_id").references(() => jobs.id, { onDelete: "set null" }),
+    type: text("type").notNull(),
+    status: text("status").notNull(),
+    params: text("params", { mode: "json" }).$type<CaptureParams>().notNull(),
+    error: text("error", { mode: "json" }).$type<{ code: string; message: string }>(),
+    createdAt: text("created_at").notNull(),
+    startedAt: text("started_at"),
+    completedAt: text("completed_at"),
+  },
+  (t) => [index("captures_project_idx").on(t.projectId)]
+);
+
+export const assets = sqliteTable(
+  "assets",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    storageKey: text("storage_key").notNull(),
+    sha256: text("sha256").notNull(),
+    mimeType: text("mime_type").notNull(),
+    byteSize: integer("byte_size").notNull(),
+    width: integer("width"),
+    height: integer("height"),
+    parentAssetId: text("parent_asset_id").references((): AnySQLiteColumn => assets.id, {
+      onDelete: "set null",
+    }),
+    captureId: text("capture_id").references(() => captures.id, { onDelete: "set null" }),
+    label: text("label"),
+    createdAt: text("created_at").notNull(),
+  },
+  (t) => [
+    index("assets_project_idx").on(t.projectId),
+    index("assets_sha256_idx").on(t.projectId, t.sha256),
+    index("assets_capture_idx").on(t.captureId),
+  ]
+);
+
+export const assetRelations = sqliteTable(
+  "asset_relations",
+  {
+    fromAssetId: text("from_asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "cascade" }),
+    toAssetId: text("to_asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.fromAssetId, t.toAssetId, t.type] }), index("asset_relations_to_idx").on(t.toAssetId)]
+);
+
+export const outputs = sqliteTable(
+  "outputs",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    jobId: text("job_id").references(() => jobs.id, { onDelete: "set null" }),
+    format: text("format").notNull(),
+    mimeType: text("mime_type").notNull(),
+    storageKey: text("storage_key").notNull(),
+    sha256: text("sha256").notNull(),
+    byteSize: integer("byte_size").notNull(),
+    width: integer("width"),
+    height: integer("height"),
+    durationMs: integer("duration_ms"),
+    sourceAssetIds: text("source_asset_ids", { mode: "json" }).$type<string[]>().notNull(),
+    label: text("label"),
+    createdAt: text("created_at").notNull(),
+  },
+  (t) => [index("outputs_project_idx").on(t.projectId)]
+);

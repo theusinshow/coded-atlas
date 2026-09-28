@@ -37,3 +37,6 @@ next-env.d.ts
 
 # Coded Atlas — sessões autenticadas (contêm cookies de login; nunca versionar)
 /auth/
+
+# Atlas 2.x — banco e storage locais (dados do usuário; nunca versionar)
+/.atlas/

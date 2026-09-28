@@ -1,0 +1,3 @@
+# Migrations são identificadas pelo SHA-256 do texto; CRLF mudaria o hash e o
+# Atlas acusaria migration editada (DB_SCHEMA_MISMATCH). Sempre LF.
+src/infrastructure/db/migrations/** text eol=lf

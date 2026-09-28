@@ -1,162 +1,127 @@
-# BUILD-PLAN — Coded Atlas (MVP v0.1)
+# BUILD PLAN — Coded Atlas 2.x
 
-Checklist **vivo** da construção. O Claude Code deve marcar cada fase como concluída
-(`[x]`) e escrever uma nota de 1 linha ao terminá-la. Detalhes de cada fase estão na
-seção "Ordem de Implementação" do `docs/architecture.md`.
+The complete roadmap lives in `ROADMAP.md`. The currently authorized scope lives in `CURRENT.md`.
 
-**Status atual:** **Projeto fechado.** Todo o roadmap entregue (exceto v1.6, descartada). Software 100% determinístico, sem IA.
-**Última fase concluída:** Mockups 3D (v1.4 item 12) + Diff visual (v1.7). `next build` ✓. Mockups 3D verificados por screenshot; diff verificado e2e (6.86% mudança, regiões destacadas).
-**Sem frentes em aberto.** Detalhes em `docs/ROADMAP.md` (fechado).
-**2026-09-27 — Auditoria concluída e direção decidida** (biblioteca de referências; ver `docs/product/PRODUCT_VISION.md`). Execução segue `docs/implementation/MASTER_PLAN.md`.
-**Fase 0 (estabilidade) concluída — aguardando teste do Matheus.** Próxima: Fase 1 (fundação da biblioteca).
+> **Status (2026-09-27):** 2.1.A concluído e verificado. O critério de saída de 2.1.A em
+> `CURRENT.md` exigia banco + repositórios + storage, então os itens de 2.1.B e 2.1.C foram
+> entregues junto. Próximo: **2.1.D — Legacy bridge** (aguardando teste do Matheus).
+> O Atlas v1 (captura, vitrine, diff, case, ZIP) segue funcionando sem alteração de comportamento.
 
----
+## Baseline (antes de qualquer mudança — 2026-09-27, commit `ac93441`)
 
-## Fases
+Ambiente: Windows 11, Node 24.15.0, npm 11.12.1, Next 15.5.19.
 
-- [x] **Fase 0 — Fundação**
-  Scaffold + `lib/types.ts` + `lib/config.ts` + `lib/errors.ts`.
-  _Verifica:_ os tipos compilam e refletem exatamente os contratos do `architecture.md`.
-  _Status:_ `npx tsc --noEmit` → zero erros. Chromium instalado via postinstall.
+| Verificação | Resultado |
+|---|---|
+| `npm install` | OK |
+| `npx tsc --noEmit` | OK, 0 erros |
+| `npm run lint` | OK, 0 warnings (aviso: `next lint` depreciado no Next 16) |
+| `npm run build` | OK, 14 rotas |
+| `npm test` | **não existia** (sem framework de testes) |
+| `npx tsx scripts/test-section-name.ts` | 21/21 |
+| `npx tsx scripts/test-delete-project.ts` | 10/10 |
+| `npx tsx scripts/test-reprocess.ts` | 16/16 |
+| `npx tsx scripts/test-portfolio-manifest.ts` | 16/16 |
+| `npx tsx scripts/test-phase1.ts` | 19/19 |
+| `npx tsx scripts/test-phase3.ts` (captura real, example.com) | PNG gerado, 7.2s |
 
-- [x] **Fase 1 — Validação**
-  `validate-url`, `validate-project-input`, `slugify`.
-  _Status:_ 19/19 casos passando via `npx tsx scripts/test-phase1.ts`. Zero erros de tipo.
+Não executados no baseline (dependem de sites reais/rede e demoram): `test-phase2/4–8`,
+`test-capture-options`, `test-multipage`, `test-states`. Nenhuma falha preexistente conhecida.
 
-- [x] **Fase 2 — Storage**
-  `paths`, `ensure-project-folder`, `write-json`.
-  _Status:_ 11/11 casos passando via `npx tsx scripts/test-phase2.ts`. Overwrite limpa a pasta (sem merge de execuções). `.gitignore` já configurado na Fase 0.
+## Atlas 2.1 — Foundation
 
-- [x] **Fase 3 — Engine: primeira captura** ⚠️ momento de verdade
-  Capturar SÓ o screenshot desktop (viewport), testado por um script CLI.
-  _Status:_ `desktop-1440x900.png` real gerado (36 KB). Browser fechado no `finally`. Guard rails de caminho público verificados.
+### 2.1.A Baseline + scaffolding
 
-- [x] **Fase 4 — Engine: capturas completas**
-  Adicionar mobile + full page (desktop e mobile), com scroll-to-bottom prévio.
-  _Status:_ 4 PNGs reais (35–50 KB cada). scroll-to-bottom com lazy-load. Eventos de progresso reais por passo. Browser fechado em finally.
+- [x] Record baseline build/type/lint/test status.
+- [x] Add/normalize `src/` architecture without mass-moving unrelated code. (`src/{core,infrastructure,shared}`; `app/ lib/ components/` intactos)
+- [x] Add Zod. (v4)
+- [x] Add ULID utility. (`src/shared/id.ts`, monotônico, IDs com brand por entidade)
+- [x] Define Project schema.
+- [x] Define Source schema.
+- [x] Define Asset schema. (+ `AssetRelation`)
+- [x] Define Capture schema.
+- [x] Define Job schema. (+ tabela de transições pura)
+- [x] Define Output schema.
+- [x] Add domain error base. (`DomainError`, `src/shared/errors.ts`)
+- [x] Add structured logger abstraction. (`src/shared/logger.ts`)
 
-- [x] **Fase 5 — Thumbnails (Sharp)**
-  Gerar `thumb-main.webp` e `thumb-mobile.webp` a partir dos screenshots.
-  _Status:_ 640×400 e 320×640 WebP quality-82, caminhos públicos verificados. Erros Sharp → AtlasError(STORAGE_FAILED).
+### 2.1.B Database
 
-- [x] **Fase 6 — Catálogo**
-  `build-catalog` + escrever `catalog.json`.
-  _Status:_ 17/17 verificações. Interface Catalog respeitada. absPath nunca no JSON. videos ausente. sections=[]. round-trip sem perda.
+- [x] Add Drizzle.
+- [x] Configure SQLite. (`better-sqlite3`, `src/infrastructure/db/client.ts`)
+- [x] Enable foreign keys.
+- [x] Enable WAL.
+- [x] Create first migration. (`0000_foundation.sql`, 7 tabelas; aplicada ao abrir o banco; detecção de schema divergente)
+- [x] Add ProjectRepository.
+- [x] Add SourceRepository.
+- [x] Add AssetRepository.
+- [x] Add JobRepository. (create/get/list/transition atômica; claim/lock fica para 2.1.E)
+- [x] Add OutputRepository.
+- [x] Add temporary-database tests. (+ `CaptureRepository`)
 
-- [x] **Fase 7 — API síncrona**
-  Rota `/api/generate` (runtime nodejs) que orquestra a engine e devolve o `Catalog`.
-  _Status:_ POST real 12.6s → ResultEvent. URL inválida → 400 INVALID_URL amigável. `next build` OK. Browser fechado em finally.
+### 2.1.C Storage
 
-- [x] **Fase 8 — API com stream (SSE)**
-  Converter a rota para transmitir eventos de progresso por etapa.
-  _Verifica:_ os eventos de progresso chegam na ordem certa até o `result`.
-  _Status:_ `ReadableStream` SSE com 9 eventos reais. Progress monotônico. Erro retorna `{step:"error"}` no stream. OK do Matheus.
+- [x] Define `AssetStorage`.
+- [x] Implement `LocalAssetStorage`.
+- [x] Add root confinement. (validação da key + `resolveWithin` + realpath contra junction/symlink)
+- [x] Add SHA-256 hashing.
+- [x] Add staging support. (commit tudo-ou-nada, discard)
+- [x] Add storage tests.
 
-- [x] **Fase 9 — UI: /generate**
-  Formulário + consumo do stream + estados de progresso reais.
-  _Verifica:_ ao gerar, a tela mostra os passos de verdade, não animação falsa.
-  _Status:_ `UrlInput` + `GenerationStatus` + page com máquina de estados. SSE consumer conforme architecture.md. OK do Matheus.
+### 2.1.D Legacy bridge
 
-- [x] **Fase 10 — UI: /projects/[slug]**
-  Server Component que lê o `catalog.json` e exibe galerias separadas (desktop/mobile).
-  _Verifica:_ a página renderiza dados + screenshots a partir do JSON.
-  _Status:_ Server Component com `fs.readFile().catch(() => notFound())`. Galerias desktop/mobile, DeviceFrame, AssetDownloads. OK do Matheus.
+- [ ] Define legacy catalog schema.
+- [ ] Read existing catalog safely.
+- [ ] Map legacy project metadata.
+- [ ] Map legacy generated files to asset descriptors.
+- [ ] Preserve existing project views during migration.
 
-- [x] **Fase 11 — Landing + polish**
-  Página `/` e acabamento visual premium (escuro/técnico Coded by M).
-  _Verifica:_ a checklist completa "Definition of Done — MVP" do `architecture.md` passa.
-  _Status:_ Landing com grid técnico, título mono, "Como funciona", estrutura de saída. `globals.css` com scrollbar e selection escuros. `next build` ✓.
+### 2.1.E Job foundation
 
----
+- [ ] Persist job states. (tabela + transições prontas desde 2.1.A; falta o worker usar)
+- [ ] Implement safe claim/lock.
+- [ ] Implement cancellation signal contract.
+- [ ] Implement progress updates.
+- [ ] Prevent concurrent destructive jobs for same project.
+- [ ] Recover/mark stale jobs after abnormal shutdown.
 
-- [x] **v0.4 — Gerador de case**
-  `lib/capture/generate-case.ts` + `POST /api/case` + `CaseDraftSection`.
-  _Verifica:_ clicar "Gerar rascunho" em `/projects/[slug]` → baixar `case-draft.mdx` com frontmatter, capturas e inspeção.
-  _Status:_ `next build` ✓. Arquivo salvo em `public/generated/[slug]/case-draft.mdx`. Server detecta se já existe e pré-popula o estado.
+### 2.1.F First migrated vertical slice
 
----
+- [ ] Create project.
+- [ ] Add URL source.
+- [ ] Queue capture.
+- [ ] Capture one deterministic asset path through current engine.
+- [ ] Store via AssetStorage.
+- [ ] Persist Asset.
+- [ ] Create Output where appropriate.
+- [ ] Reload from DB.
+- [ ] Verify UI compatibility.
 
-## v1.0 — Ferramenta de portfólio completa
+### 2.1.G Hardening
 
-> Já entregue antes deste bloco (em `0b3b943` / `9b9a609` / `0e35809`): histórico em `/projects`, export ZIP (`/api/zip/[slug]`), toast de geração persistente.
+- [ ] Transactional generation.
+- [ ] Central safe path validation. (parcial: nova fundação confinada; rotas legadas `case`, `export`, `zip`, `DELETE projects` agora validam slug — `lib/storage/paths.ts` ainda não passa por `resolveWithin`)
+- [ ] URL policy.
+- [ ] Structured warnings.
+- [ ] Runtime schema validation for persisted JSON. (feito para o SQLite novo; falta `catalog.json` legado → 2.1.D)
+- [ ] Infinite-scroll guard.
+- [ ] Explicit timeouts for long external processes.
+- [ ] Build/lint/type/tests clean.
 
-- [x] **Reprocessar captures**
-  Botão "Reprocessar capturas" em `/projects/[slug]` → `/generate?reprocess=<slug>`. A página relê o `catalog.json` público, extrai o `project` salvo e reinicia a geração com os mesmos dados (sem redigitar o form), reusando a máquina de estados/SSE/toast.
-  `ensure-project-folder` passa a **preservar o `case-draft.mdx`** ao recriar a pasta (overwrite) — antes ele era apagado junto com as capturas.
-  _Verifica:_ em um projeto existente, clicar "Reprocessar" regenera screenshots/vídeos/seções e mantém o rascunho de case.
-  _Status:_ `next build` ✓ 8 rotas. `scripts/test-reprocess.ts` 7/7. Verificado end-to-end contra example.com.
+## Verificação de 2.1.A (2026-09-27)
 
-- [x] **Integração com portfólio (manifesto)**
-  `lib/capture/build-portfolio-manifest.ts` (função pura) + `GET /api/export/[slug]` + seção "Exportar para o portfólio" em `/projects/[slug]` (copiar JSON / baixar `portfolio.json`).
-  Manifesto = fragmento que `/cases/[slug]` e a Paisagem Digital consomem: nome, slug, categoria, descrição, url, thumbnails, cover, acento (de `inspection.colors[0]`), paleta, techStack, `hasVideo`, data, versão. Sem dados novos — só projeta o Catalog. Caminhos públicos.
-  _Status:_ `test-portfolio-manifest.ts` 16/16. E2E ✓.
-  _Pendente (precisa de credenciais/repo):_ push automático via GitHub — hoje a publicação é manual assistida (baixar/copiar).
+| Comando | Resultado |
+|---|---|
+| `npm run typecheck` | OK |
+| `npm run lint` | OK, 0 warnings |
+| `npm test` | 6 arquivos, 160 testes OK |
+| `npm run build` | OK |
+| `npm run db:migrate` (ATLAS_HOME vazio, 2×) | 1ª: 1 migration aplicada, WAL, 7 tabelas; 2ª: nada a aplicar |
+| scripts legados offline + `test-phase3` | mesmos resultados do baseline |
+| `next start` + `/api/projects`, `/projects`, `/projects/estudio-lentz` | 200, projetos legados listados |
+| `/api/case`, `/api/export`, `DELETE /api/projects` com `../` | 400 (antes: aceitavam) |
+| `/api/export/estudio-lentz`, `/api/zip/estudio-lentz` | 200 |
 
-- [x] **Página pública no Laboratório**
-  `/lab/coded-atlas` (Server Component): hero do experimento, problema, como funciona, capturas geradas (projeto real mais recente), vídeo de navegação, estrutura técnica, próximos passos, CTA. Link a partir da landing. Visual escuro/técnico Coded by M.
-  _Status:_ `next build` ✓ (estática). E2E: HTTP 200 e renderiza o projeto featured.
+## Phase completion rule
 
-- [ ] **Push automático para o GitHub do portfólio** — requer token/repo configurados; fora do escopo sem esse setup.
-
-### Ajustes
-
-- [x] **Aviso de lockfile** — `outputFileTracingRoot` fixado no `next.config.ts` (havia um `C:\Dev\package-lock.json` solto que o Next confundia como raiz). Build sem aviso.
-
----
-
-## v1.0 — Revisão de UI/UX
-
-Sistema visual comprometido (ver `design.md` › "Sistema visual (v1.0)"): tokens OKLCH em
-`globals.css`, acento **cobre**, contraste de texto elevado, navegação global.
-
-- [x] **Token layer + navegação global** — `globals.css` (acento cobre, superfícies, status, foco, `.bg-grid`, `.tri`) + `AppNav` persistente no `layout.tsx`.
-- [x] **Home com histórico** — hero + "Projetos recentes" (6 mais novos) com empty-state que ensina o fluxo.
-- [x] **Biblioteca de projetos** — `ProjectsLibrary`: busca (nome/cliente/URL/categoria), filtro por categoria, sort Recentes/A→Z, contagem; cards com badge, host e ação de reprocessar no hover.
-- [x] **Formulário com menos digitação** — categoria como **dropdown** (`lib/categories.ts`, "Outro" → texto livre), nome auto-sugerido pelo domínio, slug automático, cliente/descrição recolhidos.
-- [x] **Progresso explicado** — `GenerationStatus`: fases (Preparando/Desktop/Mobile/Finalizando), passo atual destacado com descrição do que está fazendo, barra cobre, mensagem ao vivo.
-- [x] **Erros claros** — orientação prática por `AtlasErrorCode` + "Tentar novamente" / "Editar dados".
-- [x] **Contraste e acento** aplicados em toast, galeria, downloads, device-frame, página de projeto, case-draft, portfolio-export e Laboratório.
-  _Status:_ `next build` ✓ 10 rotas, zero warnings. Verificado por screenshots reais de todas as telas (home, biblioteca, formulário, progresso, projeto, lab).
-
-- [x] **Gerenciar projetos** — excluir e cancelar.
-  `lib/storage/delete-project.ts` (guarda contra path traversal, confinado a `outputDir`) + `DELETE /api/projects/[slug]` + `DeleteProject` (confirmação inline, "Zona de risco" na página do projeto). Botão **Cancelar** na tela de progresso (aborta o stream e limpa o toast).
-  _Status:_ `next build` ✓ 11 rotas. `test-delete-project.ts` 10/10 (rejeita `..`, `a/b`, espaços, vazio; sentinela fora da pasta intacta). E2E: 404 em inexistente/ inválido, `{ok:true}` + pasta removida no real.
-
----
-
-## v1.1–v1.3 — Roadmap pós-v1.0 (ver `docs/ROADMAP.md`)
-
-- [x] **v1.1 — Lightbox das capturas** — `components/zoom-image.tsx` (tela cheia, zoom 1×/real, Esc/clique, scroll-lock) na galeria, capa e seções.
-- [x] **v1.1 — Paleta de comando (Cmd/Ctrl+K)** — `command-palette.tsx` + `GET /api/projects`; busca projetos e ações, navegação por teclado, gatilho também por botão na nav.
-- [x] **v1.2 — Seleção em lote na biblioteca** — modo de seleção em `ProjectsLibrary` + `ProjectCatalogCard` selecionável; barra de ações (excluir em lote com confirmação, baixar ZIPs, selecionar todos/limpar).
-- [x] **v1.3 — Opções de captura por geração** — `CaptureOptions` em `lib/types.ts`; `captureDevice` resolve `input.options ?? config` (config vira default); toggles Vídeo/Seções no `UrlInput`; opções salvas no `catalog.json` e herdadas no reprocess.
-  _Status:_ `next build` ✓ 12 rotas, zero warnings. `test-capture-options.ts` 7/7. E2E: gerar sem vídeo/seções não cria `videos/` nem `sections-*` nem a chave `videos`; reprocess herda; geração padrão segue com vídeo+seções. Verificado por screenshots (paleta, lightbox, seleção em lote, toggles).
-
----
-
-## v1.5 — Captura mais rica (em andamento)
-
-- [x] **Item 7 — Múltiplas páginas** — `ProjectInput.pages` + `lib/capture/capture-page.ts` (viewport + full page desktop/mobile por página); rota itera com dedupe e cap (`config.maxExtraPages`); passo `capturing-pages`; `catalog.pages`; seção "Outras páginas" + ZIP; reprocess herda. `buildCatalog` refatorado para objeto `extras`. `test-multipage` 8/8.
-- [x] **Item 8 — Estados de interação** — `ProjectInput.states` (`{name, selector}`) + `lib/capture/capture-states.ts` (clica seletor, espera, fotografa desktop); passo `capturing-states`; `catalog.states`; campo no form (`Nome | seletor`); seção "Estados" + ZIP. `test-states` 6/6. E2E: clicou o botão de busca do próprio app e capturou a paleta aberta.
-- [x] **Item 9 — Nomes de seção inteligentes** — `lib/capture/section-name.ts` (puro: `deriveSectionName` por palavra-chave classe/id/aria → "Hero/Sobre/Serviços...", senão heading > tag semântica > id significativo; `disambiguate` para repetidos; rejeita ids genéricos/hash). `detect-sections` refatorado: `page.evaluate` só extrai pistas, nomes aplicados no Node. `test-section-name` 21/21. E2E em fixture: 8 seções nomeadas corretamente.
-
----
-
-## v1.4 item 12 + v1.7 — fechamento
-
-- [x] **Mockups 3D em perspectiva** — `lib/mockup/render-3d.ts`: HTML+CSS 3D (device inclinado) fotografado pelo Playwright com fundo transparente; ângulos em `config.mockups3d`. Saem como `desktop-3d`/`mobile-3d` na mesma seção "Mockups" + ZIP. Verificado por screenshot.
-- [x] **Diff visual de recaptura (v1.7)** — `lib/diff/visual-diff.ts` (Sharp decodifica RGBA, `pixelmatch` compara, Sharp grava o PNG de diff) + `POST /api/diff/[slug]` (recaptura o viewport desktop e compara com o do catálogo) + seção "Monitoramento" (`VisualDiff`) na página do projeto (antes/agora/diferença + % mudado). E2E: 6.86% num cenário com cards novos, regiões destacadas em coral.
-
----
-
-## Plano pós-auditoria (`docs/implementation/MASTER_PLAN.md`)
-
-- [x] **Fase 0 — Estabilidade e decisão**
-  0.1 direção registrada (`CLAUDE.md` guard rail 7, `product.md`) · 0.2 diff usa sessão autenticada + README de `scripts/login.mjs` (**commit do WIP pendente**) · 0.3 perfil Rápido padrão (vídeo e vitrine off; `options.showcase`; `lib/capture/generate-showcase.ts`; `POST /api/showcase/[slug]` + botão "Gerar peças de vitrine"; reprocess herda pelo conteúdo do catálogo) · 0.4 pasta com backup/commit/rollback — falha nunca deixa órfã nem destrói a versão anterior · 0.5 cancelamento real (`req.signal` + `cancel()` do stream fecham o Chromium) · 0.6 aviso de URL já capturada e de slug que será substituído · 0.7 `ProjectSummary`/`VisualDiffResult` em `types.ts`, códigos `VALIDATION`/`CANCELLED`, `.tmp` de vídeo removido, `start.bat` em 127.0.0.1.
-  _Status:_ `tsc` ✓, `next build` ✓ (13 rotas), `test-reprocess` 16/16, `test-phase2` 11/11, `test-phase1` 19/19, `test-capture-options` 7/7. E2E 17/17: Rápido em 10–14 s sem vitrine/vídeo; vitrine sob demanda em ~2 s; cancelar reprocess restaura o catálogo anterior; cancelar/falhar projeto novo não deixa pasta; `VALIDATION`; slugs inválidos → 400. Bug achado e corrigido no E2E: vídeo parcial travado (EBUSY) no rollback → `rm` com retry.
-
-## Regras de atualização
-
-- Só marcar `[x]` depois que o critério "_Verifica_" passou de fato.
-- Ao concluir uma fase, atualizar **Status atual** e **Última fase concluída** no topo.
-- Não avançar de fase sem o OK do Matheus.
+Do not start 2.2 until 2.1 exit criteria in `ROADMAP.md` pass.
