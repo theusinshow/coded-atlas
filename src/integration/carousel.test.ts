@@ -94,7 +94,7 @@ describe("store do Studio: vista da página ativa", () => {
     store.getState().undo();
     expect(store.getState().activePage).toBe(1);
     expect((store.getState().doc as CarouselContent).pages[1].artboard.layers).toHaveLength(1);
-    store.getState().applyDoc((d) => (isCarousel(d) ? removePage(d, 2) : d), 5);
+    store.getState().applyDoc((d) => (isCarousel(d) ? removePage(d, 2) : d), { page: 5 });
     expect(store.getState().activePage).toBe(1);
     expect(store.getState().saveState).toBe("dirty");
   });

@@ -2,7 +2,8 @@ import { z } from "zod";
 import { ProjectIdSchema, UlidSchema, type ProjectId } from "../../shared/id";
 import { TimestampSchema } from "../../shared/validation";
 import { FormatIdSchema } from "../creative/formats";
-import { StyleModeSchema } from "../creative/tokens";
+import { DocumentStyleSchema } from "./style";
+import { MotionContentSchema, type MotionContent } from "../motion/motion";
 import { ArtboardSchema, artboardAssetIds, type Artboard } from "./artboard";
 
 /**
@@ -10,20 +11,13 @@ import { ArtboardSchema, artboardAssetIds, type Artboard } from "./artboard";
  * Família: canvas agora; carousel, motion, presentation e case nas fases seguintes
  * reutilizam a mesma tabela de revisões com outro `kind` e outro conteúdo.
  */
-export const DocumentKindSchema = z.enum(["canvas", "carousel"]);
+export const DocumentKindSchema = z.enum(["canvas", "carousel", "motion"]);
 export type DocumentKind = z.infer<typeof DocumentKindSchema>;
 
 export const CreativeDocumentIdSchema = UlidSchema.brand<"CreativeDocumentId">();
 export type CreativeDocumentId = z.infer<typeof CreativeDocumentIdSchema>;
 
-/** Estilo de render guardado NA revisão: uma revisão é uma entrada de render completa. */
-export const DocumentStyleSchema = z.strictObject({
-  mode: StyleModeSchema,
-  primary: z.string().regex(/^#[0-9a-f]{6}$/).optional(),
-  /** Revisão do VisualProfile usada nos tokens (null = sem identidade → Atlas). */
-  profileRevision: z.number().int().positive().nullable(),
-});
-export type DocumentStyle = z.infer<typeof DocumentStyleSchema>;
+export { DocumentStyleSchema, type DocumentStyle } from "./style";
 
 /** Conteúdo de um CanvasDocument: um artboard + estilo + formato de origem (se houver). */
 export const CanvasContentSchema = z.strictObject({
@@ -60,21 +54,38 @@ export const CarouselContentSchema = z
   .refine((c) => new Set(c.pages.map((p) => p.id)).size === c.pages.length, { message: "IDs de página repetidos." });
 export type CarouselContent = z.infer<typeof CarouselContentSchema>;
 
-/** Conteúdo de qualquer documento (a forma decide o tipo: `artboard` = canvas, `pages` = carrossel). */
-export const DocumentContentSchema = z.union([CanvasContentSchema, CarouselContentSchema]);
-export type DocumentContent = CanvasContent | CarouselContent;
+/**
+ * Conteúdo de qualquer documento. A forma decide o tipo: `artboard` = canvas,
+ * `pages` = carrossel, `scenes` = motion.
+ */
+export const DocumentContentSchema = z.union([CanvasContentSchema, CarouselContentSchema, MotionContentSchema]);
+export type DocumentContent = CanvasContent | CarouselContent | MotionContent;
+export type SequenceContent = CarouselContent | MotionContent;
 
 export function isCarousel(content: DocumentContent): content is CarouselContent {
   return "pages" in content;
 }
 
-export function kindOf(content: DocumentContent): DocumentKind {
-  return isCarousel(content) ? "carousel" : "canvas";
+export function isMotion(content: DocumentContent): content is MotionContent {
+  return "scenes" in content;
 }
 
-/** Artboards em ordem de saída (canvas = 1). */
+export function isSequence(content: DocumentContent): content is SequenceContent {
+  return isCarousel(content) || isMotion(content);
+}
+
+export function kindOf(content: DocumentContent): DocumentKind {
+  return isCarousel(content) ? "carousel" : isMotion(content) ? "motion" : "canvas";
+}
+
+/**
+ * Artboards em ordem de saída (canvas = 1; carrossel = páginas; motion = cenas no
+ * estado final, usadas para miniaturas e pôsteres estáticos).
+ */
 export function contentPages(content: DocumentContent): { artboard: Artboard; title?: string }[] {
-  return isCarousel(content) ? content.pages : [{ artboard: content.artboard }];
+  if (isCarousel(content)) return content.pages;
+  if (isMotion(content)) return content.scenes;
+  return [{ artboard: content.artboard }];
 }
 
 export const DocumentSourceSchema = z.strictObject({

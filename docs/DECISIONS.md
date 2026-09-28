@@ -207,3 +207,13 @@ Accepted (2026-09-28).
 - **All pages of a carousel share size and style** (one Creative Direction per sequence). Per-page style would break the consistency rule of Media Kits.
 - **The Studio edits a view**: the store keeps the whole document and exposes the active page as canvas-shaped content. Every existing editor component keeps working unchanged, and undo entries record the document and the page that was active.
 - **Render = one Output per page**, in order, with `metadata.page` and `NN/total` labels. The ZIP route streams a render's Outputs in that order with sanitized names (never disk paths).
+
+## ADR-036 — Motion foundation (2.9)
+
+Accepted (2026-09-28).
+
+- **Motion reuses the static document system**: `motion` is a third content shape (`scenes`) in `document_revisions`. Scenes hold ordinary Artboards; animation tracks reference layer ids (no parallel layer system).
+- **Preset-driven, no keyframes** (MOTION-ENGINE V1 rule). A preset is a pure function from progress to deltas on x, y, scale, rotation, opacity, blur and image focus. Scale is applied as a CSS transform so it never changes layout.
+- **One frame function for preview and render**: `sceneFrame` (pure) plus `MotionSceneView`/`MotionFrameView` in the render kernel. The browser player and the 2.10 video renderer draw the same frames.
+- **Integrity over leniency**: tracks must reference existing layers (schema refine). The editor prunes tracks when a layer is deleted instead of saving invalid revisions.
+- **Website Scroll animates `focusY`** of a full-page capture inside a browser frame; its duration follows the page height.

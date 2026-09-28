@@ -10,8 +10,12 @@ import { CreativeDocumentIdSchema, type DocumentContent, type RevisionSummary } 
 import { getAtlasRuntime } from "@/src/infrastructure/runtime";
 import { updateInstance } from "@/src/modules/create/composition-service";
 import {
+  animateDocument,
+  animateInstance,
   createBlankCanvas,
   createBlankCarousel,
+  createBlankMotion,
+  createWebsiteScroll,
   materializePlanAsCarousel,
   deleteDocument,
   enqueueDocumentRender,
@@ -107,10 +111,13 @@ export async function createBlankCanvasAction(form: FormData): Promise<void> {
   const { documentDeps } = await getAtlasRuntime();
   const projectId = ProjectIdSchema.parse(form.get("projectId"));
   const formatId = FormatIdSchema.parse(form.get("formatId"));
+  const kind = form.get("kind");
   const { document } =
-    form.get("kind") === "carousel"
+    kind === "carousel"
       ? await createBlankCarousel(documentDeps, projectId, { formatId, pages: z.coerce.number().int().min(1).max(20).catch(3).parse(form.get("pages")) })
-      : await createBlankCanvas(documentDeps, projectId, { formatId });
+      : kind === "motion"
+        ? await createBlankMotion(documentDeps, projectId, { formatId })
+        : await createBlankCanvas(documentDeps, projectId, { formatId });
   redirect(`/studio/${document.id}`);
 }
 
@@ -147,4 +154,41 @@ export async function listRevisionsAction(documentId: string): Promise<{ ok: tru
   } catch (err) {
     return failure(err);
   }
+}
+
+/** "Animar": canvas/carrossel → vídeo (páginas viram cenas animadas por presets). */
+export async function animateDocumentAction(documentId: string): Promise<StudioResult> {
+  let target: string;
+  try {
+    const { documentDeps } = await getAtlasRuntime();
+    target = (await animateDocument(documentDeps, CreativeDocumentIdSchema.parse(documentId))).document.id;
+  } catch (err) {
+    return failure(err);
+  }
+  redirect(`/studio/${target}`);
+}
+
+/** Editor rápido → salva a composição e abre como vídeo de uma cena. */
+export async function animateInstanceAction(instanceId: string, patch: InstancePatch): Promise<StudioResult> {
+  let target: string;
+  try {
+    const { compositionDeps, documentDeps } = await getAtlasRuntime();
+    const id = CompositionInstanceIdSchema.parse(instanceId);
+    await updateInstance(compositionDeps, id, PatchSchema.parse(patch));
+    target = (await animateInstance(documentDeps, id)).document.id;
+  } catch (err) {
+    return failure(err);
+  }
+  redirect(`/studio/${target}`);
+}
+
+/** "Website Scroll": página inteira rolando no navegador. */
+export async function createWebsiteScrollAction(form: FormData): Promise<void> {
+  const { documentDeps, repos } = await getAtlasRuntime();
+  const assetId = form.get("assetId");
+  const { document } = await createWebsiteScroll({ ...documentDeps, sources: repos.sources }, ProjectIdSchema.parse(form.get("projectId")), {
+    assetId: typeof assetId === "string" ? assetId : "",
+    formatId: FormatIdSchema.parse(form.get("formatId")),
+  });
+  redirect(`/studio/${document.id}`);
 }

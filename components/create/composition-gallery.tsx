@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { createInstanceAction } from "@/app/actions/create";
-import { createBlankCanvasAction } from "@/app/actions/studio";
+import { createBlankCanvasAction, createWebsiteScrollAction } from "@/app/actions/studio";
 import { contentPages, isCarousel, type DocumentContent } from "@/src/core/documents/creative-document";
 import { resolveTokens } from "@/src/core/creative/tokens";
 import type { Binding, CompositionInstance } from "@/src/core/creative/composition";
@@ -37,13 +37,15 @@ export function CompositionGallery({ projectId, slug, assets, profile, profilesB
   const [format, setFormat] = useState<FormatId>("post-4x5");
   const assetMap = useMemo(() => new Map(assets.map((a) => [a.id, a])), [assets]);
   const available = COMPOSITIONS.filter((c) => c.formats.includes(format));
+  // Website Scroll precisa da página inteira (ou qualquer imagem bem mais alta que larga).
+  const tallPages = assets.filter((a) => a.metadata.role === "fullpage" || a.metadata.role === "page-fullpage" || (!!a.width && !!a.height && a.height > a.width * 2));
 
   return (
     <div className="space-y-10">
       <section aria-labelledby="canvas" className="space-y-3">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <h2 id="canvas" className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
-            Canvas ({documents.length})
+            Documentos ({documents.length})
           </h2>
           <form action={createBlankCanvasAction} className="flex items-center gap-2">
             <input type="hidden" name="projectId" value={projectId} />
@@ -53,6 +55,7 @@ export function CompositionGallery({ projectId, slug, assets, profile, profilesB
             <select id="blank-kind" name="kind" defaultValue="canvas" className="h-8 bg-surface border border-line text-[12px] text-zinc-300 px-2" aria-label="Tipo">
               <option value="canvas">Canvas</option>
               <option value="carousel">Carrossel (3 páginas)</option>
+              <option value="motion">Vídeo (1 cena)</option>
             </select>
             <select id="blank-format" name="formatId" defaultValue={format} className="h-8 bg-surface border border-line text-[12px] text-zinc-300 px-2">
               {FORMAT_IDS.map((id) => (
@@ -92,6 +95,37 @@ export function CompositionGallery({ projectId, slug, assets, profile, profilesB
           </ul>
         )}
       </section>
+
+      {tallPages.length > 0 && (
+        <section aria-labelledby="scroll" className="border border-line bg-surface/40 p-4 flex flex-wrap items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <h2 id="scroll" className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+              Vídeo rápido · Website Scroll
+            </h2>
+            <p className="text-[12px] text-zinc-500 mt-1">A página inteira capturada rolando dentro de uma janela de navegador — pronto para Reels e apresentação.</p>
+          </div>
+          <form action={createWebsiteScrollAction} className="flex flex-wrap items-center gap-2">
+            <input type="hidden" name="projectId" value={projectId} />
+            <select name="assetId" aria-label="Página inteira" className="h-8 max-w-56 bg-surface border border-line text-[12px] text-zinc-300 px-2">
+              {tallPages.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.label ?? `${a.metadata.device ?? ""} ${a.metadata.pagePath ?? "página inteira"}`.trim()} · {a.width}×{a.height}
+                </option>
+              ))}
+            </select>
+            <select name="formatId" aria-label="Formato do vídeo" defaultValue="story-9x16" className="h-8 bg-surface border border-line text-[12px] text-zinc-300 px-2">
+              {FORMAT_IDS.map((id) => (
+                <option key={id} value={id}>
+                  {FORMATS[id].label}
+                </option>
+              ))}
+            </select>
+            <button type="submit" className={buttonClass("primary", "sm")}>
+              Criar vídeo
+            </button>
+          </form>
+        </section>
+      )}
 
       {instances.length > 0 && (
         <section aria-labelledby="pecas">

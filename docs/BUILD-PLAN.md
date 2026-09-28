@@ -2,8 +2,8 @@
 
 The complete roadmap lives in `ROADMAP.md`. The currently authorized scope lives in `CURRENT.md`.
 
-> **Status (2026-09-28):** fases **2.1 a 2.8 concluídas**. Execução contínua até o Atlas 3.0
-> autorizada pelo Matheus (ADR-028) — ele testa só no final. Próxima: **2.9 — Motion Foundation**.
+> **Status (2026-09-28):** fases **2.1 a 2.9 concluídas**. Execução contínua até o Atlas 3.0
+> autorizada pelo Matheus (ADR-028) — ele testa só no final. Próxima: **2.10 — Video Engine**.
 > O Atlas v1 (captura, vitrine, diff, case, ZIP) segue funcionando sem alteração de comportamento.
 
 ## Baseline (antes de qualquer mudança — 2026-09-27, commit `ac93441`)
@@ -266,6 +266,18 @@ Verificação 2.7: typecheck/lint OK; `npm test` 390 testes (24 arquivos); build
 - [x] `buildZip` e `safeFileName` reutilizáveis (Export da 2.14).
 
 Verificação 2.8: typecheck/lint OK; `npm test` 398 testes (25 arquivos; render de carrossel com Chromium real → 3 Outputs ordenados; store do Studio com vista da página); build OK; `npm run e2e` 18/18 passos (plano de carrossel → Studio → + página → render → ZIP).
+
+## Atlas 2.9 — Motion Foundation (concluída 2026-09-28)
+
+- [x] `MotionDocument` (kind `motion`, mesma tabela de revisões): cenas com duração, artboard (o MESMO modelo de camadas), faixas de animação por preset e transição de entrada; schema valida tamanho igual, ids, faixas apontando para camadas existentes e teto de 2 min.
+- [x] 12 presets do docs como funções puras (x, y, escala, rotação, opacidade, desfoque + foco vertical): Fade Up, Slide Left/Right, Scale In, Smooth Zoom, Float, Parallax, Browser Reveal, Device Float, Stack Reveal, Website Scroll, UI Focus; 4 curvas.
+- [x] Linha do tempo pura (`sceneAt`, `trackDelta`, `sceneFrame`) — o mesmo cálculo no preview e no render de vídeo; escala vira transform; transições cruzadas (a cena anterior fica por baixo).
+- [x] `autoAnimate` determinístico por tipo de camada (página inteira em moldura ganha scroll).
+- [x] Criação: "Animar" (canvas/carrossel → vídeo; páginas viram cenas), "Animar" no editor rápido, vídeo em branco e **Website Scroll** a partir da página inteira capturada (duração pela altura).
+- [x] Studio como extensão do Canvas: tira de cenas (duração, total), seção da cena (duração, transição, animar automaticamente), animação da camada (presets filtrados por tipo, atraso, duração, intensidade, curva), player no navegador (play/pausa, scrub, repetir). Apagar camada poda as animações dela.
+- [x] Kernel: `MotionSceneView`/`MotionFrameView` em `src/render` (reuso no render de vídeo).
+
+Verificação 2.9: typecheck/lint OK; `npm test` 409 testes (26 arquivos); build OK; `npm run e2e` 19/19 passos (Website Scroll → preview → faixa de scroll; Animar documento → preset Float → autosave).
 
 ## Phase completion rule
 

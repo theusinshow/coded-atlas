@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useState, useTransition } from "react";
 import { deleteInstanceAction, renderInstanceAction, saveInstanceAction, type InstancePatch } from "@/app/actions/create";
-import { materializeInstanceAction } from "@/app/actions/studio";
+import { animateInstanceAction, materializeInstanceAction } from "@/app/actions/studio";
 import type { Binding, CompositionDefinition, CompositionInstance, SlotDefinition } from "@/src/core/creative/composition";
 import { FORMATS, type FormatId } from "@/src/core/creative/formats";
 import type { StyleMode } from "@/src/core/creative/tokens";
@@ -181,6 +181,14 @@ function Editor({ instance, definition, assets, profile, latestProfile }: Props 
     });
   }
 
+  function animate() {
+    setError(null);
+    startTransition(async () => {
+      const result = await animateInstanceAction(instance.id, toPatch(draft));
+      if (result && !result.ok) setError(result.error);
+    });
+  }
+
   function remove() {
     if (!window.confirm("Excluir esta composição? As peças já renderizadas continuam em Publicar.")) return;
     startTransition(async () => {
@@ -318,6 +326,9 @@ function Editor({ instance, definition, assets, profile, latestProfile }: Props 
             </Button>
             <Button onClick={openInCanvas} disabled={pending} title="Congela esta composição num documento livre (camadas, posição, textos)">
               Editar no canvas
+            </Button>
+            <Button onClick={animate} disabled={pending} title="Abre esta peça como vídeo animado (presets de movimento)">
+              Animar
             </Button>
             <Button variant="ghost" onClick={remove} disabled={pending} className="ml-auto">
               Excluir

@@ -284,6 +284,29 @@ async function main(): Promise<void> {
       assert(Buffer.from(await res.arrayBuffer()).subarray(0, 2).toString() === "PK", "zip inválido");
     });
 
+    await step("motion: Website Scroll e Animar documento, preview e preset", async () => {
+      await page.goto(`${BASE}/projects/e2e-${slug}/create`);
+      await page.getByRole("button", { name: "Criar vídeo" }).click();
+      await page.waitForURL(/\/studio\/[0-9A-Z]{26}$/);
+      await page.getByRole("button", { name: "Tocar vídeo" }).click();
+      await page.locator("[data-motion-player] [data-atlas-artboard]").first().waitFor();
+      await page.getByRole("button", { name: "Editar cena" }).click();
+      await page.locator("[data-layer-row]").first().click();
+      await page.locator('[data-track="website-scroll"]').waitFor();
+
+      // Um documento estático vira vídeo: cada página, uma cena animada.
+      await page.goto(`${BASE}/projects/e2e-${slug}/create`);
+      await page.locator("[data-document]").last().click();
+      await page.waitForURL(/\/studio\//);
+      await page.getByRole("button", { name: "Animar", exact: true }).click();
+      await page.waitForURL(/\/studio\//);
+      await page.getByRole("region", { name: "Cenas do vídeo" }).waitFor();
+      await page.locator("[data-layer-row]").first().click();
+      await page.getByLabel("Adicionar preset").selectOption("float");
+      await page.locator('[data-track="float"]').waitFor();
+      await page.locator('[data-save-state="saved"]').waitFor({ timeout: 15_000 });
+    });
+
     await step("jobs e ajustes mostram o estado real", async () => {
       await page.goto(`${BASE}/jobs`);
       await page.getByText("Captura").first().waitFor();

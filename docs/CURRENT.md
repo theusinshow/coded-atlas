@@ -2,7 +2,7 @@
 
 ## Active phase
 
-**Atlas 2.9 — Motion Foundation** (in progress). 2.1–2.3 completed 2026-09-27; 2.4–2.8 completed 2026-09-28.
+**Atlas 2.10 — Video Engine** (in progress). 2.1–2.3 completed 2026-09-27; 2.4–2.9 completed 2026-09-28.
 
 **Owner authorization (2026-09-27):** execute the roadmap continuously from 2.2 through 2.14 (Atlas 3.0) without stopping between phases; the owner tests only at the end. Each phase still ends with typecheck/lint/test/build, `BUILD-PLAN.md` + this file updated and a commit.
 
@@ -12,7 +12,7 @@ Introduce the new persistence/domain/job foundation while preserving useful beha
 
 ## Current milestone
 
-**2.9 — Motion Foundation**: MotionDocument (scenes with duration, layers, animation tracks, transitions), MotionPreset library, scene strip, preset-driven motion from compositions/carousels, and "Website Scroll" from full-page captures; live preview in the browser with the same render kernel.
+**2.10 — Video Engine**: `MotionRenderer` port with a frame-accurate adapter (Chromium frames of the render kernel → FFmpeg MP4/WebM), render job for motion documents, VideoRecipe (e.g. Website Reveal Reel), basic audio track, captured motion (scroll video) reusable as Asset, low-quality preview render.
 
 ## State of the code (2026-09-27)
 
@@ -91,6 +91,10 @@ Delivered in 2.7 (Creative System):
 Delivered in 2.8 (Carousel & Multi-page Documents):
 
 - `carousel` documents with ordered pages sharing one style, page operations, multi-page Studio (active page view + storyboard), carousel goal and plan → carousel, multi-output render with ZIP download per render.
+
+Delivered in 2.9 (Motion Foundation):
+
+- `motion` documents (scenes, preset-driven tracks, transitions), 12 pure presets, pure timeline/frame functions, auto-animation, Website Scroll, Studio scene strip/animation inspector/browser player, `MotionFrameView` in the render kernel.
 
 ## Work allowed now
 

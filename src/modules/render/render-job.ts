@@ -5,7 +5,7 @@ import { createOutput, type Output } from "../../core/assets/output";
 import type { AssetRepository, OutputRepository } from "../../core/assets/repositories";
 import { contentStorageKey } from "../../core/assets/storage-key";
 import type { Artboard } from "../../core/documents/artboard";
-import { CreativeDocumentIdSchema, contentPages, isCarousel, type CreativeDocumentId, type CreativeDocumentRepository } from "../../core/documents/creative-document";
+import { CreativeDocumentIdSchema, contentPages, isSequence, type CreativeDocumentId, type CreativeDocumentRepository } from "../../core/documents/creative-document";
 import { artboardAssetIds } from "../../core/documents/artboard";
 import { CompositionInstanceIdSchema, type CompositionInstanceRepository } from "../../core/creative/composition";
 import { getComposition } from "../../core/creative/compositions";
@@ -93,7 +93,7 @@ async function resolveDocument(deps: RenderDeps, documentId: CreativeDocumentId,
   const profile = style.profileRevision ? await deps.visualProfiles.getRevision(document.projectId, style.profileRevision) : null;
   const tokens = resolveTokens(profile, style.mode, style.primary ? { primary: style.primary } : {});
   const pages = contentPages(revision.content);
-  const multi = isCarousel(revision.content);
+  const multi = isSequence(revision.content);
   // Carrossel: uma peça por página, na ordem (page = índice, rótulo com n/total).
   return pages.map((page, index) => ({
     projectId: document.projectId,

@@ -11,6 +11,7 @@ import { STYLE_MODES, type StudioAsset } from "@/components/create/types";
 import { lintArtboard } from "@/src/core/creative/guardrails";
 import { CreativeIssues } from "@/components/creative/creative-issues";
 import { ColorField, FIELD_LABEL, NumberField, RangeField, Section, Segmented, TextField, Toggle } from "./fields";
+import { LayerAnimationSection, SceneSection } from "./motion-inspector";
 import { LAYER_TYPE_LABEL, newLayerId } from "./layer-factory";
 import { useStudio, useStudioApi } from "./store";
 
@@ -126,6 +127,8 @@ function LayerInspector({ layer, tokens, assets }: { layer: Layer; tokens: Style
         <TextField label="Nome" value={layer.name ?? ""} maxLength={80} onChange={(v) => edit({ name: v || undefined }, "name")} />
       </Section>
 
+      <LayerAnimationSection layer={layer} />
+
       <Section title="Posição e tamanho">
         <div className="grid grid-cols-2 gap-2">
           <NumberField label="X" value={layer.x} onChange={(v) => edit({ x: v }, "x")} min={-20000} max={20000} />
@@ -211,6 +214,7 @@ function DocumentInspector({ tokens, profiles, latestRevision }: { tokens: Style
   const profile = style.profileRevision ? profiles[style.profileRevision] : null;
   return (
     <>
+      <SceneSection />
       <Section title="Documento">
         <p className="text-[12px] text-zinc-400 font-mono tabular-nums">
           {artboard.width}×{artboard.height}px · {artboard.layers.length} camada(s)

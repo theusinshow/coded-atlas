@@ -1,10 +1,10 @@
 "use client";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
-import { deleteDocumentAction, listRevisionsAction, renameDocumentAction, renderCanvasAction, restoreRevisionAction, saveCanvasAction } from "@/app/actions/studio";
+import { animateDocumentAction, deleteDocumentAction, listRevisionsAction, renameDocumentAction, renderCanvasAction, restoreRevisionAction, saveCanvasAction } from "@/app/actions/studio";
 import { resolveTokens } from "@/src/core/creative/tokens";
 import type { VisualProfile } from "@/src/core/creative/visual-profile";
-import { isCarousel, type CanvasContent, type DocumentContent, type RevisionSummary } from "@/src/core/documents/creative-document";
+import { isMotion, isSequence, type CanvasContent, type DocumentContent, type RevisionSummary } from "@/src/core/documents/creative-document";
 import { duplicateLayer, findLayer, removeLayer, reorderLayer, updateLayer } from "@/src/core/documents/layer-tree";
 import { JobFollower } from "@/components/atlas/job-follower";
 import type { StudioAsset } from "@/components/create/types";
@@ -12,6 +12,7 @@ import { CanvasStage, type Zoom } from "./canvas-stage";
 import { Inspector } from "./inspector";
 import { newLayerId } from "./layer-factory";
 import { AddPanel, LayersPanel } from "./layers-panel";
+import { MotionPlayer } from "./motion-player";
 import { PageStrip } from "./page-strip";
 import { createStudioStore, StudioContext, useStudio, useStudioApi, type SaveState } from "./store";
 
@@ -245,7 +246,12 @@ function StudioShell({ documentId, name: initialName, project, assets, profiles,
   const revision = useStudio((s) => s.revision);
   const canUndo = useStudio((s) => s.past.length > 0);
   const canRedo = useStudio((s) => s.future.length > 0);
-  const carousel = useStudio((s) => isCarousel(s.doc));
+  const sequence = useStudio((s) => isSequence(s.doc));
+  const doc = useStudio((s) => s.doc);
+  const motion = isMotion(doc) ? doc : null;
+  const activePage = useStudio((s) => s.activePage);
+  const [playing, setPlaying] = useState(false);
+  const [animating, startAnimate] = useTransition();
   const [tab, setTab] = useState<"layers" | "add">("layers");
   const [zoom, setZoom] = useState<Zoom>("fit");
   const [fitScale, setFitScale] = useState(0.3);
@@ -312,6 +318,17 @@ function StudioShell({ documentId, name: initialName, project, assets, profiles,
               </option>
             ))}
           </select>
+          {!motion && (
+            <button
+              type="button"
+              className={btn}
+              disabled={animating}
+              title="Cria um vídeo a partir deste documento (cada página vira uma cena animada)"
+              onClick={() => startAnimate(async () => void (await animateDocumentAction(documentId)))}
+            >
+              Animar
+            </button>
+          )}
           <div className="relative">
             <button type="button" className={btn} onClick={() => setMenu((m) => (m === "revisions" ? null : "revisions"))} aria-expanded={menu === "revisions"}>
               Revisões
@@ -378,7 +395,18 @@ function StudioShell({ documentId, name: initialName, project, assets, profiles,
           <div className="flex-1 min-h-0 relative">
             <CanvasStage tokens={tokens} zoom={zoom} onFit={onFit} />
           </div>
-          {carousel && <PageStrip tokens={tokens} />}
+          {motion && playing && (
+            <MotionPlayer
+              content={motion}
+              tokens={tokens}
+              startScene={activePage}
+              onClose={(scene) => {
+                setPlaying(false);
+                api.getState().setActivePage(scene);
+              }}
+            />
+          )}
+          {sequence && <PageStrip tokens={tokens} onPlay={motion ? () => setPlaying(true) : undefined} />}
           {jobId && (
             <div className="absolute right-4 bottom-4 w-80 space-y-2">
               <JobFollower key={jobId} jobId={jobId} />

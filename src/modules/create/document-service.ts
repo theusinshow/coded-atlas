@@ -11,6 +11,7 @@ import {
   CarouselContentSchema,
   DocumentContentSchema,
   contentAssetIds,
+  contentPages,
   CreativeDocumentSchema,
   type DocumentContent,
   type CommitResult,
@@ -20,7 +21,8 @@ import {
 } from "../../core/documents/creative-document";
 import { createJob, type Job } from "../../core/jobs/job";
 import type { JobRepository } from "../../core/jobs/repository";
-import type { ProjectRepository } from "../../core/projects/repositories";
+import { MotionContentSchema, motionFromArtboards, websiteScrollScene } from "../../core/motion/motion";
+import type { ProjectRepository, SourceRepository } from "../../core/projects/repositories";
 import { DomainError } from "../../shared/errors";
 import { newId, type ProjectId } from "../../shared/id";
 import { nowIso, parseOrThrow } from "../../shared/validation";
@@ -184,4 +186,73 @@ export async function enqueueDocumentRender(deps: DocumentDeps, id: CreativeDocu
   await deps.documents.pin(document.id, revision);
   const payload: RenderJobPayload = { target: { kind: "document", documentId: document.id, revision }, formats: [...new Set(formats)] };
   return deps.jobs.create(createJob({ type: "render", projectId: document.projectId, payload }));
+}
+
+// ── Motion (2.9) ─────────────────────────────────────────────────────────────
+
+async function assetDims(deps: DocumentDeps, projectId: ProjectId): Promise<Map<string, { width: number | null; height: number | null }>> {
+  return new Map((await deps.assets.listByProject(projectId)).map((a) => [a.id as string, { width: a.width, height: a.height }]));
+}
+
+/**
+ * "Animar": canvas ou carrossel → documento de motion (cada página vira uma cena,
+ * animada automaticamente por presets). O original não muda.
+ */
+export async function animateDocument(deps: DocumentDeps, id: CreativeDocumentId): Promise<CommitResult> {
+  const document = await requireDocument(deps, id);
+  if (document.kind === "motion") throw new DomainError("VALIDATION", "Este documento já é um vídeo.");
+  const head = await deps.documents.getRevision(document.id, document.headRevision);
+  if (!head) throw new DomainError("NOT_FOUND", "Revisão atual do documento não encontrada.");
+  const content = motionFromArtboards({
+    artboards: contentPages(head.content),
+    style: head.content.style,
+    formatId: head.content.formatId,
+    assets: await assetDims(deps, document.projectId),
+  });
+  return deps.documents.create(newDocument(document.projectId, `${document.name} · vídeo`.slice(0, 120), { ...document.source }, "motion"), content, "create");
+}
+
+/** Composição → vídeo de uma cena (a peça montada pela receita, animada). */
+export async function animateInstance(deps: DocumentDeps, instanceId: CompositionInstanceId): Promise<CommitResult> {
+  const { document } = await materializeInstance(deps, instanceId);
+  const result = await animateDocument(deps, document.id);
+  await deps.documents.delete(document.id); // o canvas intermediário não precisa existir
+  return result;
+}
+
+/** Vídeo em branco: uma cena vazia do formato. */
+export async function createBlankMotion(deps: DocumentDeps, projectId: ProjectId, input: { formatId: FormatId; name?: string }): Promise<CommitResult> {
+  if (!(await deps.projects.getById(projectId))) throw new DomainError("NOT_FOUND", "Projeto não encontrado.");
+  const profile = await deps.visualProfiles.latest(projectId);
+  const { width, height } = formatSize(input.formatId);
+  const content = motionFromArtboards({
+    artboards: [{ artboard: { width, height, background: { fill: "background", pattern: "none" }, layers: [] } }],
+    style: { mode: "hybrid", profileRevision: profile?.revision ?? null },
+    formatId: input.formatId,
+  });
+  return deps.documents.create(newDocument(projectId, input.name?.trim() || `Vídeo ${FORMATS[input.formatId].label}`, {}, "motion"), content, "create");
+}
+
+/** "Website Scroll": a página inteira capturada rolando numa janela de navegador. */
+export async function createWebsiteScroll(deps: DocumentDeps & { sources: SourceRepository }, projectId: ProjectId, input: { assetId: string; formatId: FormatId }): Promise<CommitResult> {
+  const project = await deps.projects.getById(projectId);
+  if (!project) throw new DomainError("NOT_FOUND", "Projeto não encontrado.");
+  const asset = await deps.assets.getById(input.assetId as Parameters<AssetRepository["getById"]>[0]);
+  if (!asset || asset.projectId !== projectId || !asset.mimeType.startsWith("image/")) throw new DomainError("VALIDATION", "Escolha uma imagem deste projeto (de preferência a página inteira).");
+  const profile = await deps.visualProfiles.latest(projectId);
+  const url = (await deps.sources.listByProject(projectId)).find((s) => s.type === "url")?.locator;
+  const { width, height } = formatSize(input.formatId);
+  let host: string | undefined;
+  try {
+    host = url ? new URL(url).host.replace(/^www\./, "") : undefined;
+  } catch {
+    host = undefined;
+  }
+  const content = MotionContentSchema.parse({
+    fps: 30,
+    scenes: [websiteScrollScene({ width, height, asset, url: host })],
+    style: { mode: "hybrid", profileRevision: profile?.revision ?? null },
+    formatId: input.formatId,
+  });
+  return deps.documents.create(newDocument(projectId, `Website Scroll · ${project.name}`.slice(0, 120), {}, "motion"), content, "create");
 }

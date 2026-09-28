@@ -1,13 +1,15 @@
 "use client";
 import { createContext, useContext } from "react";
 import { createStore, useStore, type StoreApi } from "zustand";
-import { isCarousel, type CanvasContent, type DocumentContent } from "@/src/core/documents/creative-document";
+import { isCarousel, isMotion, type CanvasContent, type DocumentContent } from "@/src/core/documents/creative-document";
+import { findLayer } from "@/src/core/documents/layer-tree";
+import type { Scene } from "@/src/core/motion/motion";
 
 /**
  * Estado EFÊMERO do editor (docs/STACK.md: Zustand só para UI). A verdade
  * persistente é a revisão no SQLite — o autosave empurra `doc` para lá.
  *
- * `doc` é o documento inteiro (canvas ou carrossel). `content` é a VISTA da página
+ * `doc` é o documento inteiro (canvas, carrossel ou vídeo). `content` é a VISTA da página
  * ativa no formato de canvas ({ artboard, style, formatId }): canvas, camadas e
  * inspetor editam só a vista, e `apply` devolve a mudança para a página certa.
  */
@@ -18,17 +20,38 @@ const HISTORY_LIMIT = 100;
 const GESTURE_MS = 800;
 
 function viewOf(doc: DocumentContent, page: number): CanvasContent {
-  if (!isCarousel(doc)) return doc;
-  const current = doc.pages[Math.min(page, doc.pages.length - 1)];
-  return { artboard: current.artboard, style: doc.style, formatId: doc.formatId };
+  if (isCarousel(doc)) {
+    const current = doc.pages[Math.min(page, doc.pages.length - 1)];
+    return { artboard: current.artboard, style: doc.style, formatId: doc.formatId };
+  }
+  if (isMotion(doc)) {
+    const current = doc.scenes[Math.min(page, doc.scenes.length - 1)];
+    return { artboard: current.artboard, style: doc.style, formatId: doc.formatId };
+  }
+  return doc;
 }
 
 function writeBack(doc: DocumentContent, page: number, view: CanvasContent): DocumentContent {
-  if (!isCarousel(doc)) return view;
-  return { ...doc, style: view.style, formatId: view.formatId, pages: doc.pages.map((p, i) => (i === page ? { ...p, artboard: view.artboard } : p)) };
+  if (isCarousel(doc)) return { ...doc, style: view.style, formatId: view.formatId, pages: doc.pages.map((p, i) => (i === page ? { ...p, artboard: view.artboard } : p)) };
+  if (isMotion(doc)) {
+    // Camada apagada leva junto as animações dela (senão a revisão fica inválida).
+    return {
+      ...doc,
+      style: view.style,
+      formatId: view.formatId,
+      scenes: doc.scenes.map((s, i) => (i === page ? { ...s, artboard: view.artboard, animations: s.animations.filter((a) => findLayer(view.artboard.layers, a.layerId)) } : s)),
+    };
+  }
+  return view;
 }
 
-const clampPage = (doc: DocumentContent, page: number) => (isCarousel(doc) ? Math.min(Math.max(page, 0), doc.pages.length - 1) : 0);
+const clampPage = (doc: DocumentContent, page: number) =>
+  isCarousel(doc) ? Math.min(Math.max(page, 0), doc.pages.length - 1) : isMotion(doc) ? Math.min(Math.max(page, 0), doc.scenes.length - 1) : 0;
+
+/** Cena ativa (só em documentos de motion). */
+export function activeScene(state: Pick<StudioState, "doc" | "activePage">): Scene | null {
+  return isMotion(state.doc) ? (state.doc.scenes[state.activePage] ?? null) : null;
+}
 
 export interface StudioState {
   doc: DocumentContent;
@@ -48,8 +71,11 @@ export interface StudioState {
   select(id: string | null): void;
   /** Aplica uma mudança à página ativa; `key` agrupa mudanças contínuas num passo de undo. */
   apply(change: (content: CanvasContent) => CanvasContent, key?: string): void;
-  /** Mudança no documento inteiro (páginas do carrossel); `page` = página ativa depois. */
-  applyDoc(change: (doc: DocumentContent) => DocumentContent, page?: number): void;
+  /**
+   * Mudança no documento inteiro (páginas/cenas). `page` = página ativa depois;
+   * `key` agrupa como gesto; `keepSelection` mantém a camada selecionada.
+   */
+  applyDoc(change: (doc: DocumentContent) => DocumentContent, options?: { page?: number; key?: string; keepSelection?: boolean }): void;
   setActivePage(page: number): void;
   undo(): void;
   redo(): void;
@@ -100,13 +126,13 @@ export function createStudioStore(initial: { doc: DocumentContent; revision: num
         if (next === state.content) return;
         commit(writeBack(state.doc, state.activePage, next), state.activePage, key);
       },
-      applyDoc: (change, page) => {
+      applyDoc: (change, options = {}) => {
         const state = get();
         if (state.saveState === "conflict") return;
         const next = change(state.doc);
         if (next === state.doc) return;
-        commit(next, page ?? state.activePage);
-        set({ selectedId: null });
+        commit(next, options.page ?? state.activePage, options.key);
+        if (!options.keepSelection) set({ selectedId: null });
       },
       setActivePage: (page) => {
         const { doc } = get();
