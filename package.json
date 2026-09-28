@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/atlas-db-migrate.ts",
-    "legacy:scan": "tsx scripts/legacy-scan.ts"
+    "legacy:scan": "tsx scripts/legacy-scan.ts",
+    "worker": "tsx scripts/atlas-worker.ts"
   },
   "dependencies": {
     "archiver": "^8.0.0",

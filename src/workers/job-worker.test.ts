@@ -204,6 +204,20 @@ describe("JobWorker loop", () => {
     expect(await repos.jobs.getById(orphan.id)).toMatchObject({ status: "failed", error: { code: "STALE" } });
   });
 
+  it("recupera também órfãos que só ficam stale depois que o worker já subiu", async () => {
+    const orphan = await enqueue();
+    await repos.jobs.claimNext("worker-morto", ["capture"]);
+    await repos.jobs.markRunning(orphan.id, "worker-morto"); // heartbeat fresco: ainda não é stale
+
+    const w = worker({ capture: { run: async () => undefined } }, { staleAfterMs: 150 });
+    w.start();
+    await new Promise((r) => setTimeout(r, 40));
+    expect((await repos.jobs.getById(orphan.id))?.status).toBe("running"); // no start ainda não venceu
+    await until(async () => (await repos.jobs.getById(orphan.id))?.status === "failed");
+    await w.stop();
+    expect((await repos.jobs.getById(orphan.id))?.error?.code).toBe("STALE");
+  });
+
   it("cancelamento pedido entre o claim e o início não chama o handler", async () => {
     const job = await enqueue();
     let called = false;

@@ -75,6 +75,14 @@ npm test             # Vitest (nova fundação em src/)
 npm run build
 npm run db:migrate   # cria/atualiza .atlas/atlas.db (ou $ATLAS_HOME)
 npm run legacy:scan  # relatório (somente leitura) dos projetos v1 no modelo novo
+npm run worker       # worker de jobs avulso (o servidor já sobe um embutido; ATLAS_WORKER=off desliga)
+```
+
+Página de verificação da fundação 2.x: `/lab/foundation` (captura via fila de jobs, SQLite e
+AssetStorage). Variáveis: `ATLAS_HOME` (padrão `./.atlas`), `ATLAS_URL_POLICY` (`local` | `hosted-safe`),
+`ATLAS_WORKER=off`, `ATLAS_CAPTURE_JOB_TIMEOUT_MS`.
+
+```bash
 ```
 
 O uso do Atlas v1 (formulário, opções de captura, scripts por fase) está documentado em

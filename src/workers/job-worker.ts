@@ -57,7 +57,7 @@ const ABORT_ERRORS: Record<AbortReason["kind"], (reason: AbortReason) => DomainE
   cancelled: () => new DomainError("CANCELLED", "Job cancelado."),
   timeout: (r) =>
     new DomainError("TIMEOUT", "Job excedeu o tempo máximo.", r.kind === "timeout" ? { timeoutMs: r.timeoutMs } : {}),
-  shutdown: () => new DomainError("CANCELLED", "Worker desligado durante o job."),
+  shutdown: () => new DomainError("INTERRUPTED", "Worker desligado durante o job."),
   "lost-lock": () => new DomainError("CONFLICT", "Worker perdeu o controle do job."),
 };
 
@@ -97,7 +97,7 @@ export class JobWorker {
     return recovered;
   }
 
-  /** Recupera jobs abandonados e passa a processar a fila até `stop()`. */
+  /** Processa a fila até `stop()`, recuperando jobs abandonados no início e a cada `staleAfterMs`. */
   start(): void {
     if (this.loop) return;
     this.stopping = false;
@@ -121,8 +121,14 @@ export class JobWorker {
   }
 
   private async runLoop(): Promise<void> {
-    await this.recoverStale().catch((err: unknown) => this.logger.error("falha ao recuperar jobs", { error: err }));
+    // Recupera no start e depois periodicamente: um worker que morreu há menos de
+    // `staleAfterMs` quando este subiu só fica "stale" mais tarde.
+    let lastRecovery = 0;
     while (!this.stopping) {
+      if (Date.now() - lastRecovery >= this.timing.staleAfterMs) {
+        lastRecovery = Date.now();
+        await this.recoverStale().catch((err: unknown) => this.logger.error("falha ao recuperar jobs", { error: err }));
+      }
       let job: Job | null = null;
       try {
         job = await this.runOnce();

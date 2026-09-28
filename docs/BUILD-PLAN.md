@@ -2,8 +2,8 @@
 
 The complete roadmap lives in `ROADMAP.md`. The currently authorized scope lives in `CURRENT.md`.
 
-> **Status (2026-09-27):** 2.1.A (com 2.1.B/C), 2.1.D e **2.1.E concluídos e verificados**.
-> Próximo: **2.1.F — First migrated vertical slice** (aguardando teste do Matheus).
+> **Status (2026-09-27):** 2.1.A–**2.1.F concluídos e verificados** — o critério de saída da
+> fase 2.1 (ROADMAP) passa de ponta a ponta. Próximo: **2.1.G — Hardening**.
 > O Atlas v1 (captura, vitrine, diff, case, ZIP) segue funcionando sem alteração de comportamento.
 
 ## Baseline (antes de qualquer mudança — 2026-09-27, commit `ac93441`)
@@ -86,21 +86,21 @@ Não executados no baseline (dependem de sites reais/rede e demoram): `test-phas
 
 ### 2.1.F First migrated vertical slice
 
-- [ ] Create project.
-- [ ] Add URL source.
-- [ ] Queue capture.
-- [ ] Capture one deterministic asset path through current engine.
-- [ ] Store via AssetStorage.
-- [ ] Persist Asset.
-- [ ] Create Output where appropriate.
-- [ ] Reload from DB.
-- [ ] Verify UI compatibility.
+- [x] Create project. (`queueUrlCapture`; reaproveita o projeto pelo slug)
+- [x] Add URL source. (sem duplicar a mesma URL)
+- [x] Queue capture. (`POST /api/atlas/captures` → 202 com IDs; nada roda na request)
+- [x] Capture one deterministic asset path through current engine. (`PlaywrightCaptureEngine` reaproveita `dismissOverlays`/`waitForPageStability` do v1; viewport desktop do `lib/config.ts`)
+- [x] Store via AssetStorage. (staging → validação PNG → commit; chave `captures/<ab>/<sha256>.png`)
+- [x] Persist Asset. (+ Capture com status e `coverAssetId` do projeto)
+- [x] Create Output where appropriate. (não se aplica: a fatia não renderiza peça final — screenshot é Asset; Output entra com render)
+- [x] Reload from DB. (`GET /api/atlas/projects/[id]`, bytes em `GET /api/atlas/assets/[id]/file`)
+- [x] Verify UI compatibility. (telas v1 intactas; página de verificação `/lab/foundation`)
 
 ### 2.1.G Hardening
 
 - [ ] Transactional generation.
 - [ ] Central safe path validation. (parcial: nova fundação confinada; rotas legadas `case`, `export`, `zip`, `DELETE projects` agora validam slug — `lib/storage/paths.ts` ainda não passa por `resolveWithin`)
-- [ ] URL policy.
+- [ ] URL policy. (entregue junto com 2.1.F: `local`/`hosted-safe`, DNS, guard de requisições e redirects no Playwright, entrada do `/api/generate` v1 — falta fechar no 2.1.G)
 - [ ] Structured warnings.
 - [ ] Runtime schema validation for persisted JSON. (feito para o SQLite novo e para a leitura do `catalog.json` pelo adapter; as telas v1 ainda fazem `JSON.parse(...) as Catalog`)
 - [ ] Infinite-scroll guard.
@@ -146,6 +146,19 @@ Não executados no baseline (dependem de sites reais/rede e demoram): `test-phas
 | `npm run build` | OK |
 | `npm run db:migrate` (ATLAS_HOME vazio) | 2 migrations aplicadas |
 | scripts legados offline, `npm run legacy:scan` | mesmos resultados; 9/9 projetos |
+
+## Verificação de 2.1.F (2026-09-27)
+
+| Comando | Resultado |
+|---|---|
+| `npm run typecheck` / `npm run lint` | OK / 0 warnings |
+| `npm test` | 13 arquivos, 276 testes OK (2 execuções; inclui Chromium real contra site local) |
+| `npm run build` | OK (6 rotas `/api/atlas/*`, `/lab/foundation`) |
+| `next start` + worker embutido, `ATLAS_HOME` temporário | job enfileirado pela API → `completed`; PNG 2880×1800 servido com ETag = SHA-256 |
+| cancelar job preso na navegação pela API | `cancelled` em ~3 s (intervalo de heartbeat); 0 Chromium do Playwright sobrando |
+| fechar conexões SSE durante o job | job continua (acompanhar ≠ executar) |
+| matar o servidor à força no meio do job e religar em < 30 s | job órfão → `failed/STALE` 30 s depois; nova captura do mesmo projeto conclui |
+| scripts legados offline, `legacy:scan`, `/projects`, `/generate` | inalterados |
 
 ## Phase completion rule
 

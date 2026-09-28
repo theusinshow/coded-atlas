@@ -5,6 +5,7 @@ import { NextRequest } from "next/server";
 import { chromium } from "playwright";
 import type { Browser } from "playwright";
 import { validateProjectInput } from "@/lib/validation/validate-project-input";
+import { assertCapturableUrl } from "@/lib/validation/url-policy";
 import {
   ensureProjectFolder,
   commitProjectFolder,
@@ -94,6 +95,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       try {
         emit({ step: "validating", message: "Validando URL...", progress: 5 });
         validateProjectInput(input);
+        await assertCapturableUrl(input.url);
 
         emit({ step: "launching", message: "Abrindo navegador...", progress: 10 });
         lease = await ensureProjectFolder(input.slug);
@@ -132,6 +134,7 @@ export async function POST(req: NextRequest): Promise<Response> {
             }
           })
           .slice(0, config.maxExtraPages);
+        for (const entry of pageEntries) await assertCapturableUrl(resolvePageUrl(entry, input.url));
 
         for (let i = 0; i < pageEntries.length; i++) {
           throwIfCancelled();

@@ -15,6 +15,7 @@ export type DomainErrorCode =
   | "STORAGE_FAILED"      // falha de I/O ao ler/gravar bytes
   | "DB_SCHEMA_MISMATCH"  // banco criado por outra versão/migrations divergentes
   | "CANCELLED"           // trabalho interrompido por pedido de cancelamento
+  | "INTERRUPTED"         // trabalho interrompido pelo desligamento do worker
   | "TIMEOUT";            // trabalho excedeu o tempo máximo configurado
 
 export class DomainError extends Error {

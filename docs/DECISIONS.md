@@ -108,3 +108,13 @@ Accepted (2026-09-27).
 - **Cancellation:** a persisted request (`cancelRequestedAt`). Queued jobs are cancelled immediately; active ones are aborted through the handler's `AbortSignal` when the worker sees the flag (heartbeat or progress). If the handler finishes anyway, the job is `completed` — the work was committed.
 - **Stale policy:** jobs whose heartbeat is older than `staleAfterMs` are marked `failed` (`STALE`), or `cancelled` if cancellation had been requested. No automatic requeue: capture is destructive and not assumed idempotent; retry is an explicit new job.
 - **Worker hosting** (separate process vs. inside the Next server) is decided in 2.1.F, when the first real handler exists. `JobWorker` has no dependency on either.
+
+## ADR-026 — Worker hosting and the first migrated slice
+
+Accepted (2026-09-27).
+
+- **Hosting:** the job worker starts inside the Next server process through `instrumentation.ts` (so `start.bat` keeps being the only thing to run) and can also run standalone (`npm run worker`). Both can coexist — the claim is atomic. `ATLAS_WORKER=off` disables the embedded one. Runtime and worker are singletons per process (kept on `globalThis` to survive dev HMR).
+- **Graceful vs. hard stop:** SIGINT/SIGTERM stop the worker (current job → `failed/INTERRUPTED`); a hard kill leaves the job for stale recovery, which runs on start **and every `staleAfterMs`** — recovery only at start missed workers that died less than `staleAfterMs` before the restart.
+- **Slice scope:** one desktop viewport screenshot per capture job, via the v1 engine routines. Screenshots are Assets; no Output is created until a render step exists.
+- **Content-addressed capture keys** (`captures/<ab>/<sha256>.png`): recapturing identical pixels creates a new Asset record but shares bytes.
+- **URL policy pulled forward** from 2.1.G: `local` (default — capturing localhost/dev sites is a real use case) and `hosted-safe` (DNS-resolved check of every address; Playwright request guard; redirect chain re-checked after navigation because Playwright does not route redirect hops). Limitation: in `hosted-safe`, a server-side redirect hop to a forbidden address is detected and the capture fails, but that hop's request has already been sent.
