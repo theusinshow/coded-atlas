@@ -2,7 +2,7 @@
 
 ## Active phase
 
-**Atlas 2.1 — Foundation**
+**Atlas 2.1 — Foundation — COMPLETED (2026-09-27).** Next phase: **Atlas 2.2 — Project System** (not started; needs the owner's test and go-ahead).
 
 ## Objective
 
@@ -10,7 +10,7 @@ Introduce the new persistence/domain/job foundation while preserving useful beha
 
 ## Current milestone
 
-**2.1.G — Hardening** (in progress)
+None active. 2.1.A–2.1.G are done and verified (see `BUILD-PLAN.md`). The next milestone is the first one of **2.2 — Project System**, to be planned when the owner authorizes the phase.
 
 ## State of the code (2026-09-27)
 
@@ -21,7 +21,7 @@ Delivered in 2.1.A (which also covered 2.1.B and 2.1.C, because the 2.1.A comple
 - `src/infrastructure/db` — SQLite (`better-sqlite3`) + Drizzle, WAL, foreign keys, migration `0000_foundation` applied on open, `DB_SCHEMA_MISMATCH` on newer/edited migrations; repositories for all six entities with Zod validation on write and read.
 - `src/infrastructure/storage` — `LocalAssetStorage`: key validation, root confinement (incl. junction/symlink), SHA-256, no-overwrite atomic publish, dedupe, staging with all-or-nothing commit.
 - `ATLAS_HOME` (default `./.atlas`, git-ignored) holds `atlas.db` and `storage/`. `npm run db:migrate` initializes it.
-- Vitest: `npm test` (276 tests after 2.1.F). `npm run typecheck`.
+- Vitest: `npm test` (302 tests after 2.1.G, `src/` and `lib/`). `npm run typecheck`.
 
 Delivered in 2.1.D:
 
@@ -45,13 +45,20 @@ Delivered in 2.1.F (Atlas 2.1 exit criteria pass end-to-end):
 - `/api/atlas/{captures, projects, projects/[id], jobs/[id]/events (SSE), jobs/[id]/cancel, assets/[id]/file}` and the verification page `/lab/foundation`.
 - URL policy (`ATLAS_URL_POLICY=local|hosted-safe`) — pulled forward from 2.1.G because the new capture path needed it.
 
+Delivered in 2.1.G (hardening, mostly on the v1 pipeline the product still runs on):
+
+- v1 interrupted recaptures are restored on server start (`lib/storage/recover-generations.ts`); a v1 generation watchdog (`generationTimeoutMs`) aborts and rolls back.
+- `lib/storage/paths.ts` validates slugs with the domain schema and confines every project path.
+- `catalog.json` gains `warnings` (structured, persisted, shown on the project page); showcase pieces, extra pages, states, video, inspection, section detection, scroll limit and truncated full pages report instead of failing silently.
+- `lib/storage/read-catalog.ts` is the only v1 catalog reader and validates at runtime.
+- Infinite-scroll guard and full-page height cap; explicit Playwright action timeouts.
+
 The v1 pipeline (`/generate`, `/projects`, `catalog.json`, `public/generated`) is still the main flow and keeps working; the 2.x path runs beside it.
 
 ## Work allowed now
 
-- hardening of the whole 2.1 surface (new foundation and the v1 pipeline it still depends on): transactional generation, central safe paths, URL policy, structured warnings, runtime validation of persisted JSON, infinite-scroll guard, explicit timeouts;
-- document migration seams;
-- everything already allowed in 2.1 (Zod, SQLite/Drizzle, migrations, IDs, Foundation schemas, `AssetStorage`).
+- nothing new until the owner authorizes 2.2 — only fixes to what 2.1 delivered;
+- when 2.2 is authorized (ROADMAP): Project Library, Overview, project lifecycle, Sources, search, archive, URL/manual import, GitHub/local source groundwork.
 
 ## Work NOT allowed now
 
@@ -71,18 +78,12 @@ Current capture/social/mockup/diff functionality must remain operational unless 
 6. ~~implement AssetStorage;~~
 7. ~~create legacy adapter;~~
 8. ~~migrate one narrow capture flow end-to-end (2.1.E jobs, 2.1.F slice);~~
-9. verify + harden (2.1.G) ← now;
-10. expand only after passing criteria.
+9. ~~verify + harden (2.1.G);~~
+10. expand only after passing criteria → phase 2.2, when authorized.
 
-## Completion criteria for 2.1.G
+## Completion criteria
 
-- An interrupted v1 generation (server killed mid-run) never leaves a project missing: the previous version is restored on next start.
-- Every path built from a slug goes through the central validation + root confinement.
-- URL policy covers the new and the v1 capture entry points, with tests.
-- Optional-step failures in the v1 pipeline become structured warnings persisted in `catalog.json` and visible in the UI — no silent `.catch(() => [])` on meaningful work.
-- v1 screens read `catalog.json` through the runtime schema.
-- Infinite-scroll pages cannot hang the capture; long operations have explicit, configurable timeouts.
-- typecheck, lint, test and build clean.
+Phase 2.1 exit criteria (ROADMAP: create project → register source → capture → persist metadata in SQLite → store bytes through AssetStorage → reload project) pass end-to-end, through the running server. Criteria for 2.2 will be written when the phase starts.
 
 ## Agent rule
 

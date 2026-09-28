@@ -7,12 +7,13 @@ import path from "node:path";
 import { chromium } from "playwright";
 import type { Browser } from "playwright";
 import { config } from "@/lib/config";
-import { catalogPath, viewportShotPath, diffDir, publicPath as makePublicPath } from "@/lib/storage/paths";
+import { viewportShotPath, diffDir, publicPath as makePublicPath } from "@/lib/storage/paths";
+import { loadCatalog } from "@/lib/storage/read-catalog";
 import { dismissOverlays } from "@/lib/capture/dismiss-overlays";
 import { waitForPageStability } from "@/lib/capture/wait-for-stability";
 import { authContextOptions } from "@/lib/capture/auth-state";
 import { computeVisualDiff } from "@/lib/diff/visual-diff";
-import type { Catalog, VisualDiffResult } from "@/lib/types";
+import type { VisualDiffResult } from "@/lib/types";
 
 interface Params {
   params: Promise<{ slug: string }>;
@@ -29,12 +30,8 @@ export async function POST(_req: NextRequest, { params }: Params): Promise<Respo
     return Response.json({ error: "Slug inválido." }, { status: 400 });
   }
 
-  let catalog: Catalog;
-  try {
-    catalog = JSON.parse(await fs.readFile(catalogPath(slug), "utf-8")) as Catalog;
-  } catch {
-    return Response.json({ error: "Projeto não encontrado." }, { status: 404 });
-  }
+  const catalog = await loadCatalog(slug);
+  if (!catalog) return Response.json({ error: "Projeto não encontrado." }, { status: 404 });
 
   const vp = config.viewports.desktop;
   const beforeAbs = viewportShotPath(slug, vp);
@@ -61,6 +58,7 @@ export async function POST(_req: NextRequest, { params }: Params): Promise<Respo
       userAgent: config.userAgent,
       ...(await authContextOptions(slug)), // entra logado se houver sessão
     });
+    context.setDefaultTimeout(config.actionTimeoutMs);
     const page = await context.newPage();
     await page.goto(catalog.project.url, { waitUntil: "networkidle", timeout: config.navTimeoutMs });
     await dismissOverlays(page);

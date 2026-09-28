@@ -1,4 +1,5 @@
 import path from "node:path";
+import { warning, type WarnFn } from "../warnings";
 import { promises as fs } from "node:fs";
 import type { Browser } from "playwright";
 import { config } from "../config";
@@ -9,13 +10,14 @@ import type { MockupResult } from "../capture/generate-mockups";
  * Mockups 3D em perspectiva (v1.4 item 12): a captura num device inclinado,
  * renderizada via HTML + CSS 3D e fotografada pelo próprio Playwright com
  * fundo transparente. Mesma infra de render headless da captura — sem engine 3D.
- * Falha por mockup é silenciosa (enhancement).
+ * Falha por mockup vira aviso estruturado (enhancement).
  */
 export async function generateMockups3D(
   browser: Browser,
   slug: string,
   desktopAbs: string,
-  mobileAbs: string
+  mobileAbs: string,
+  onWarning?: WarnFn
 ): Promise<MockupResult[]> {
   const dir = mockupDir(slug);
   await fs.mkdir(dir, { recursive: true });
@@ -34,7 +36,8 @@ export async function generateMockups3D(
         viewport: { width: job.scene.sceneW, height: job.scene.sceneH },
         deviceScaleFactor: config.mockups3d.deviceScaleFactor,
       });
-      const page = await context.newPage();
+      context.setDefaultTimeout(config.actionTimeoutMs);
+    const page = await context.newPage();
       await page.setContent(html, { waitUntil: "load" });
       await page.waitForTimeout(250); // deixa fontes/transform assentarem
       await page.screenshot({ path: path.join(dir, `${job.name}.png`), omitBackground: true });
@@ -42,7 +45,7 @@ export async function generateMockups3D(
 
       results.push({ name: job.name, label: job.label, image: makePublicPath(slug, "mockups", `${job.name}.png`) });
     } catch (err) {
-      console.warn(`[atlas:${slug}] mockup 3D "${job.name}" falhou: ${err}`);
+      onWarning?.(warning("MOCKUPS_3D_FAILED", `O mockup 3D "${job.label}" não pôde ser gerado.`, err));
     }
   }
 

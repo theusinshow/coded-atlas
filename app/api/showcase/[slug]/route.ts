@@ -8,6 +8,7 @@ import type { Browser } from "playwright";
 import { config } from "@/lib/config";
 import { catalogPath, viewportShotPath } from "@/lib/storage/paths";
 import { writeJson } from "@/lib/storage/write-json";
+import { loadCatalog } from "@/lib/storage/read-catalog";
 import { generateShowcase } from "@/lib/capture/generate-showcase";
 import type { Catalog } from "@/lib/types";
 
@@ -29,12 +30,8 @@ export async function POST(_req: NextRequest, { params }: Params): Promise<Respo
     return Response.json({ error: "Slug inválido." }, { status: 400 });
   }
 
-  let catalog: Catalog;
-  try {
-    catalog = JSON.parse(await fs.readFile(catalogPath(slug), "utf-8")) as Catalog;
-  } catch {
-    return Response.json({ error: "Projeto não encontrado." }, { status: 404 });
-  }
+  const catalog = await loadCatalog(slug);
+  if (!catalog) return Response.json({ error: "Projeto não encontrado." }, { status: 404 });
 
   const desktopAbs = viewportShotPath(slug, config.viewports.desktop);
   const mobileAbs = viewportShotPath(slug, config.viewports.mobile);
@@ -61,8 +58,11 @@ export async function POST(_req: NextRequest, { params }: Params): Promise<Respo
       { url: catalog.project.url, ogImage: catalog.inspection?.ogImage }
     );
 
+    const SHOWCASE_CODES = new Set(["COVER_FAILED", "COVER_FALLBACK", "COMPOSITIONS_FAILED", "MOCKUPS_FAILED", "MOCKUPS_3D_FAILED"]);
+    const warnings = [...(catalog.warnings ?? []).filter((w) => !SHOWCASE_CODES.has(w.code)), ...showcase.warnings];
     const updated: Catalog = {
       ...catalog,
+      warnings: warnings.length ? warnings : undefined, // undefined some do JSON
       project: {
         ...catalog.project,
         options: { ...catalog.project.options, showcase: true },
@@ -81,6 +81,7 @@ export async function POST(_req: NextRequest, { params }: Params): Promise<Respo
         cover: Boolean(showcase.cover),
         compositions: showcase.compositions.length,
         mockups: showcase.mockups.length,
+        warnings: showcase.warnings,
       },
       { headers: { "Cache-Control": "no-store" } }
     );

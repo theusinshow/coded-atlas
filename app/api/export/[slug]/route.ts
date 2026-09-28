@@ -1,10 +1,8 @@
 export const runtime = "nodejs";
 
 import { NextRequest } from "next/server";
-import { promises as fs } from "node:fs";
-import { catalogPath } from "@/lib/storage/paths";
+import { loadCatalog } from "@/lib/storage/read-catalog";
 import { buildPortfolioManifest } from "@/lib/capture/build-portfolio-manifest";
-import type { Catalog } from "@/lib/types";
 import { SlugSchema } from "@/src/core/projects/project";
 
 interface Params {
@@ -23,13 +21,8 @@ export async function GET(req: NextRequest, { params }: Params): Promise<Respons
     return Response.json({ error: "slug inválido" }, { status: 400 });
   }
 
-  let catalog: Catalog;
-  try {
-    const raw = await fs.readFile(catalogPath(slug), "utf-8");
-    catalog = JSON.parse(raw) as Catalog;
-  } catch {
-    return Response.json({ error: "Projeto não encontrado." }, { status: 404 });
-  }
+  const catalog = await loadCatalog(slug);
+  if (!catalog) return Response.json({ error: "Projeto não encontrado." }, { status: 404 });
 
   const manifest = buildPortfolioManifest(catalog);
   const body = JSON.stringify(manifest, null, 2);

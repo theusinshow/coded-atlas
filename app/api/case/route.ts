@@ -2,9 +2,9 @@ export const runtime = "nodejs";
 
 import { NextRequest } from "next/server";
 import { promises as fs } from "node:fs";
-import { catalogPath, caseDraftPath } from "@/lib/storage/paths";
+import { caseDraftPath } from "@/lib/storage/paths";
+import { loadCatalog } from "@/lib/storage/read-catalog";
 import { generateCaseDraft } from "@/lib/capture/generate-case";
-import type { Catalog } from "@/lib/types";
 import { SlugSchema } from "@/src/core/projects/project";
 
 export async function POST(req: NextRequest): Promise<Response> {
@@ -20,10 +20,12 @@ export async function POST(req: NextRequest): Promise<Response> {
     return Response.json({ error: "corpo da requisição inválido" }, { status: 400 });
   }
 
-  try {
-    const raw = await fs.readFile(catalogPath(slug), "utf-8");
-    const catalog = JSON.parse(raw) as Catalog;
+  const catalog = await loadCatalog(slug);
+  if (!catalog) {
+    return Response.json({ error: "Catálogo não encontrado. Gere o catálogo primeiro." }, { status: 404 });
+  }
 
+  try {
     const mdx = generateCaseDraft(catalog);
     await fs.writeFile(caseDraftPath(slug), mdx, "utf-8");
 
@@ -31,18 +33,7 @@ export async function POST(req: NextRequest): Promise<Response> {
 
     return Response.json({ path: `/generated/${slug}/case-draft.mdx` });
   } catch (err) {
-    const isNotFound =
-      err instanceof Error && "code" in err && (err as NodeJS.ErrnoException).code === "ENOENT";
-
     console.error(`[atlas:${slug}]`, err instanceof Error ? err.message : err);
-
-    if (isNotFound) {
-      return Response.json(
-        { error: "Catálogo não encontrado. Gere o catálogo primeiro." },
-        { status: 404 }
-      );
-    }
-
     return Response.json(
       { error: "Não foi possível gerar o rascunho de case." },
       { status: 500 }

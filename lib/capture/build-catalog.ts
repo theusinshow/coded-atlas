@@ -1,5 +1,5 @@
 import { config } from "../config";
-import type { Catalog, ProjectInput, PageCapture, StateCapture } from "../types";
+import type { Catalog, CatalogWarning, ProjectInput, PageCapture, StateCapture } from "../types";
 import type { DeviceCaptureResult } from "./capture-device";
 import type { ThumbnailResult } from "./generate-thumbnails";
 import type { CoverResult } from "./generate-cover";
@@ -12,6 +12,7 @@ export interface CatalogExtras {
   mockups?: MockupResult[];
   pages?: PageCapture[];
   states?: StateCapture[];
+  warnings?: CatalogWarning[];
 }
 
 export function buildCatalog(
@@ -26,6 +27,7 @@ export function buildCatalog(
   const mockups = extras.mockups ?? [];
   const pages = extras.pages ?? [];
   const states = extras.states ?? [];
+  const warnings = extras.warnings ?? [];
   const hasVideos =
     captures.desktop.videoPublicPath !== undefined ||
     captures.mobile.videoPublicPath  !== undefined;
@@ -68,6 +70,7 @@ export function buildCatalog(
     ...(cover ? { cover: { image: cover.cover, source: cover.source } } : {}),
     ...(compositions.length ? { compositions } : {}),
     ...(mockups.length ? { mockups } : {}),
+    ...(warnings.length ? { warnings } : {}),
     meta: {
       captureDelayMs: config.captureDelayMs,
       navTimeoutMs:   config.navTimeoutMs,

@@ -47,6 +47,7 @@ export class PlaywrightCaptureEngine implements CaptureEngine {
         deviceScaleFactor: viewport.deviceScaleFactor,
         userAgent: this.options.userAgent,
       });
+      context.setDefaultTimeout(this.options.navTimeoutMs); // nenhuma ação sem teto de tempo
       const page = await context.newPage();
       const guard = this.options.urlGuard;
       let blocked: unknown;

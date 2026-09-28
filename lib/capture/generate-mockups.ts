@@ -1,4 +1,5 @@
 import path from "node:path";
+import { warning, type WarnFn } from "../warnings";
 import { promises as fs } from "node:fs";
 import sharp from "sharp";
 import { config } from "../config";
@@ -16,12 +17,13 @@ const TRANSPARENT = { r: 0, g: 0, b: 0, alpha: 0 } as const;
 /**
  * Gera mockups (v1.4): a captura dentro de uma moldura desenhada via SVG —
  * janela de navegador (desktop) e corpo de celular (mobile). Fundo transparente
- * para reuso em qualquer layout. Falhas por mockup são silenciosas (enhancement).
+ * para reuso em qualquer layout. Falha por mockup vira aviso estruturado (enhancement).
  */
 export async function generateMockups(
   slug: string,
   desktop: Pick<DeviceCaptureResult, "screenshotAbsPath">,
-  mobile: Pick<DeviceCaptureResult, "screenshotAbsPath">
+  mobile: Pick<DeviceCaptureResult, "screenshotAbsPath">,
+  onWarning?: WarnFn
 ): Promise<MockupResult[]> {
   const dir = mockupDir(slug);
   await fs.mkdir(dir, { recursive: true });
@@ -46,7 +48,7 @@ export async function generateMockups(
       await job.run();
       results.push({ name: job.name, label: job.label, image: makePublicPath(slug, "mockups", `${job.name}.png`) });
     } catch (err) {
-      console.warn(`[atlas:${slug}] mockup "${job.name}" falhou: ${err}`);
+      onWarning?.(warning("MOCKUPS_FAILED", `O mockup "${job.label}" não pôde ser gerado.`, err));
     }
   }
 

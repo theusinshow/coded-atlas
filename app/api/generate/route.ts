@@ -22,8 +22,10 @@ import { writeJson } from "@/lib/storage/write-json";
 import { catalogPath } from "@/lib/storage/paths";
 import { config } from "@/lib/config";
 import { AtlasError } from "@/lib/errors";
+import { warning } from "@/lib/warnings";
 import type {
   AtlasErrorPayload,
+  CatalogWarning,
   ProjectInput,
   PageCapture,
   StateCapture,
@@ -68,6 +70,13 @@ export async function POST(req: NextRequest): Promise<Response> {
   // operação em andamento, e a geração cai no rollback.
   const cancel = new AbortController();
   req.signal.addEventListener("abort", () => cancel.abort(), { once: true });
+  // Teto da geração inteira (2.1.G): estourou → mesmo caminho do cancelamento
+  // (fecha o Chromium, rollback), mas reportado como timeout.
+  let timedOut = false;
+  const watchdog = setTimeout(() => {
+    timedOut = true;
+    cancel.abort();
+  }, config.generationTimeoutMs);
   let browser: Browser | undefined;
   cancel.signal.addEventListener("abort", () => {
     browser?.close().catch(() => {});
@@ -92,6 +101,12 @@ export async function POST(req: NextRequest): Promise<Response> {
 
       let lease: ProjectFolderLease | undefined;
       let succeeded = false;
+      // Etapas opcionais que falham viram avisos persistidos no catálogo (2.1.G).
+      const warnings: CatalogWarning[] = [];
+      const onWarning = (w: CatalogWarning) => {
+        warnings.push(w);
+        console.warn(`[atlas:${input.slug}] aviso ${w.code}: ${w.message}${w.detail ? ` (${w.detail})` : ""}`);
+      };
       try {
         emit({ step: "validating", message: "Validando URL...", progress: 5 });
         validateProjectInput(input);
@@ -107,13 +122,13 @@ export async function POST(req: NextRequest): Promise<Response> {
 
         // Desktop: emite capturing-desktop (30%) e capturing-fullpage-desktop (40%)
         const desktop = await captureDevice(
-          browser, input, config.viewports.desktop, emitProgress
+          browser, input, config.viewports.desktop, emitProgress, onWarning
         );
         throwIfCancelled();
 
         // Mobile: emite capturing-mobile (50%) e capturing-fullpage-mobile (65%)
         const mobile = await captureDevice(
-          browser, input, config.viewports.mobile, emitProgress
+          browser, input, config.viewports.mobile, emitProgress, onWarning
         );
         throwIfCancelled();
 
@@ -144,9 +159,9 @@ export async function POST(req: NextRequest): Promise<Response> {
             progress: 70,
           });
           try {
-            pages.push(await captureExtraPage(browser, input, pageEntries[i], i));
+            pages.push(await captureExtraPage(browser, input, pageEntries[i], i, onWarning));
           } catch (err) {
-            console.warn(`[atlas:${input.slug}] página "${pageEntries[i]}" falhou: ${err}`);
+            onWarning(warning("PAGE_CAPTURE_FAILED", `A página "${pageEntries[i]}" não pôde ser capturada.`, err));
           }
         }
 
@@ -166,7 +181,7 @@ export async function POST(req: NextRequest): Promise<Response> {
           try {
             states.push(await captureState(browser, input, stateInputs[i], i));
           } catch (err) {
-            console.warn(`[atlas:${input.slug}] estado "${stateInputs[i].name}" falhou: ${err}`);
+            onWarning(warning("STATE_CAPTURE_FAILED", `O estado "${stateInputs[i].name}" não pôde ser capturado.`, err));
           }
         }
         throwIfCancelled();
@@ -187,7 +202,8 @@ export async function POST(req: NextRequest): Promise<Response> {
               { desktopAbs: desktop.screenshotAbsPath, mobileAbs: mobile.screenshotAbsPath },
               { url: input.url, ogImage: desktop.inspection?.ogImage }
             )
-          : { compositions: [], mockups: [] };
+          : { compositions: [], mockups: [], warnings: [] };
+        showcase.warnings.forEach(onWarning);
         throwIfCancelled();
 
         emit({ step: "writing-catalog", message: "Montando catálogo...", progress: 92 });
@@ -196,7 +212,7 @@ export async function POST(req: NextRequest): Promise<Response> {
           { desktop, mobile },
           thumbnails,
           showcase.cover,
-          { compositions: showcase.compositions, mockups: showcase.mockups, pages, states },
+          { compositions: showcase.compositions, mockups: showcase.mockups, pages, states, warnings },
           startedAt
         );
         await writeJson(catalogPath(input.slug), catalog);
@@ -211,7 +227,15 @@ export async function POST(req: NextRequest): Promise<Response> {
 
         console.log(`[atlas:${input.slug}] Concluído em ${Date.now() - startedAt}ms`);
       } catch (err) {
-        if (cancel.signal.aborted) {
+        if (timedOut) {
+          console.error(`[atlas:${input.slug}] Geração excedeu ${config.generationTimeoutMs}ms.`);
+          emit({
+            step: "error",
+            code: "RENDER_TIMEOUT",
+            message: "A geração demorou demais e foi interrompida. Nada foi perdido.",
+            detail: `generationTimeoutMs=${config.generationTimeoutMs}`,
+          });
+        } else if (cancel.signal.aborted) {
           console.log(`[atlas:${input.slug}] Geração cancelada pelo cliente.`);
           emit({ step: "error", code: "CANCELLED", message: "Geração cancelada." });
         } else {
@@ -233,6 +257,7 @@ export async function POST(req: NextRequest): Promise<Response> {
           }
         }
       } finally {
+        clearTimeout(watchdog);
         await browser?.close().catch(() => {});
         // Depois do browser fechado (vídeo finalizado, nenhum arquivo em uso):
         // sucesso descarta a versão anterior; falha/cancelamento a restaura.

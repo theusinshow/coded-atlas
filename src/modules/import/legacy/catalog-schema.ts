@@ -90,6 +90,29 @@ export const LegacyCatalogSchema = z.object({
     )
     .optional(),
   mockups: z.array(z.object({ name: z.string(), label: z.string(), image: PublicPathSchema })).optional(),
+  warnings: z
+    .array(
+      z.object({
+        code: z.enum([
+          "COVER_FAILED",
+          "COVER_FALLBACK",
+          "COMPOSITIONS_FAILED",
+          "MOCKUPS_FAILED",
+          "MOCKUPS_3D_FAILED",
+          "PAGE_CAPTURE_FAILED",
+          "STATE_CAPTURE_FAILED",
+          "VIDEO_SAVE_FAILED",
+          "SECTION_DETECTION_FALLBACK",
+          "INSPECTION_FAILED",
+          "SCROLL_LIMIT_REACHED",
+          "FULLPAGE_TRUNCATED",
+        ]),
+        message: z.string(),
+        device: z.enum(["desktop", "mobile"]).optional(),
+        detail: z.string().optional(),
+      })
+    )
+    .optional(),
   meta: z.object({
     captureDelayMs: z.number(),
     navTimeoutMs: z.number(),

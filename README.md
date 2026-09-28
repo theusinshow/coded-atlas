@@ -80,10 +80,8 @@ npm run worker       # worker de jobs avulso (o servidor já sobe um embutido; A
 
 Página de verificação da fundação 2.x: `/lab/foundation` (captura via fila de jobs, SQLite e
 AssetStorage). Variáveis: `ATLAS_HOME` (padrão `./.atlas`), `ATLAS_URL_POLICY` (`local` | `hosted-safe`),
-`ATLAS_WORKER=off`, `ATLAS_CAPTURE_JOB_TIMEOUT_MS`.
-
-```bash
-```
+`ATLAS_WORKER=off`, `ATLAS_CAPTURE_JOB_TIMEOUT_MS`. Limites do pipeline v1 (scroll, full page,
+timeouts) ficam em `lib/config.ts`, sobrescrevíveis por env.
 
 O uso do Atlas v1 (formulário, opções de captura, scripts por fase) está documentado em
 `docs/legacy/v1-README.md` enquanto a migração não substitui esses fluxos.

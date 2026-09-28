@@ -9,7 +9,7 @@ Protect capture, persistence, creative contracts and rendering behavior while At
 ```text
 npm run typecheck   # tsc --noEmit
 npm run lint
-npm test            # Vitest: src/**/*.test.ts
+npm test            # Vitest: src/**/*.test.ts and lib/**/*.test.ts (includes real-Chromium tests against local fixtures)
 npm run build
 npm run legacy:scan         # read-only report of public/generated in the new model
 npx tsx scripts/test-*.ts   # legacy v1 scripts (some capture real sites)
@@ -58,3 +58,13 @@ Heavy Chromium/FFmpeg tests may run separately.
 ## Definition of done
 
 A feature is complete when contract is validated, failure path tested, unrelated behavior preserved, docs updated, checks pass and manual verification is documented.
+
+## Manual end-to-end checks used for 2.1 (repeat before closing a phase)
+
+Run `next start` with a temporary `ATLAS_HOME` and a local fixture HTTP server (a page that answers, one that never answers):
+
+1. `POST /api/atlas/captures` → follow `/api/atlas/jobs/<id>/events` → `completed`; asset bytes served by `/api/atlas/assets/<id>/file`.
+2. Cancel a job stuck in navigation → `cancelled` within one heartbeat; no Playwright Chromium left running.
+3. Kill the server mid-job and restart within 30 s → job becomes `failed/STALE` on the periodic recovery; the project accepts a new capture.
+4. v1 `/api/generate` with showcase; with an unreachable extra page (warning); with `ATLAS_GENERATION_TIMEOUT_MS` small on a hanging page (timeout + rollback); killing the server mid-recapture (restored on restart).
+5. Tests must not write to `public/generated` (compare the folder before/after `npm test`).

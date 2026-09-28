@@ -7,7 +7,7 @@ import {
 } from "../lib/storage/ensure-project-folder";
 import { projectDir, caseDraftPath, screenshotDir, thumbnailDir, trashDir } from "../lib/storage/paths";
 
-const SLUG = "__test_reprocess__";
+const SLUG = "test-reprocess-tmp"; // slug válido: paths.ts recusa qualquer outro (2.1.G)
 
 let pass = 0, fail = 0;
 function ok(label: string, cond: boolean) {

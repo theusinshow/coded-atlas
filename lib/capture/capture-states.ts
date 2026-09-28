@@ -30,7 +30,8 @@ export async function captureState(
     userAgent: config.userAgent,
     ...(await authContextOptions(input.slug)), // entra logado se houver sessão
   });
-  const page = await context.newPage();
+  context.setDefaultTimeout(config.actionTimeoutMs);
+    const page = await context.newPage();
 
   try {
     await page.goto(input.url, { waitUntil: "networkidle", timeout: config.navTimeoutMs });

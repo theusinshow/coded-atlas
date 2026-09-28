@@ -1,4 +1,5 @@
 import type { Page } from "playwright";
+import { warning, type WarnFn } from "../warnings";
 import type { SiteInspection } from "../types";
 
 /**
@@ -6,7 +7,7 @@ import type { SiteInspection } from "../types";
  * Executa em uma única page.evaluate para minimizar round-trips.
  * Falhas são silenciosas — retorna objeto vazio em caso de erro.
  */
-export async function inspectSite(page: Page): Promise<SiteInspection> {
+export async function inspectSite(page: Page, onWarning?: WarnFn): Promise<SiteInspection> {
   const result = await page
     .evaluate((): { colors: string[]; fonts: string[]; techStack: string[]; ogImage?: string } => {
       // ── Helpers de cor ──────────────────────────────────────────────────────
@@ -129,7 +130,10 @@ export async function inspectSite(page: Page): Promise<SiteInspection> {
         ogImage: ogImage || undefined,
       };
     })
-    .catch(() => ({ colors: [] as string[], fonts: [] as string[], techStack: [] as string[] }));
+    .catch((err: unknown) => {
+      onWarning?.(warning("INSPECTION_FAILED", "Paleta, fontes e tecnologias não puderam ser lidas.", err));
+      return { colors: [] as string[], fonts: [] as string[], techStack: [] as string[] };
+    });
 
   return result;
 }

@@ -1,10 +1,8 @@
-import { promises as fs } from "node:fs";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { listProjects } from "@/lib/storage/list-projects";
-import { catalogPath } from "@/lib/storage/paths";
+import { loadCatalog } from "@/lib/storage/read-catalog";
 import { config } from "@/lib/config";
-import type { Catalog } from "@/lib/types";
 
 export const metadata: Metadata = {
   title: "Coded Atlas — Laboratório · Coded by M",
@@ -28,15 +26,7 @@ export default async function LabAtlasPage() {
   const projects = await listProjects();
   const featured = projects[0];
 
-  let featuredCatalog: Catalog | undefined;
-  if (featured) {
-    try {
-      const raw = await fs.readFile(catalogPath(featured.slug), "utf-8");
-      featuredCatalog = JSON.parse(raw) as Catalog;
-    } catch {
-      featuredCatalog = undefined;
-    }
-  }
+  const featuredCatalog = featured ? ((await loadCatalog(featured.slug)) ?? undefined) : undefined;
 
   const featuredVideo =
     featuredCatalog?.videos?.desktop ?? featuredCatalog?.videos?.mobile;

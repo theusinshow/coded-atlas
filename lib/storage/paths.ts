@@ -1,8 +1,20 @@
 import path from "node:path";
 import { config } from "../config";
+import { AtlasError } from "../errors";
+import { SlugSchema } from "../../src/core/projects/project";
+import { resolveWithin } from "../../src/infrastructure/storage/confine";
 
-export const projectDir = (slug: string) =>
-  path.join(config.outputDir, slug);
+/**
+ * Ponto único de onde sai todo caminho de projeto no v1 (2.1.G): o slug é
+ * validado com o schema do domínio e o caminho confinado a `outputDir`. Todos
+ * os outros helpers derivam daqui, então nenhum slug cru vira caminho.
+ */
+export function projectDir(slug: string): string {
+  if (!SlugSchema.safeParse(slug).success) {
+    throw new AtlasError("VALIDATION", "Slug inválido.", `Invalid slug for path: ${JSON.stringify(slug)}`);
+  }
+  return resolveWithin(config.outputDir, slug);
+}
 
 export const screenshotDir = (slug: string) =>
   path.join(projectDir(slug), "screenshots");
@@ -66,5 +78,9 @@ export const publicPath = (slug: string, ...parts: string[]) =>
 // que jamais podem ser servidos na web).
 export const authStateDir = () => path.join(process.cwd(), "auth");
 
-export const authStatePath = (slug: string) =>
-  path.join(authStateDir(), `${slug}.json`);
+export function authStatePath(slug: string): string {
+  if (!SlugSchema.safeParse(slug).success) {
+    throw new AtlasError("VALIDATION", "Slug inválido.", `Invalid slug for auth state: ${JSON.stringify(slug)}`);
+  }
+  return resolveWithin(authStateDir(), `${slug}.json`);
+}

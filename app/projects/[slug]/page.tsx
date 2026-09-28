@@ -2,8 +2,8 @@ import { promises as fs } from "node:fs";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { catalogPath, caseDraftPath } from "@/lib/storage/paths";
-import type { Catalog } from "@/lib/types";
+import { caseDraftPath } from "@/lib/storage/paths";
+import { loadCatalog } from "@/lib/storage/read-catalog";
 import { buildPortfolioManifest } from "@/lib/capture/build-portfolio-manifest";
 import { GeneratedGallery } from "@/components/generated-gallery";
 import { AssetDownloadItems } from "@/components/asset-downloads";
@@ -20,24 +20,16 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  try {
-    const raw = await fs.readFile(catalogPath(slug), "utf-8");
-    const catalog = JSON.parse(raw) as Catalog;
-    return { title: `${catalog.project.name} — Coded Atlas` };
-  } catch {
-    return { title: "Projeto — Coded Atlas" };
-  }
+  const catalog = await loadCatalog(slug);
+  return { title: catalog ? `${catalog.project.name} — Coded Atlas` : "Projeto — Coded Atlas" };
 }
 
 export default async function ProjectPage({ params }: Props) {
   const { slug } = await params;
 
-  const raw = await fs
-    .readFile(catalogPath(slug), "utf-8")
-    .catch(() => notFound());
-
-  const catalog = JSON.parse(raw) as Catalog;
-  const { project, captures, thumbnails, meta, createdAt } = catalog;
+  const catalog = await loadCatalog(slug);
+  if (!catalog) notFound();
+  const { project, captures, thumbnails, meta, createdAt, warnings = [] } = catalog;
   const portfolioManifest = buildPortfolioManifest(catalog);
 
   const caseExists = await fs
@@ -139,6 +131,23 @@ export default async function ProjectPage({ params }: Props) {
             </div>
           </div>
         </section>
+
+        {/* ── Avisos da geração (etapas opcionais que falharam ou usaram fallback) ── */}
+        {warnings.length > 0 && (
+          <section aria-labelledby="avisos" className="border border-warn/40 bg-warn/5 p-4 space-y-2">
+            <h2 id="avisos" className="text-[11px] font-mono text-warn uppercase tracking-widest">
+              Concluído com {warnings.length} aviso{warnings.length === 1 ? "" : "s"}
+            </h2>
+            <ul className="space-y-1">
+              {warnings.map((w, i) => (
+                <li key={`${w.code}-${i}`} className="text-[13px] text-zinc-300" title={w.detail}>
+                  {w.message}
+                  <span className="ml-2 text-[10px] font-mono text-zinc-500">{w.code}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {/* ── Peças de vitrine sob demanda (perfil Rápido não as gera) ── */}
         {!catalog.cover && !catalog.compositions?.length && !catalog.mockups?.length && (

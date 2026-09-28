@@ -118,3 +118,12 @@ Accepted (2026-09-27).
 - **Slice scope:** one desktop viewport screenshot per capture job, via the v1 engine routines. Screenshots are Assets; no Output is created until a render step exists.
 - **Content-addressed capture keys** (`captures/<ab>/<sha256>.png`): recapturing identical pixels creates a new Asset record but shares bytes.
 - **URL policy pulled forward** from 2.1.G: `local` (default — capturing localhost/dev sites is a real use case) and `hosted-safe` (DNS-resolved check of every address; Playwright request guard; redirect chain re-checked after navigation because Playwright does not route redirect hops). Limitation: in `hosted-safe`, a server-side redirect hop to a forbidden address is detected and the capture fails, but that hop's request has already been sent.
+
+## ADR-027 — Hardening the v1 pipeline while it is still the main flow
+
+Accepted (2026-09-27). 2.1.G hardened the v1 code in place (adapters and small hooks, no rewrite), because it remains the flow the studio uses until 2.3 migrates capture outputs.
+
+- **Recovery over prevention for v1 recapture:** the existing backup lease stays; on server start, `.trash/<slug>-<ts>` backups are restored when the project folder has no valid catalog, or discarded when the new version is complete. A valid version is never replaced.
+- **Warnings are data:** `catalog.json.warnings` (`CatalogWarning`, typed codes) — one entry per optional piece/step that failed or fell back, persisted and shown. The remaining silent `catch` blocks are only cleanup (closing browsers, removing temp files), best-effort waits (`wait-for-stability`, overlay dismissal), or catches that are the control flow itself (URL parse → invalid, file missing → not found).
+- **One catalog reader:** `readCatalog` validates with `LegacyCatalogSchema`; invalid catalogs are logged with the reason and treated as absent instead of crashing a page. No real catalog loses keys through the schema (verified on the 9 existing projects).
+- **Limits live in `lib/config.ts`** (env-overridable): `scrollMaxHeightPx`, `scrollMaxMs`, `maxFullPageHeightPx`, `actionTimeoutMs`, `generationTimeoutMs`.

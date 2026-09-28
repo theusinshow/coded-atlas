@@ -2,8 +2,9 @@
 
 The complete roadmap lives in `ROADMAP.md`. The currently authorized scope lives in `CURRENT.md`.
 
-> **Status (2026-09-27):** 2.1.A–**2.1.F concluídos e verificados** — o critério de saída da
-> fase 2.1 (ROADMAP) passa de ponta a ponta. Próximo: **2.1.G — Hardening**.
+> **Status (2026-09-27):** **fase 2.1 — Foundation concluída** (2.1.A–2.1.G verificados; critério
+> de saída do ROADMAP passa de ponta a ponta). Próxima fase: **2.2 — Project System** — não
+> iniciada, aguardando teste e autorização do Matheus.
 > O Atlas v1 (captura, vitrine, diff, case, ZIP) segue funcionando sem alteração de comportamento.
 
 ## Baseline (antes de qualquer mudança — 2026-09-27, commit `ac93441`)
@@ -98,14 +99,14 @@ Não executados no baseline (dependem de sites reais/rede e demoram): `test-phas
 
 ### 2.1.G Hardening
 
-- [ ] Transactional generation.
-- [ ] Central safe path validation. (parcial: nova fundação confinada; rotas legadas `case`, `export`, `zip`, `DELETE projects` agora validam slug — `lib/storage/paths.ts` ainda não passa por `resolveWithin`)
-- [ ] URL policy. (entregue junto com 2.1.F: `local`/`hosted-safe`, DNS, guard de requisições e redirects no Playwright, entrada do `/api/generate` v1 — falta fechar no 2.1.G)
-- [ ] Structured warnings.
-- [ ] Runtime schema validation for persisted JSON. (feito para o SQLite novo e para a leitura do `catalog.json` pelo adapter; as telas v1 ainda fazem `JSON.parse(...) as Catalog`)
-- [ ] Infinite-scroll guard.
-- [ ] Explicit timeouts for long external processes. (parcial: `timeoutMs` por handler de job aborta o signal → `failed/TIMEOUT`; falta aplicar aos processos do pipeline)
-- [ ] Build/lint/type/tests clean.
+- [x] Transactional generation. (2.x: staging do AssetStorage; v1: lease de backup + **recuperação na inicialização** de recapturas interrompidas — antes o projeto sumia se o servidor morresse no meio)
+- [x] Central safe path validation. (`lib/storage/paths.ts` → `projectDir`/`authStatePath` validam o slug com o schema do domínio e confinam com `resolveWithin`; nova fundação já confinada)
+- [x] URL policy. (`local`/`hosted-safe`: DNS, guard de requisições e cadeia de redirects no Playwright; entrada do `/api/generate` v1 e da captura 2.x)
+- [x] Structured warnings. (`CatalogWarning` no `catalog.json` + bloco "Concluído com avisos" na página do projeto; um aviso por peça/etapa opcional que falha ou usa fallback)
+- [x] Runtime schema validation for persisted JSON. (SQLite novo + `readCatalog` único no v1: páginas, biblioteca, case, diff, export, vitrine)
+- [x] Infinite-scroll guard. (`scrollToBottom` para em `scrollMaxHeightPx`/`scrollMaxMs`; full page cortada em `maxFullPageHeightPx`, com aviso)
+- [x] Explicit timeouts for long external processes. (`actionTimeoutMs` em todo contexto Playwright; watchdog `generationTimeoutMs` na geração v1 → `RENDER_TIMEOUT` + rollback; `timeoutMs` por job 2.x)
+- [x] Build/lint/type/tests clean.
 
 ## Verificação de 2.1.A (2026-09-27)
 
@@ -159,6 +160,24 @@ Não executados no baseline (dependem de sites reais/rede e demoram): `test-phas
 | fechar conexões SSE durante o job | job continua (acompanhar ≠ executar) |
 | matar o servidor à força no meio do job e religar em < 30 s | job órfão → `failed/STALE` 30 s depois; nova captura do mesmo projeto conclui |
 | scripts legados offline, `legacy:scan`, `/projects`, `/generate` | inalterados |
+
+## Verificação de 2.1.G (2026-09-27)
+
+| Comando | Resultado |
+|---|---|
+| `npm run typecheck` / `npm run lint` | OK / 0 warnings |
+| `npm test` | 16 arquivos, 302 testes OK (2 execuções); agora inclui `lib/**/*.test.ts` |
+| `npm run build` | OK |
+| scripts legados offline | OK (`test-reprocess` passou a usar slug válido: o antigo `__test_reprocess__` é recusado pela validação central) |
+| `legacy:scan` | 9/9 projetos |
+| E2E v1 pelo servidor: geração com seções + vitrine | `done`, catálogo sem avisos, página 200 |
+| E2E v1: página extra fora do ar | `done` + aviso `PAGE_CAPTURE_FAILED` no catálogo e na página |
+| E2E v1: recaptura presa com `ATLAS_GENERATION_TIMEOUT_MS=6000` | `RENDER_TIMEOUT` em 6 s; versão anterior intacta; nenhum backup sobrando |
+| E2E v1: servidor morto no meio de uma recaptura | projeto some da biblioteca (bug antigo); ao religar → `restored`, página 200 |
+| Testes não escrevem em `public/generated` | conferido antes/depois da suíte |
+
+Projetos de teste criados nos E2E foram removidos pela API; `public/generated` ficou com os 9
+projetos originais.
 
 ## Phase completion rule
 

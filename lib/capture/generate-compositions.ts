@@ -1,4 +1,5 @@
 import path from "node:path";
+import { warning, type WarnFn } from "../warnings";
 import { promises as fs } from "node:fs";
 import sharp from "sharp";
 import { config } from "../config";
@@ -18,13 +19,14 @@ type FormatDef = (typeof config.compositions.formats)[number];
 /**
  * Gera as composições para redes (v1.4): a captura centralizada sobre o fundo
  * da marca, com cantos arredondados e sombra, nos formatos definidos no config.
- * Puramente Sharp — sem nova captura. Falhas por formato são silenciosas
+ * Puramente Sharp — sem nova captura. Falha por formato vira aviso estruturado
  * (composição é enhancement, não pode derrubar a geração do catálogo).
  */
 export async function generateCompositions(
   slug: string,
   desktop: Pick<DeviceCaptureResult, "screenshotAbsPath">,
-  mobile: Pick<DeviceCaptureResult, "screenshotAbsPath">
+  mobile: Pick<DeviceCaptureResult, "screenshotAbsPath">,
+  onWarning?: WarnFn
 ): Promise<CompositionResult[]> {
   const dir = compositionDir(slug);
   await fs.mkdir(dir, { recursive: true });
@@ -45,7 +47,7 @@ export async function generateCompositions(
         image: makePublicPath(slug, "compositions", filename),
       });
     } catch (err) {
-      console.warn(`[atlas:${slug}] composição "${fmt.name}" falhou: ${err}`);
+      onWarning?.(warning("COMPOSITIONS_FAILED", `A composição "${fmt.label}" não pôde ser gerada.`, err));
     }
   }
 

@@ -18,6 +18,7 @@ import type {
   ViewportConfig,
 } from "../types";
 import { scrollToBottom } from "./scroll-to-bottom";
+import { captureFullPage } from "./fullpage-screenshot";
 import { smoothScrollTo } from "./record-scroll";
 import { detectPageSections } from "./detect-sections";
 import type { SectionCandidate } from "./detect-sections";
@@ -26,6 +27,7 @@ import { waitForPageStability } from "./wait-for-stability";
 import { inspectSite } from "./inspect-site";
 import { authContextOptions } from "./auth-state";
 import type { SiteInspection } from "../types";
+import { warning, type WarnFn } from "../warnings";
 
 // ─── Viewport-only result (Fase 3 — mantido para test-phase3) ────────────────
 export interface ViewportCaptureResult {
@@ -75,7 +77,8 @@ function mapPlaywrightError(err: unknown): AtlasError {
 async function capturePageSections(
   page: Page,
   input: ProjectInput,
-  viewport: ViewportConfig
+  viewport: ViewportConfig,
+  onWarning?: WarnFn
 ): Promise<CatalogSection[]> {
   const device = viewport.label as "desktop" | "mobile";
   const sectDir = sectionDir(input.slug, device);
@@ -85,7 +88,10 @@ async function capturePageSections(
   let candidates: SectionCandidate[] = await detectPageSections(
     page,
     config.sectionMinHeight
-  ).catch(() => []);
+  ).catch((err: unknown) => {
+    onWarning?.(warning("SECTION_DETECTION_FALLBACK", "Detecção de seções falhou; usadas fatias por rolagem.", err, device));
+    return [];
+  });
 
   // ── 2. Fallback: scroll-step fixo se DOM não tem estrutura suficiente ────────
   if (candidates.length < 2) {
@@ -149,6 +155,7 @@ export async function captureViewport(
     userAgent: config.userAgent,
     ...(await authContextOptions(input.slug)), // entra logado se houver sessão
   });
+  context.setDefaultTimeout(config.actionTimeoutMs);
   const page = await context.newPage();
 
   try {
@@ -196,7 +203,8 @@ export async function captureDevice(
   browser: Browser,
   input: ProjectInput,
   viewport: ViewportConfig,
-  onProgress: (event: ProgressEvent) => void
+  onProgress: (event: ProgressEvent) => void,
+  onWarning?: WarnFn
 ): Promise<DeviceCaptureResult> {
   const isDesktop = viewport.label === "desktop";
   // Opções por geração sobrescrevem os defaults do config (ausência = default).
@@ -225,6 +233,7 @@ export async function captureDevice(
       : {}),
   });
 
+  context.setDefaultTimeout(config.actionTimeoutMs);
   const page = await context.newPage();
 
   // Resultado parcial construído no try — só definido se não houver erro
@@ -262,7 +271,7 @@ export async function captureDevice(
 
     // ── Inspeção do site (só no desktop — dados são por site, não por device) ──
     if (isDesktop) {
-      inspection = await inspectSite(page);
+      inspection = await inspectSite(page, onWarning);
     }
 
     const shotDir = screenshotDir(input.slug);
@@ -290,10 +299,13 @@ export async function captureDevice(
         message: `Fotografando seções ${viewport.label}...`,
         progress: isDesktop ? 22 : 55,
       });
-      sections = await capturePageSections(page, input, viewport);
+      sections = await capturePageSections(page, input, viewport, onWarning);
     } else {
       // Sem seções: scroll-to-bottom garante carregamento lazy para o fullpage
-      await scrollToBottom(page);
+      const { limitReached } = await scrollToBottom(page);
+      if (limitReached) {
+        onWarning?.(warning("SCROLL_LIMIT_REACHED", `A rolagem ${viewport.label} parou no limite (página longa ou infinita).`, undefined, isDesktop ? "desktop" : "mobile"));
+      }
     }
 
     // ── Fullpage screenshot ────────────────────────────────────────────────────
@@ -307,7 +319,7 @@ export async function captureDevice(
     const fullpageAbsPath = path.join(shotDir, fpFilename);
 
     try {
-      await page.screenshot({ path: fullpageAbsPath, fullPage: true, type: "png" });
+      await captureFullPage(page, fullpageAbsPath, isDesktop ? "desktop" : "mobile", onWarning);
     } catch (err) {
       throw new AtlasError("CAPTURE_FAILED", "Falha ao capturar a página. Tente novamente.", String(err));
     }
@@ -349,7 +361,7 @@ export async function captureDevice(
         videoAbsPath = destPath;
       }
     } catch (err) {
-      console.warn(`[atlas:${input.slug}] Não foi possível salvar vídeo: ${err}`);
+      onWarning?.(warning("VIDEO_SAVE_FAILED", `O vídeo ${viewport.label} não pôde ser salvo.`, err, isDesktop ? "desktop" : "mobile"));
     }
     // O Playwright grava com nome aleatório em .tmp — nada mais a guardar ali.
     if (vidTempDir) await fs.rm(vidTempDir, { recursive: true, force: true }).catch(() => {});

@@ -73,8 +73,32 @@ export interface Catalog {
   };
   compositions?: CompositionAsset[];     // composições para redes (v1.4)
   mockups?: MockupAsset[];               // mockups com moldura (v1.4)
+  warnings?: CatalogWarning[];           // etapas opcionais que falharam ou usaram fallback (2.1.G)
   meta: CatalogMeta;
   createdAt: string; // new Date().toISOString()
+}
+
+/** Códigos de aviso: a geração terminou, mas algo opcional ficou de fora ou usou fallback. */
+export type CatalogWarningCode =
+  | "COVER_FAILED"
+  | "COVER_FALLBACK"            // og:image indisponível → smart crop do screenshot
+  | "COMPOSITIONS_FAILED"
+  | "MOCKUPS_FAILED"
+  | "MOCKUPS_3D_FAILED"
+  | "PAGE_CAPTURE_FAILED"
+  | "STATE_CAPTURE_FAILED"
+  | "VIDEO_SAVE_FAILED"
+  | "SECTION_DETECTION_FALLBACK" // DOM sem seções detectáveis → fatias por scroll fixo
+  | "INSPECTION_FAILED"
+  | "SCROLL_LIMIT_REACHED"       // página longa/infinita: rolagem parou no limite
+  | "FULLPAGE_TRUNCATED";        // full page cortada na altura máxima
+
+/** Aviso estruturado persistido no catalog.json (nunca some num catch vazio). */
+export interface CatalogWarning {
+  code: CatalogWarningCode;
+  message: string;           // PT-BR, pronto para exibir
+  device?: "desktop" | "mobile";
+  detail?: string;           // técnico, para depuração
 }
 
 /** Composição para redes: a captura sobre fundo da marca num formato pronto (v1.4). */

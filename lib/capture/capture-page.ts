@@ -1,4 +1,6 @@
 import path from "node:path";
+import { warning, type WarnFn } from "../warnings";
+import { captureFullPage } from "./fullpage-screenshot";
 import { promises as fs } from "node:fs";
 import type { Browser } from "playwright";
 import { config } from "../config";
@@ -33,7 +35,8 @@ async function captureOneDevice(
   pageSlugVal: string,
   fullUrl: string,
   dir: string,
-  viewport: ViewportConfig
+  viewport: ViewportConfig,
+  onWarning?: WarnFn
 ): Promise<DeviceCapture> {
   const context = await browser.newContext({
     viewport: { width: viewport.width, height: viewport.height },
@@ -41,7 +44,9 @@ async function captureOneDevice(
     userAgent: config.userAgent,
     ...(await authContextOptions(slug)), // entra logado se houver sessão
   });
+  context.setDefaultTimeout(config.actionTimeoutMs);
   const page = await context.newPage();
+  const device = viewport.label === "mobile" ? "mobile" : "desktop";
   try {
     await page.goto(fullUrl, { waitUntil: "networkidle", timeout: config.navTimeoutMs });
     await dismissOverlays(page);
@@ -52,8 +57,11 @@ async function captureOneDevice(
     const fpFile = `${viewport.label}-fullpage.png`;
 
     await page.screenshot({ path: path.join(dir, vpFile), type: "png" });
-    await scrollToBottom(page);
-    await page.screenshot({ path: path.join(dir, fpFile), fullPage: true, type: "png" });
+    const { limitReached } = await scrollToBottom(page);
+    if (limitReached) {
+      onWarning?.(warning("SCROLL_LIMIT_REACHED", `A rolagem da página ${fullUrl} (${device}) parou no limite.`, undefined, device));
+    }
+    await captureFullPage(page, path.join(dir, fpFile), device, onWarning);
 
     return {
       viewport: `${viewport.width}x${viewport.height}`,
@@ -74,15 +82,16 @@ export async function captureExtraPage(
   browser: Browser,
   input: ProjectInput,
   entry: string,
-  index: number
+  index: number,
+  onWarning?: WarnFn
 ): Promise<PageCapture> {
   const pageSlugVal = pageSlug(entry, input.url, index);
   const fullUrl = resolvePageUrl(entry, input.url);
   const dir = pageScreenshotDir(input.slug, pageSlugVal);
   await fs.mkdir(dir, { recursive: true });
 
-  const desktop = await captureOneDevice(browser, input.slug, pageSlugVal, fullUrl, dir, config.viewports.desktop);
-  const mobile = await captureOneDevice(browser, input.slug, pageSlugVal, fullUrl, dir, config.viewports.mobile);
+  const desktop = await captureOneDevice(browser, input.slug, pageSlugVal, fullUrl, dir, config.viewports.desktop, onWarning);
+  const mobile = await captureOneDevice(browser, input.slug, pageSlugVal, fullUrl, dir, config.viewports.mobile, onWarning);
 
   return { path: entry.trim(), url: fullUrl, desktop, mobile };
 }

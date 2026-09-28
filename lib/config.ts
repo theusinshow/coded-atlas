@@ -98,6 +98,16 @@ export const config = {
   // pausa após clicar o seletor, para a animação assentar antes do print
   stateSettleMs: Number(process.env.ATLAS_STATE_SETTLE_MS ?? 800),
 
+  // ── Limites de segurança (2.1.G) ───────────────────────────────────────────
+  // Páginas com scroll infinito ou absurdamente longas não podem travar a captura.
+  scrollMaxHeightPx:   Number(process.env.ATLAS_SCROLL_MAX_HEIGHT_PX   ?? 30000),
+  scrollMaxMs:         Number(process.env.ATLAS_SCROLL_MAX_MS          ?? 20000),
+  maxFullPageHeightPx: Number(process.env.ATLAS_MAX_FULLPAGE_HEIGHT_PX ?? 16000),
+  // Tempo máximo de cada ação do Playwright (screenshot, clique, evaluate…).
+  actionTimeoutMs:     Number(process.env.ATLAS_ACTION_TIMEOUT_MS      ?? 30000),
+  // Teto da geração inteira: estourou → navegador fechado → rollback.
+  generationTimeoutMs: Number(process.env.ATLAS_GENERATION_TIMEOUT_MS  ?? 10 * 60_000),
+
   userAgent:
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
     "(KHTML, like Gecko) Chrome/124.0 Safari/537.36",
