@@ -226,7 +226,7 @@ describe("Atlas Brain: plano criativo", () => {
     expect(gateway.calls[1].level).toBe("complex");
     expect(JSON.stringify(gateway.calls[1].messages)).toContain("mais minimalista");
 
-    const applied = await applyPlan({ plans: repos.plans, composition: repos }, planId as never);
+    const applied = await applyPlan({ plans: repos.plans, memory: repos.memory, composition: repos }, planId as never);
     expect(applied.status).toBe("applied");
     const instances = await repos.compositionInstances.listByProject(project.id);
     expect(instances).toHaveLength(1);
@@ -234,7 +234,7 @@ describe("Atlas Brain: plano criativo", () => {
 
     const discarded = await discardPlan(deps, revision!.id);
     expect(discarded.status).toBe("discarded");
-    await expect(applyPlan({ plans: repos.plans, composition: repos }, revision!.id)).rejects.toSatisfy((e: unknown) => isDomainError(e, "INVALID_TRANSITION"));
+    await expect(applyPlan({ plans: repos.plans, memory: repos.memory, composition: repos }, revision!.id)).rejects.toSatisfy((e: unknown) => isDomainError(e, "INVALID_TRANSITION"));
   });
 });
 

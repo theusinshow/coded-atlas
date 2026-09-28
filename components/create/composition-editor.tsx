@@ -9,6 +9,8 @@ import type { VisualProfile } from "@/src/core/creative/visual-profile";
 import { AssetThumb } from "@/components/atlas/asset-image";
 import { JobFollower } from "@/components/atlas/job-follower";
 import { Button, FormError, INPUT_CLASS, LABEL_CLASS } from "@/components/ui/primitives";
+import { lintArtboard } from "@/src/core/creative/guardrails";
+import { CreativeIssues } from "@/components/creative/creative-issues";
 import { ArtboardPreview } from "./artboard-preview";
 import { AssetPicker } from "./asset-picker";
 import { instanceDefinition, renderModel, STYLE_MODES, type StudioAsset } from "./types";
@@ -199,6 +201,7 @@ function Editor({ instance, definition, assets, profile, latestProfile }: Props 
           {size.label} · {size.width}×{size.height}px · {definition.name} v{definition.version}
           {activeProfile ? ` · identidade rev ${activeProfile.revision}` : " · sem identidade capturada"}
         </p>
+        <CreativeIssues issues={lintArtboard(model.artboard, model.tokens)} />
       </section>
 
       <section aria-label="Inspetor" className="space-y-6">

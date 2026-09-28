@@ -5,7 +5,9 @@ import type { CreativePlan } from "@/src/core/brain/plan";
 import { getComposition } from "@/src/core/creative/compositions";
 import { FORMATS } from "@/src/core/creative/formats";
 import type { VisualProfile } from "@/src/core/creative/visual-profile";
+import { lintArtboard } from "@/src/core/creative/guardrails";
 import { ArtboardPreview } from "@/components/create/artboard-preview";
+import { CreativeIssues } from "@/components/creative/creative-issues";
 import { renderModel, type StudioAsset } from "@/components/create/types";
 import { buttonClass } from "@/components/ui/primitives";
 
@@ -46,6 +48,7 @@ export function PlanItems({ plan, assets, profile, canApply }: { plan: CreativeP
               )}
             </div>
             <p className="text-[12px] text-zinc-400 leading-snug">{item.rationale}</p>
+            <CreativeIssues issues={lintArtboard(model.artboard, model.tokens)} compact />
           </li>
         );
       })}

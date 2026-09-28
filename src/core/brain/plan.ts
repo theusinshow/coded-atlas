@@ -5,6 +5,7 @@ import { FORMATS, FormatIdSchema, type FormatId } from "../creative/formats";
 import { StyleModeSchema } from "../creative/tokens";
 import { AssetIdSchema, ProjectIdSchema, UlidSchema, newId } from "../../shared/id";
 import { TimestampSchema, nowIso, parseOrThrow } from "../../shared/validation";
+import type { ResolvedPreferences } from "../creative/memory";
 import type { ShortlistItem } from "./context";
 
 /**
@@ -32,6 +33,8 @@ export const CreativeRequestSchema = z.strictObject({
   maxItems: z.number().int().min(1).max(6).optional(),
   /** Pedido de revisão sobre um plano anterior. */
   feedback: z.string().trim().max(600).optional(),
+  /** Direção criativa salva a seguir (consistência entre entregas). */
+  directionId: z.string().max(40).optional(),
 });
 export type CreativeRequest = z.infer<typeof CreativeRequestSchema>;
 export type CreativeRequestInput = z.input<typeof CreativeRequestSchema>;
@@ -130,6 +133,8 @@ export interface PlanValidationContext {
   shortlist: readonly ShortlistItem[];
   bindingContext: BindingContext;
   request: CreativeRequest;
+  /** Composições que a memória criativa manda evitar (erro reparável se o modelo insistir). */
+  avoidCompositions?: ReadonlySet<string>;
 }
 
 export interface ValidatedPlan {
@@ -190,6 +195,10 @@ export function validatePlanOutput(raw: unknown, ctx: PlanValidationContext): Pl
       errors.push(`${at}: composição "${item.compositionId}" não existe no catálogo.`);
       return;
     }
+    if (ctx.avoidCompositions?.has(definition.id)) {
+      errors.push(`${at}: a memória criativa deste projeto pede para evitar ${definition.id}; escolha outra composição.`);
+      return;
+    }
     const format = FormatIdSchema.safeParse(item.formatId);
     if (!format.success || !definition.formats.includes(format.data)) itemErrors.push(`${at}: formato "${item.formatId}" não é suportado por ${definition.id} (use ${definition.formats.join(", ")}).`);
     if (!definition.variants.some((v) => v.id === item.variant)) itemErrors.push(`${at}: variante "${item.variant}" não existe em ${definition.id} (use ${definition.variants.map((v) => v.id).join(", ")}).`);
@@ -247,14 +256,22 @@ export function deterministicPlan(input: {
   shortlist: readonly ShortlistItem[];
   hasPalette: boolean;
   category: string;
+  preferences?: ResolvedPreferences;
+  direction?: CreativeDirection | null;
 }): ValidatedPlan {
-  const { request, compositions, bindingContext } = input;
+  const { request, compositions, bindingContext, preferences } = input;
   const goal = CREATIVE_GOALS[request.goal];
   const formats: FormatId[] = request.formats.length > 0 ? request.formats : [...goal.defaultFormats];
   const limit = request.maxItems ?? goal.items;
   const items: PlanItem[] = [];
 
-  for (const id of GOAL_PICKS[request.goal]) {
+  // Memória: composições evitadas saem; preferidas sobem (ordem estável entre iguais).
+  const picks = GOAL_PICKS[request.goal]
+    .filter((id) => !preferences?.avoidCompositions.has(id))
+    .map((id, index) => ({ id, index, weight: preferences?.preferCompositions.get(id) ?? 0 }))
+    .sort((a, b) => b.weight - a.weight || a.index - b.index)
+    .map((p) => p.id);
+  for (const id of picks) {
     if (items.length >= limit) break;
     const definition = compositions.find((c) => c.id === id);
     if (!definition) continue;
@@ -268,7 +285,7 @@ export function deterministicPlan(input: {
   }
   // Pouco material: completa com o que couber, em qualquer formato do pedido.
   if (items.length === 0) {
-    for (const definition of compositions) {
+    for (const definition of compositions.filter((c) => !preferences?.avoidCompositions.has(c.id))) {
       const formatId = formats.find((f) => definition.formats.includes(f)) ?? definition.formats[0];
       const bindings = autoBind(definition, bindingContext);
       if (missingSlots(definition, bindings).length === 0) {
@@ -280,7 +297,12 @@ export function deterministicPlan(input: {
 
   return {
     summary: `${goal.label} para ${bindingContext.project.name}, montado pelas regras do Atlas a partir do material capturado.`,
-    direction: { tone: `Técnico e direto, adequado a ${input.category.toLowerCase()}`, emphasis: "Mostrar o site real em primeiro plano", styleMode: input.hasPalette ? "hybrid" : "atlas", accent: null },
+    direction: input.direction ?? {
+      tone: `Técnico e direto, adequado a ${input.category.toLowerCase()}`,
+      emphasis: "Mostrar o site real em primeiro plano",
+      styleMode: preferences?.styleMode ?? (input.hasPalette ? "hybrid" : "atlas"),
+      accent: null,
+    },
     assetRanking: input.shortlist.slice(0, 6).map((s) => ({ assetId: AssetIdSchema.parse(s.id), score: s.priority, reason: `Prioridade do Atlas: ${s.describe}.` })),
     items,
   };

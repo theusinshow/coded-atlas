@@ -128,7 +128,7 @@ async function main(): Promise<void> {
 
     await step("identidade visual e biblioteca global", async () => {
       await page.goto(`${BASE}/projects/e2e-${slug}`);
-      await page.getByText("#101418").waitFor();
+      await page.getByRole("list", { name: "Paleta" }).getByText("#101418").waitFor();
       await page.goto(`${BASE}/library?q=servi&project=e2e-${slug}`);
       await page.getByText("Serviços").first().waitFor();
     });
@@ -232,6 +232,29 @@ async function main(): Promise<void> {
       await page.waitForURL(`**/projects/e2e-${slug}/create`);
       await page.goto(`${BASE}/projects/e2e-${slug}/plans`);
       await page.getByText("aplicado").first().waitFor();
+    });
+
+    await step("sistema criativo: corrigir identidade, memória do projeto e direção salva", async () => {
+      await page.goto(`${BASE}/projects/e2e-${slug}`);
+      await page.getByText("Corrigir identidade").click();
+      await page.getByLabel(/Paleta \(hex/).fill("#0b1f33, #f2a900, #ffffff");
+      await page.getByRole("button", { name: "Salvar nova revisão" }).click();
+      await page.getByText(/Identidade atualizada \(revisão \d+\)/).waitFor();
+
+      await page.goto(`${BASE}/projects/e2e-${slug}/plans`);
+      const memory = page.locator("form", { has: page.getByLabel("Assunto") });
+      await memory.getByLabel("Tipo").selectOption("avoid");
+      await memory.getByLabel("Assunto").selectOption("composition");
+      await memory.getByLabel("Composição").selectOption("mobile-stack");
+      await memory.getByRole("button", { name: "Adicionar" }).click();
+      await page.getByRole("list", { name: "Memórias" }).getByText("Mobile Stack").waitFor();
+
+      await page.locator("a[href*='/plans/']").first().click();
+      await page.getByLabel("Salvar como direção criativa").fill("Direção E2E");
+      await page.getByRole("button", { name: "Salvar", exact: true }).click();
+      await page.getByText('Direção "Direção E2E" salva').waitFor();
+      await page.goto(`${BASE}/projects/e2e-${slug}/plans`);
+      await page.getByLabel("Seguir uma direção salva").selectOption({ label: "Direção E2E" });
     });
 
     await step("jobs e ajustes mostram o estado real", async () => {

@@ -6,6 +6,7 @@ import type { Metadata } from "next";
 import { AssetThumb } from "@/components/atlas/asset-image";
 import { SourcesPanel } from "@/components/atlas/sources-panel";
 import { VisualIdentity } from "@/components/atlas/visual-identity";
+import { IdentityEditor } from "@/components/creative/identity-editor";
 import { Panel, SectionTitle, Stat } from "@/components/ui/primitives";
 import { JOB_TYPE_LABEL, JobStatusBadge } from "@/components/ui/status";
 import { getAtlasRuntime } from "@/src/infrastructure/runtime";
@@ -95,7 +96,10 @@ export default async function ProjectOverviewPage({ params }: Props) {
 
       <section aria-labelledby="identidade">
         <SectionTitle id="identidade">Identidade visual</SectionTitle>
-        <VisualIdentity profile={profile} />
+        <div className="space-y-4">
+          <VisualIdentity profile={profile} />
+          <IdentityEditor projectId={o.project.id} profile={profile} />
+        </div>
       </section>
 
       <div className="grid gap-10 lg:grid-cols-2">

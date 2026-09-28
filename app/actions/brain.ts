@@ -29,11 +29,13 @@ export async function requestPlanAction(_prev: BrainActionState, form: FormData)
   try {
     const { brainDeps } = await getAtlasRuntime();
     const maxItems = Number(text(form, "maxItems"));
+    const directionId = text(form, "directionId");
     const job = await requestPlan(brainDeps, ProjectIdSchema.parse(form.get("projectId")), {
       goal: CreativeGoalSchema.parse(form.get("goal")),
       notes: text(form, "notes"),
       formats: form.getAll("formats").map((f) => FormatIdSchema.parse(f)),
       ...(Number.isInteger(maxItems) && maxItems > 0 ? { maxItems } : {}),
+      ...(directionId ? { directionId } : {}),
     });
     return { jobId: job.id };
   } catch (err) {
@@ -64,7 +66,7 @@ export async function applyPlanAction(form: FormData): Promise<void> {
   const { brainDeps, compositionDeps } = await getAtlasRuntime();
   const planId = CreativePlanIdSchema.parse(form.get("planId"));
   const item = form.get("item");
-  const plan = await applyPlan({ plans: brainDeps.plans, composition: compositionDeps }, planId, typeof item === "string" && item !== "" ? [z.coerce.number().int().min(0).parse(item)] : undefined);
+  const plan = await applyPlan({ plans: brainDeps.plans, memory: brainDeps.memory, composition: compositionDeps }, planId, typeof item === "string" && item !== "" ? [z.coerce.number().int().min(0).parse(item)] : undefined);
   const slug = await slugOf(plan.projectId);
   revalidatePath(`/projects/${slug}/create`);
   revalidatePath(`/projects/${slug}/plans`);

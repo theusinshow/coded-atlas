@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { SyncLegacyButton } from "@/components/atlas/job-controls";
+import { MemoryPanel } from "@/components/creative/memory-panel";
 import { PageHeader, Panel, SectionTitle } from "@/components/ui/primitives";
 import { monthStart } from "@/src/core/brain/usage";
 import { getAtlasRuntime } from "@/src/infrastructure/runtime";
@@ -19,10 +20,11 @@ export default async function SettingsPage() {
     dismissed: ledger.filter((e) => e.status === "dismissed").length,
     failed: ledger.filter((e) => e.status === "failed"),
   };
-  const [brain, month, recentAi] = await Promise.all([
+  const [brain, month, recentAi, workspaceMemory] = await Promise.all([
     brainStatus(runtime.brainDeps),
     runtime.repos.aiUsage.summarizeSince(monthStart()),
     runtime.repos.aiUsage.listRecent(8),
+    runtime.repos.memory.listWorkspace(),
   ]);
   const pricing = runtime.brainDeps.brain.pricing;
   const usd = (n: number) => `US$ ${n.toFixed(n < 1 ? 4 : 2)}`;
@@ -117,6 +119,12 @@ export default async function SettingsPage() {
             Variáveis: OPENAI_API_KEY, ATLAS_AI_MODEL, ATLAS_AI_PRICE_INPUT / _CACHED_INPUT / _OUTPUT (USD por 1M tokens), ATLAS_AI_BUDGET_USD, ATLAS_AI_BUDGET_MODE (warn|block), ATLAS_AI_IMAGES, ATLAS_AI=off.
           </p>
         </Panel>
+      </section>
+
+      <section aria-labelledby="memoria">
+        <SectionTitle id="memoria">Memória criativa da Coded by M</SectionTitle>
+        <p className="text-[13px] text-zinc-400 mb-3">Preferências que valem para todos os projetos. A memória de cada projeto (aba Planos) vence estas, e o pedido do momento vence as duas.</p>
+        <MemoryPanel memories={workspaceMemory} projectId={null} />
       </section>
 
       <section aria-labelledby="v1">

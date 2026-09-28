@@ -3,6 +3,8 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { PlanRequestForm } from "@/components/brain/plan-request-form";
+import { DirectionList, NewDirectionForm } from "@/components/creative/directions";
+import { MemoryPanel } from "@/components/creative/memory-panel";
 import { EmptyState, Panel, SectionTitle } from "@/components/ui/primitives";
 import { CREATIVE_GOALS } from "@/src/core/brain/plan";
 import { getAtlasRuntime } from "@/src/infrastructure/runtime";
@@ -24,7 +26,12 @@ export default async function ProjectPlansPage({ params }: Props) {
   const { slug } = await params;
   const { repos, brainDeps } = await getAtlasRuntime();
   const project = await requireProjectBySlug(repos.projects, slug);
-  const [plans, status] = await Promise.all([repos.plans.listByProject(project.id), brainStatus(brainDeps)]);
+  const [plans, status, memories, directions] = await Promise.all([
+    repos.plans.listByProject(project.id),
+    brainStatus(brainDeps),
+    repos.memory.listFor(project.id),
+    repos.directions.listByProject(project.id),
+  ]);
 
   return (
     <div className="grid gap-10 lg:grid-cols-[26rem_1fr]">
@@ -34,7 +41,19 @@ export default async function ProjectPlansPage({ params }: Props) {
           O Atlas escolhe as composições, o material e os textos para o objetivo — você revisa e decide o que vira peça.
           {status.budgetState !== "ok" && <span className="block mt-2 text-warn">Orçamento de IA do mês {status.budgetState === "exceeded" ? "atingido" : "quase no limite"}.</span>}
         </p>
-        <PlanRequestForm projectId={project.id} slug={project.slug} brain={{ enabled: status.enabled, model: status.model }} />
+        <PlanRequestForm projectId={project.id} slug={project.slug} brain={{ enabled: status.enabled, model: status.model }} directions={directions.map((d) => ({ id: d.id, name: d.name }))} />
+
+        <div className="mt-10 space-y-3">
+          <SectionTitle id="direcoes">Direções criativas</SectionTitle>
+          <DirectionList directions={directions} />
+          <NewDirectionForm projectId={project.id} />
+        </div>
+
+        <div className="mt-10 space-y-3">
+          <SectionTitle id="memoria">Memória do projeto</SectionTitle>
+          <p className="text-[12px] text-zinc-500">Vale só para este projeto e vence a memória da Coded by M (Ajustes).</p>
+          <MemoryPanel memories={memories} projectId={project.id} />
+        </div>
       </section>
 
       <section aria-labelledby="planos">

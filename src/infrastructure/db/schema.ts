@@ -314,3 +314,42 @@ export const aiUsage = sqliteTable(
   },
   (t) => [index("ai_usage_created_idx").on(t.createdAt)]
 );
+
+/** Memória criativa: preferências do workspace (project_id nulo) e de cada projeto. */
+export const creativeMemory = sqliteTable(
+  "creative_memory",
+  {
+    id: text("id").primaryKey(),
+    scope: text("scope").notNull(),
+    projectId: text("project_id").references(() => projects.id, { onDelete: "cascade" }),
+    polarity: text("polarity").notNull(),
+    subject: text("subject").notNull(),
+    value: text("value").notNull(),
+    source: text("source").notNull(),
+    weight: integer("weight").notNull(),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => [index("creative_memory_project_idx").on(t.projectId)]
+);
+
+/** Direções criativas salvas (reutilizadas por planos e, depois, Media Kits). */
+export const creativeDirections = sqliteTable(
+  "creative_directions",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    tone: text("tone").notNull(),
+    emphasis: text("emphasis").notNull(),
+    styleMode: text("style_mode").notNull(),
+    accent: text("accent"),
+    notes: text("notes").notNull(),
+    planId: text("plan_id"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => [index("creative_directions_project_idx").on(t.projectId)]
+);

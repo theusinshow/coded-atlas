@@ -7,6 +7,7 @@ import { applyPlanAction, discardPlanAction } from "@/app/actions/brain";
 import { AssetThumb } from "@/components/atlas/asset-image";
 import { PlanItems } from "@/components/brain/plan-items";
 import { PlanReviseForm } from "@/components/brain/plan-request-form";
+import { SaveDirectionForm } from "@/components/creative/directions";
 import { STYLE_MODES } from "@/components/create/types";
 import { Button, Panel, SectionTitle } from "@/components/ui/primitives";
 import { CREATIVE_GOALS, CreativePlanIdSchema } from "@/src/core/brain/plan";
@@ -85,6 +86,9 @@ export default async function PlanPage({ params }: Props) {
             </form>
           )}
           <p className="text-[11px] text-zinc-500">As peças viram rascunhos editáveis em Criar. Nada é renderizado ou publicado sozinho.</p>
+          <div className="border-t border-line pt-3">
+            <SaveDirectionForm planId={plan.id} />
+          </div>
           {plan.status === "draft" && (
             <form action={discardPlanAction}>
               <input type="hidden" name="planId" value={plan.id} />

@@ -3,6 +3,7 @@ import { SqliteAssetRepository } from "./asset-repository";
 import { SqliteAiUsageRepository, SqliteCreativePlanRepository } from "./brain-repositories";
 import { SqliteCaptureRepository } from "./capture-repository";
 import { SqliteCompositionInstanceRepository } from "./composition-instance-repository";
+import { SqliteCreativeDirectionRepository, SqliteCreativeMemoryRepository } from "./creative-repositories";
 import { SqliteCreativeDocumentRepository } from "./creative-document-repository";
 import { SqliteJobRepository } from "./job-repository";
 import { SqliteLegacyImportLedger } from "./legacy-ledger-repository";
@@ -25,6 +26,8 @@ export function createRepositories(db: AtlasDb) {
     documents: new SqliteCreativeDocumentRepository(db),
     plans: new SqliteCreativePlanRepository(db),
     aiUsage: new SqliteAiUsageRepository(db),
+    memory: new SqliteCreativeMemoryRepository(db),
+    directions: new SqliteCreativeDirectionRepository(db),
   };
 }
 

@@ -57,16 +57,40 @@ function describeRequest(request: CreativeRequest): string {
     .join("\n");
 }
 
+export interface CreativeGuidance {
+  /** Notas da memória em ordem de precedência (projeto antes de workspace). */
+  memoryNotes: string[];
+  avoidCompositions: string[];
+  preferCompositions: string[];
+  /** Direção salva que o plano deve seguir. */
+  direction: { name: string; tone: string; emphasis: string; styleMode: string; accent: string | null; notes: string } | null;
+}
+
 export interface PromptInput {
   context: ContextPack;
   request: CreativeRequest;
+  guidance?: CreativeGuidance;
   /** Plano anterior quando é uma revisão. */
   parent: CreativePlan | null;
   /** Quantas miniaturas da lista curta mandar como imagem. */
   imageCount: number;
 }
 
-export function buildPlanMessages({ context, request, parent, imageCount }: PromptInput): ModelMessage[] {
+function describeGuidance(g: CreativeGuidance | undefined): string {
+  if (!g) return "";
+  const lines: string[] = [];
+  if (g.direction) {
+    const d = g.direction;
+    lines.push(`Direção criativa a seguir ("${d.name}"): tom ${d.tone}; ênfase ${d.emphasis}; styleMode ${d.styleMode}; accent ${d.accent ?? "automático"}.${d.notes ? ` Notas: ${d.notes}` : ""}`);
+  }
+  if (g.avoidCompositions.length) lines.push(`Composições a EVITAR neste projeto: ${g.avoidCompositions.join(", ")}.`);
+  if (g.preferCompositions.length) lines.push(`Composições que já funcionaram (preferir quando couber): ${g.preferCompositions.join(", ")}.`);
+  if (g.memoryNotes.length) lines.push(`Memória criativa (o pedido atual vence a memória; projeto vence Coded by M):\n${g.memoryNotes.map((n) => `- ${n}`).join("\n")}`);
+  return lines.join("\n");
+}
+
+export function buildPlanMessages({ context, request, parent, imageCount, guidance }: PromptInput): ModelMessage[] {
+  const guidanceText = describeGuidance(guidance);
   const contextJson = JSON.stringify({ project: context.project, visualIdentity: context.visual, shortlist: context.shortlist, catalog: context.catalog });
   const images = context.shortlist.slice(0, imageCount);
   const messages: ModelMessage[] = [
@@ -77,6 +101,7 @@ export function buildPlanMessages({ context, request, parent, imageCount }: Prom
         { type: "text", text: `Contexto do projeto (JSON):\n${contextJson}` },
         ...(images.length > 0 ? [{ type: "text" as const, text: `Miniaturas dos ${images.length} primeiros assets da lista curta, na ordem: ${images.map((i) => i.id).join(", ")}.` }] : []),
         ...images.map((i) => ({ type: "image" as const, assetId: i.id, detail: "low" as const })),
+        ...(guidanceText ? [{ type: "text" as const, text: guidanceText }] : []),
         { type: "text", text: describeRequest(request) },
       ],
     },

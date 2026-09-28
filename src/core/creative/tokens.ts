@@ -56,6 +56,22 @@ export function mix(a: string, b: string, amount: number): string {
 
 const readableOn = (bg: string) => (contrastRatio("#ffffff", bg) >= contrastRatio("#111111", bg) ? "#ffffff" : "#111111");
 
+/** Texto pequeno na cor de marca (rótulos) precisa de AA: 4,5:1 sobre o fundo. */
+const TEXT_CONTRAST = 4.5;
+
+/**
+ * Aproxima a cor do extremo legível (preto/branco) só o necessário para chegar ao
+ * contraste pedido — o tom da marca continua reconhecível.
+ */
+export function ensureContrast(color: string, background: string, target = TEXT_CONTRAST): string {
+  const pole = readableOn(background);
+  for (let step = 0; step <= 20; step++) {
+    const candidate = step === 0 ? color : mix(color, pole, step * 0.05);
+    if (contrastRatio(candidate, background) >= target) return candidate;
+  }
+  return pole;
+}
+
 /** Cor de marca: a mais saturada que se destaque do fundo. */
 function brandColor(palette: readonly string[], background: string, minContrast: number): string | null {
   const candidates = palette
@@ -100,15 +116,17 @@ export function resolveTokens(profile: VisualProfile | null, mode: StyleMode, ov
     const background = palette[0];
     const byContrast = [...palette].sort((a, b) => contrastRatio(b, background) - contrastRatio(a, background))[0];
     const text = contrastRatio(byContrast, background) >= 4.5 ? byContrast : readableOn(background);
-    const primary = brandColor(palette, background, 2) ?? mix(text, background, 0.2);
-    const accent = brandColor(palette.filter((c) => c !== primary), background, 1.5) ?? primary;
+    const brand = brandColor(palette, background, 2);
+    const primary = brand ? ensureContrast(brand, background) : mix(text, background, 0.2);
+    const second = brandColor(palette.filter((c) => c !== brand), background, 1.5);
+    const accent = second ? ensureContrast(second, background) : primary;
     tokens = {
       colors: {
         background,
         surface: mix(background, text, 0.06),
         line: mix(background, text, 0.16),
         text,
-        textMuted: mix(text, background, 0.38),
+        textMuted: ensureContrast(mix(text, background, 0.38), background),
         primary,
         onPrimary: readableOn(primary),
         accent,
@@ -116,7 +134,8 @@ export function resolveTokens(profile: VisualProfile | null, mode: StyleMode, ov
       fonts: projectFonts(profile, ATLAS_TOKENS.fonts),
     };
   } else {
-    const primary = brandColor(palette, ATLAS_TOKENS.colors.background, 3) ?? ATLAS_TOKENS.colors.primary;
+    const brand = brandColor(palette, ATLAS_TOKENS.colors.background, 3);
+    const primary = brand ? ensureContrast(brand, ATLAS_TOKENS.colors.background) : ATLAS_TOKENS.colors.primary;
     tokens = {
       colors: { ...ATLAS_TOKENS.colors, primary, accent: primary, onPrimary: readableOn(primary) },
       fonts: { ...projectFonts(profile, ATLAS_TOKENS.fonts), body: ATLAS_TOKENS.fonts.body },

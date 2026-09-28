@@ -2,7 +2,7 @@
 
 ## Active phase
 
-**Atlas 2.7 — Creative System** (in progress). 2.1 Foundation, 2.2 Project System and 2.3 Asset & Capture System completed 2026-09-27; 2.4 Composition Engine, 2.5 Studio Canvas and 2.6 Atlas Brain completed 2026-09-28.
+**Atlas 2.8 — Carousel & Multi-page Documents** (in progress). 2.1–2.3 completed 2026-09-27; 2.4–2.7 completed 2026-09-28.
 
 **Owner authorization (2026-09-27):** execute the roadmap continuously from 2.2 through 2.14 (Atlas 3.0) without stopping between phases; the owner tests only at the end. Each phase still ends with typecheck/lint/test/build, `BUILD-PLAN.md` + this file updated and a commit.
 
@@ -12,7 +12,7 @@ Introduce the new persistence/domain/job foundation while preserving useful beha
 
 ## Current milestone
 
-**2.7 — Creative System**: CreativeSession, CreativeDirection, CreativeJob, VisualProfile evolution, project/workspace creative memory (approved/rejected patterns) and creative guardrails feeding the Brain context.
+**2.8 — Carousel & Multi-page Documents**: CreativeDocument abstraction for multiple pages, CarouselDocument (ordered slides sharing one direction/style), slide storyboard, per-slide editing in the Studio and multi-output static render (one Output per page, ZIP-ready ordering).
 
 ## State of the code (2026-09-27)
 
@@ -83,6 +83,10 @@ Delivered in 2.6 (Atlas Brain):
 
 - `ModelGateway` port + OpenAI Responses adapter (enabled only with `OPENAI_API_KEY`), deterministic Context Builder, `CreativePlan` with schema/domain validation, one repair and deterministic fallback, AI usage tracking and budget (migration `0006_brain`).
 - `plan` job and project tab **Planos**; applying a plan creates drafts in Criar. Real OpenAI calls were not exercised (no key on this machine).
+
+Delivered in 2.7 (Creative System):
+
+- Workspace/project creative memory with learned signals and precedence, saved Creative Directions, manual VisualProfile revisions, deterministic creative guardrails (migration `0007_creative`). Brand Adapter now guarantees AA contrast for brand/muted text.
 
 ## Work allowed now
 

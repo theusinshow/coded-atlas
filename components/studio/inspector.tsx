@@ -8,6 +8,8 @@ import type { VisualProfile } from "@/src/core/creative/visual-profile";
 import { AssetThumb } from "@/components/atlas/asset-image";
 import { AssetPicker } from "@/components/create/asset-picker";
 import { STYLE_MODES, type StudioAsset } from "@/components/create/types";
+import { lintArtboard } from "@/src/core/creative/guardrails";
+import { CreativeIssues } from "@/components/creative/creative-issues";
 import { ColorField, FIELD_LABEL, NumberField, RangeField, Section, Segmented, TextField, Toggle } from "./fields";
 import { LAYER_TYPE_LABEL, newLayerId } from "./layer-factory";
 import { useStudio, useStudioApi } from "./store";
@@ -203,6 +205,7 @@ function LayerInspector({ layer, tokens, assets }: { layer: Layer; tokens: Style
 function DocumentInspector({ tokens, profiles, latestRevision }: { tokens: StyleTokens; profiles: Record<number, VisualProfile>; latestRevision: number | null }) {
   const content = useStudio((s) => s.content);
   const apply = useStudio((s) => s.apply);
+  const select = useStudio((s) => s.select);
   const set = (change: (c: CanvasContent) => CanvasContent, key: string) => apply(change, `doc:${key}`);
   const { artboard, style } = content;
   const profile = style.profileRevision ? profiles[style.profileRevision] : null;
@@ -252,6 +255,9 @@ function DocumentInspector({ tokens, profiles, latestRevision }: { tokens: Style
             </button>
           )}
         </div>
+      </Section>
+      <Section title="Checagens">
+        <CreativeIssues issues={lintArtboard(artboard, tokens)} onSelect={select} />
       </Section>
       <Section title="Atalhos">
         <ul className="text-[11px] text-zinc-500 space-y-1 font-mono">

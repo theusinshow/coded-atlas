@@ -16,6 +16,8 @@ import {
 } from "../../core/brain/plan";
 import { budgetState, createAiUsage, estimateCost, monthStart, type AiBudget, type AiUsageRepository, type ModelPricing } from "../../core/brain/usage";
 import { COMPOSITIONS } from "../../core/creative/compositions";
+import { CreativeDirectionIdSchema, type CreativeDirectionRepository } from "../../core/creative/direction";
+import { resolvePreferences, type CreativeMemoryRepository } from "../../core/creative/memory";
 import type { VisualProfileRepository } from "../../core/creative/visual-profile";
 import { createJob, type Job } from "../../core/jobs/job";
 import type { JobRepository } from "../../core/jobs/repository";
@@ -25,6 +27,7 @@ import type { ProjectId } from "../../shared/id";
 import { parseOrThrow } from "../../shared/validation";
 import type { JobHandler } from "../../workers/job-worker";
 import { createInstance, type CompositionDeps } from "../create/composition-service";
+import { learnFromPlanDecision } from "../creative/creative-service";
 import { buildPlanMessages, planJsonSchema, repairMessages } from "./prompts";
 
 export interface BrainSettings {
@@ -44,6 +47,8 @@ export interface BrainDeps {
   plans: CreativePlanRepository;
   aiUsage: AiUsageRepository;
   jobs: JobRepository;
+  memory: CreativeMemoryRepository;
+  directions: CreativeDirectionRepository;
   brain: BrainSettings;
 }
 
@@ -58,10 +63,14 @@ export function reasoningLevelFor(request: z.infer<typeof CreativeRequestSchema>
   return "creative";
 }
 
-export async function requestPlan(deps: Pick<BrainDeps, "projects" | "plans" | "jobs">, projectId: ProjectId, input: CreativeRequestInput, parentId?: string | null): Promise<Job> {
+export async function requestPlan(deps: Pick<BrainDeps, "projects" | "plans" | "jobs" | "directions">, projectId: ProjectId, input: CreativeRequestInput, parentId?: string | null): Promise<Job> {
   const project = await deps.projects.getById(projectId);
   if (!project) throw new DomainError("NOT_FOUND", "Projeto não encontrado.");
   const request = parseOrThrow(CreativeRequestSchema, input, "Pedido criativo");
+  if (request.directionId) {
+    const direction = await deps.directions.getById(CreativeDirectionIdSchema.parse(request.directionId));
+    if (!direction || direction.projectId !== projectId) throw new DomainError("NOT_FOUND", "Direção criativa não encontrada.");
+  }
   let parent: CreativePlanId | null = null;
   if (parentId) {
     const found = await deps.plans.getById(CreativePlanIdSchema.parse(parentId));
@@ -106,7 +115,16 @@ export async function generatePlan(deps: BrainDeps, projectId: ProjectId, payloa
   const context = buildContextPack({ project, url, profile, assets, compositions: COMPOSITIONS });
   if (context.shortlist.length === 0) throw new DomainError("VALIDATION", "O projeto ainda não tem imagens para planejar. Capture o site ou envie imagens.");
   const bindingContext = { project, assets, url };
-  const validationContext = { compositions: COMPOSITIONS, shortlist: context.shortlist, bindingContext, request: payload.request };
+  const preferences = resolvePreferences(await deps.memory.listFor(projectId));
+  const saved = payload.request.directionId ? await deps.directions.getById(CreativeDirectionIdSchema.parse(payload.request.directionId)) : null;
+  const direction = saved && saved.projectId === projectId ? { tone: saved.tone, emphasis: saved.emphasis, styleMode: saved.styleMode, accent: saved.accent } : null;
+  const guidance = {
+    memoryNotes: preferences.notes.slice(0, 20),
+    avoidCompositions: [...preferences.avoidCompositions],
+    preferCompositions: [...preferences.preferCompositions.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id),
+    direction: saved && direction ? { name: saved.name, ...direction, notes: saved.notes } : null,
+  };
+  const validationContext = { compositions: COMPOSITIONS, shortlist: context.shortlist, bindingContext, request: payload.request, avoidCompositions: preferences.avoidCompositions };
 
   const warnings: string[] = [];
   let result: { plan: ValidatedPlan; model: string } | null = null;
@@ -136,7 +154,7 @@ export async function generatePlan(deps: BrainDeps, projectId: ProjectId, payloa
       warnings.push("Orçamento mensal de IA atingido: plano gerado pelas regras do Atlas.");
     } else {
       const level = reasoningLevelFor(payload.request, parent !== null);
-      const messages = buildPlanMessages({ context, request: payload.request, parent, imageCount: deps.brain.imageCount });
+      const messages = buildPlanMessages({ context, request: payload.request, parent, imageCount: deps.brain.imageCount, guidance });
       const schema = { name: "creative_plan", jsonSchema: planJsonSchema() };
       await onProgress?.(20, "Atlas Brain analisando o projeto…");
       const started = Date.now();
@@ -173,9 +191,14 @@ export async function generatePlan(deps: BrainDeps, projectId: ProjectId, payloa
   }
 
   await onProgress?.(85, "Salvando o plano…");
-  const plan =
+  let plan =
     result?.plan ??
-    deterministicPlan({ request: payload.request, compositions: COMPOSITIONS, bindingContext, shortlist: context.shortlist, hasPalette: (profile?.palette.length ?? 0) >= 2, category: project.category });
+    deterministicPlan({ request: payload.request, compositions: COMPOSITIONS, bindingContext, shortlist: context.shortlist, hasPalette: (profile?.palette.length ?? 0) >= 2, category: project.category, preferences, direction });
+  // Direção salva manda no estilo: todas as peças do plano ficam consistentes com ela.
+  if (direction && saved) {
+    if (result) plan = { ...plan, direction };
+    warnings.push(`Seguindo a direção "${saved.name}".`);
+  }
   if (plan.items.length === 0) throw new DomainError("VALIDATION", "Não há material suficiente para nenhuma composição deste pedido.");
   return deps.plans.create(
     createPlan({
@@ -208,7 +231,7 @@ export function createPlanJobHandler(deps: BrainDeps): JobHandler {
 }
 
 /** Aplica o plano: cada peça escolhida vira um rascunho (CompositionInstance). Ação explícita do usuário. */
-export async function applyPlan(deps: Pick<BrainDeps, "plans"> & { composition: CompositionDeps }, planId: CreativePlanId, itemIndexes?: number[]): Promise<CreativePlan> {
+export async function applyPlan(deps: Pick<BrainDeps, "plans" | "memory"> & { composition: CompositionDeps }, planId: CreativePlanId, itemIndexes?: number[]): Promise<CreativePlan> {
   const plan = await deps.plans.getById(planId);
   if (!plan) throw new DomainError("NOT_FOUND", "Plano não encontrado.");
   if (plan.status === "discarded") throw new DomainError("INVALID_TRANSITION", "Este plano foi descartado.");
@@ -227,11 +250,13 @@ export async function applyPlan(deps: Pick<BrainDeps, "plans"> & { composition: 
     });
     created.push(instance.id);
   }
+  await learnFromPlanDecision(deps, plan.id, "applied", indexes);
   return deps.plans.setStatus(plan.id, "applied", [...plan.appliedInstanceIds, ...created].slice(0, 12));
 }
 
-export async function discardPlan(deps: Pick<BrainDeps, "plans">, planId: CreativePlanId): Promise<CreativePlan> {
+export async function discardPlan(deps: Pick<BrainDeps, "plans" | "memory">, planId: CreativePlanId): Promise<CreativePlan> {
   const plan = await deps.plans.getById(planId);
   if (!plan) throw new DomainError("NOT_FOUND", "Plano não encontrado.");
+  await learnFromPlanDecision(deps, plan.id, "discarded");
   return deps.plans.setStatus(plan.id, "discarded");
 }

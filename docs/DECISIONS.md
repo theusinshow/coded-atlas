@@ -187,3 +187,14 @@ Accepted (2026-09-28).
 - **Plans are immutable** (revision = new plan with `parent_id`) and are applied only by an explicit user action, which creates CompositionInstance drafts. Nothing is rendered or published by the Brain.
 - **Costs are never guessed**: prices come from env; without them usage records tokens and `estimated_cost_usd = null`. Budget `block` mode switches to the deterministic planner when the month limit is reached.
 - **Reasoning router**: plan goals map to `creative`, while showcase sets, free requests and revisions map to `complex`. The adapter maps levels to effort (low/medium/high) in one place.
+
+## ADR-034 — Creative System (2.7)
+
+Accepted (2026-09-28).
+
+- **CreativeSession = plan lineage** (a plan and its revisions via `parent_id`) plus the Creative Direction it follows; **CreativeJob = the `plan` job** with its goal. No separate tables until a phase needs state they cannot hold.
+- **Creative memory is explicit data**, never hidden model state: rows in `creative_memory` (workspace when `project_id` is null). Learned signals only come from real decisions (apply/discard) and are visible and removable.
+- **Precedence** is resolved in one pure function (`resolvePreferences`): project over workspace, manual over learned, then weight. The current request overrides everything in the prompt.
+- **Avoided compositions are a validation rule** for model output (repairable error), not only a prompt hint.
+- **Guardrails warn, never block**: `lintArtboard` is deterministic and applies to AI, rule-based and manual work alike.
+- **Brand colors are adjusted for legibility** (mixed toward black/white only as much as needed for 4.5:1) in project/hybrid modes. A color the user picks explicitly (override) is kept, and the guardrail warns instead.

@@ -2,8 +2,8 @@
 
 The complete roadmap lives in `ROADMAP.md`. The currently authorized scope lives in `CURRENT.md`.
 
-> **Status (2026-09-28):** fases **2.1 a 2.6 concluídas**. Execução contínua até o Atlas 3.0
-> autorizada pelo Matheus (ADR-028) — ele testa só no final. Próxima: **2.7 — Creative System**.
+> **Status (2026-09-28):** fases **2.1 a 2.7 concluídas**. Execução contínua até o Atlas 3.0
+> autorizada pelo Matheus (ADR-028) — ele testa só no final. Próxima: **2.8 — Carousel & Multi-page Documents**.
 > O Atlas v1 (captura, vitrine, diff, case, ZIP) segue funcionando sem alteração de comportamento.
 
 ## Baseline (antes de qualquer mudança — 2026-09-27, commit `ac93441`)
@@ -243,6 +243,18 @@ Verificação 2.5: typecheck/lint OK; `npm test` 362 testes (22 arquivos; revis�
 - [x] Sem `OPENAI_API_KEY` tudo funciona com as regras do Atlas (badge "IA desligada").
 
 Verificação 2.6: typecheck/lint OK; `npm test` 379 testes (23 arquivos; gateway falso para sucesso/reparo/fallback/orçamento/revisão/aplicar; adapter OpenAI contra fetch simulado verificando request e parsing); build OK; `npm run e2e` 15/15 passos (plano sem IA → preview → criar peça). **Chamada real à OpenAI não verificada** (sem chave nesta máquina).
+
+## Atlas 2.7 — Creative System (concluída 2026-09-28)
+
+- [x] Memória criativa em dois escopos (Coded by M em Ajustes; projeto em Planos): preferir/evitar/nota sobre composição, estilo, tom ou geral. Sinais aprendidos: aplicar peça reforça a composição; descartar plano sem aplicar conta contra. Precedência pedido > projeto > workspace > padrões (manual vence sinal no mesmo escopo).
+- [x] A memória alimenta o Brain (prompt + validação: composição evitada é erro reparável) e o planejador determinístico (evitadas saem, preferidas sobem, estilo preferido).
+- [x] Direções criativas salvas (a partir de um plano ou à mão) e escolhidas ao pedir planos — o estilo do plano segue a direção (base dos Media Kits).
+- [x] Evolução do VisualProfile: "Corrigir identidade" cria revisão manual; decisões antigas ficam na revisão usada.
+- [x] Guardrails criativos determinísticos (contraste, texto que não cabe, texto minúsculo, imagem vazia, elemento fora, excesso de destaque, tudo oculto) no editor rápido, no Studio (clique seleciona a camada) e nas peças do plano.
+- [x] Brand Adapter garante contraste AA para a cor de marca e o texto suave (mantendo o tom); varredura prova que as 10 composições × 5 formatos × variantes × 3 estilos saem sem avisos.
+- [x] Migration `0007_creative`.
+
+Verificação 2.7: typecheck/lint OK; `npm test` 390 testes (24 arquivos); build OK; `npm run e2e` 17/17 passos (corrigir identidade, memória do projeto, salvar e escolher direção).
 
 ## Phase completion rule
 

@@ -32,7 +32,7 @@ function useFollowPlan(slug: string) {
   };
 }
 
-export function PlanRequestForm({ projectId, slug, brain }: { projectId: string; slug: string; brain: BrainBadgeInfo }) {
+export function PlanRequestForm({ projectId, slug, brain, directions = [] }: { projectId: string; slug: string; brain: BrainBadgeInfo; directions?: { id: string; name: string }[] }) {
   const [state, action, pending] = useActionState<BrainActionState, FormData>(requestPlanAction, null);
   const [goal, setGoal] = useState<CreativeGoal>("launch-post");
   const onDone = useFollowPlan(slug);
@@ -62,6 +62,21 @@ export function PlanRequestForm({ projectId, slug, brain }: { projectId: string;
           ))}
         </div>
       </fieldset>
+      {directions.length > 0 && (
+        <div>
+          <label htmlFor="plan-direction" className={LABEL_CLASS}>
+            Seguir uma direção salva
+          </label>
+          <select id="plan-direction" name="directionId" defaultValue="" className={INPUT_CLASS}>
+            <option value="">Nenhuma — o Atlas decide</option>
+            {directions.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <div className="grid grid-cols-[1fr_7rem] gap-3">
         <div>
           <label htmlFor="plan-notes" className={LABEL_CLASS}>
