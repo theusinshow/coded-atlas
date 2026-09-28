@@ -184,9 +184,14 @@ export async function buildDelivery(deps: ExportDeps, record: ExportRecord): Pro
   return { base: "portfolio", files };
 }
 
-/** `2026-09-28T14:05:09.123Z` → `2026-09-28-140509` (seguro em qualquer sistema de arquivos). */
+/**
+ * Carimbo da pasta de entrega no horário LOCAL da máquina (o nome que o Matheus vê
+ * no explorador de arquivos): `2026-09-28-140509`. Seguro em qualquer sistema de arquivos.
+ */
 export function deliveryStamp(iso: string): string {
-  return iso.slice(0, 19).replace("T", "-").replace(/:/g, "");
+  const d = new Date(iso);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
 }
 
 export function createExportJobHandler(deps: ExportDeps): JobHandler {

@@ -46,7 +46,9 @@ export function OutputCard({ output, compact = false }: { output: Output; compac
       )}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          {!compact && <p className="text-[12px] text-zinc-200 truncate">{output.label ?? "Peça"}</p>}
+          <p className={compact ? "text-[11px] text-zinc-300 truncate" : "text-[12px] text-zinc-200 truncate"} title={output.label ?? undefined}>
+            {output.label ?? "Peça"}
+          </p>
           <p className="text-[11px] font-mono text-zinc-500">
             {output.format.toUpperCase()}
             {output.width && output.height ? ` · ${output.width}×${output.height}` : ""}

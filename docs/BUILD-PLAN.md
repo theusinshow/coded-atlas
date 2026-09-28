@@ -370,3 +370,7 @@ Verificação 3.1.A+B: typecheck/lint OK; `npm test` 457 testes (34 arquivos; ca
 - [x] Testes do v1 portados: nomes de seção e guarda de scroll infinito (Vitest).
 
 Verificação 3.1.C: typecheck/lint OK; `npm test` 451 testes (33 arquivos; os testes que só cobriam o código v1 removido saíram junto); build OK; `npm run e2e` 25/25 passos; rotas v1 respondem 404; os 9 projetos v1 continuam importados e `legacy:scan` lê a biblioteca; `public/generated` intacto.
+
+## Manutenção pós-3.1
+
+- [x] 2026-09-28 — pasta de entrega com carimbo no horário local (antes UTC); cartões compactos (Portfólio, kits, composição) mostram o nome da peça. Verificação: typecheck/lint OK, `npm test` 451 (carimbo testado em dois fusos), build OK, `npm run e2e` 25/25.

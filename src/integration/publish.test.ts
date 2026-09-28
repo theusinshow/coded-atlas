@@ -80,7 +80,9 @@ describe("Publish & Portfolio", () => {
     ] as unknown as Output[];
     const paths = packagePaths(outputs, "norte/");
     expect([...paths.values()]).toEqual(["norte/imagens/hero-desktop.png", "norte/imagens/hero-desktop-aaaab2.png", "norte/videos/reel.mp4", "norte/web/etc-passwd.zip"]);
-    expect(deliveryStamp("2026-09-28T14:05:09.123Z")).toBe("2026-09-28-140509");
+    // Horário local: o mesmo instante montado a partir dos componentes locais.
+    expect(deliveryStamp(new Date(2026, 8, 28, 14, 5, 9, 123).toISOString())).toBe("2026-09-28-140509");
+    expect(deliveryStamp(new Date(2026, 0, 2, 3, 4, 5).toISOString())).toBe("2026-01-02-030405");
   });
 
   it("pacote como ZIP: registro + job, pastas por tipo, manifest e download guardado no storage", async () => {
