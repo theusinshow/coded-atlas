@@ -1,3 +1,4 @@
+import type { ExportRepository } from "../../core/publish/export";
 import type { AssetStorage } from "../../core/assets/asset-storage";
 import type { AssetRepository, OutputRepository } from "../../core/assets/repositories";
 import type { StorageKey } from "../../core/assets/storage-key";
@@ -31,6 +32,8 @@ export interface ProjectServiceDeps {
   assertUrlAllowed?: (url: string) => Promise<void>;
   /** Chaves de cache derivadas de um objeto (ex.: miniaturas) — apagadas junto com os bytes. */
   derivedCacheKeys?: (key: StorageKey, sha256: string) => StorageKey[];
+  /** Pacotes gerados (2.14): o ZIP de cada exportação do projeto sai junto. */
+  exports?: Pick<ExportRepository, "listByProject">;
 }
 
 /** Slug a partir do nome (mesmo algoritmo do v1), garantindo unicidade com sufixo. */
@@ -178,6 +181,8 @@ export async function deleteProjectPermanently(
   const [assets, outputs] = await Promise.all([deps.assets.listByProject(projectId), deps.outputs.listByProject(projectId)]);
   const candidates = new Map<StorageKey, string>();
   for (const item of [...assets, ...outputs]) candidates.set(item.storageKey, item.sha256);
+  const archives = new Set<StorageKey>();
+  for (const record of (await deps.exports?.listByProject(projectId)) ?? []) if (record.result.archive) archives.add(record.result.archive.storageKey);
 
   await deps.projects.delete(projectId);
   if (project.origin === "legacy") {
@@ -196,6 +201,11 @@ export async function deleteProjectPermanently(
     if (stillUsed > 0) continue; // bytes compartilhados com outro projeto (dedupe)
     await deps.storage.delete(key);
     for (const derived of deps.derivedCacheKeys?.(key, sha256) ?? []) await deps.storage.delete(derived);
+    bytesRemoved++;
+  }
+  for (const key of archives) {
+    if (candidates.has(key)) continue;
+    await deps.storage.delete(key);
     bytesRemoved++;
   }
   return { bytesRemoved };

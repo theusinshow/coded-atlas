@@ -3,9 +3,15 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { OutputCard } from "@/components/create/output-card";
-import { EmptyState, SectionTitle } from "@/components/ui/primitives";
+import { ExportForm } from "@/components/publish/export-forms";
+import { ExportHistory, PickOutput } from "@/components/publish/export-history";
+import { EmptyState, Panel, SectionTitle } from "@/components/ui/primitives";
 import { getAtlasRuntime } from "@/src/infrastructure/runtime";
 import { requireProjectBySlug } from "@/src/modules/projects/project-service";
+import { JobIdSchema } from "@/src/shared/id";
+import { destinationStatus } from "@/src/modules/publish/export-service";
+
+const FORM_ID = "package-form";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -14,7 +20,7 @@ interface Props {
 /** Peças finais do projeto (Outputs imutáveis): renders do Atlas e peças importadas do v1. */
 export default async function ProjectPublishPage({ params }: Props) {
   const { slug } = await params;
-  const { repos } = await getAtlasRuntime();
+  const { repos, exportDeps } = await getAtlasRuntime();
   const project = await requireProjectBySlug(repos.projects, slug);
   const outputs = [...(await repos.outputs.listByProject(project.id))].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   // Só o que saiu do render do Atlas 2 é "render"; o resto veio da biblioteca v1.
@@ -28,6 +34,10 @@ export default async function ProjectPublishPage({ params }: Props) {
     else groups.push({ jobId: o.jobId, items: [o] });
   }
   for (const g of groups) g.items.sort((a, b) => (a.metadata.page ?? 0) - (b.metadata.page ?? 0) || a.format.localeCompare(b.format));
+
+  const exports = await repos.exports.listByProject(project.id);
+  const jobStatus: Record<string, string> = {};
+  for (const e of exports) if (e.jobId && (e.status === "queued" || e.status === "running")) jobStatus[e.jobId] = (await repos.jobs.getById(JobIdSchema.parse(e.jobId)))?.status ?? "failed";
 
   if (outputs.length === 0) {
     return (
@@ -46,6 +56,16 @@ export default async function ProjectPublishPage({ params }: Props) {
 
   return (
     <div className="space-y-10">
+      <section aria-labelledby="pacote">
+        <SectionTitle id="pacote">Criar pacote</SectionTitle>
+        <Panel className="p-4 space-y-3">
+          <p className="text-[12px] text-zinc-400">
+            Marque as peças abaixo (<span className="text-zinc-200">Incluir</span>) — o pacote sai organizado por tipo (imagens, vídeos, documentos, web) com um{" "}
+            <span className="font-mono">manifest.json</span>.
+          </p>
+          <ExportForm formId={FORM_ID} mode="package" projectId={project.id} destinations={destinationStatus(exportDeps)} defaultName={`${project.name} · pacote`} />
+        </Panel>
+      </section>
       {rendered.length > 0 && (
         <section aria-labelledby="renders" className="space-y-8">
           <SectionTitle id="renders">Renders ({rendered.length})</SectionTitle>
@@ -66,6 +86,7 @@ export default async function ProjectPublishPage({ params }: Props) {
                 {group.items.map((o) => (
                   <li key={o.id}>
                     <OutputCard output={o} />
+                    <PickOutput formId={FORM_ID} outputId={o.id} />
                     {o.metadata.documentId && (
                       <Link href={`/studio/${o.metadata.documentId}`} className="text-[11px] text-zinc-500 hover:text-zinc-200">
                         Abrir no canvas (rev {o.metadata.documentRevision}) →
@@ -90,9 +111,16 @@ export default async function ProjectPublishPage({ params }: Props) {
             {legacy.map((o) => (
               <li key={o.id}>
                 <OutputCard output={o} />
+                <PickOutput formId={FORM_ID} outputId={o.id} />
               </li>
             ))}
           </ul>
+        </section>
+      )}
+      {exports.length > 0 && (
+        <section aria-labelledby="entregas">
+          <SectionTitle id="entregas">Entregas ({exports.length})</SectionTitle>
+          <ExportHistory records={exports} jobStatus={jobStatus} />
         </section>
       )}
     </div>

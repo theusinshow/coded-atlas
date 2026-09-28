@@ -375,3 +375,22 @@ export const mediaKits = sqliteTable(
   },
   (t) => [index("media_kits_project_idx").on(t.projectId)]
 );
+
+/** Exportações (pacotes e portfólio) e o destino/resultado de cada entrega. */
+export const exportsTable = sqliteTable(
+  "exports",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id").references(() => projects.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    name: text("name").notNull(),
+    destination: text("destination").notNull(),
+    outputIds: text("output_ids", { mode: "json" }).$type<string[]>().notNull(),
+    status: text("status").notNull(),
+    result: text("result", { mode: "json" }).$type<Record<string, unknown>>().notNull(),
+    jobId: text("job_id"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => [index("exports_project_idx").on(t.projectId)]
+);

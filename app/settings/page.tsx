@@ -10,6 +10,7 @@ import { monthStart } from "@/src/core/brain/usage";
 import { getAtlasRuntime } from "@/src/infrastructure/runtime";
 import { brainStatus } from "@/src/modules/brain/plan-service";
 import { ffmpegPath, ffmpegVersion } from "@/src/infrastructure/ffmpeg/ffmpeg";
+import { destinationStatus } from "@/src/modules/publish/export-service";
 
 export const metadata: Metadata = { title: "Ajustes — Coded Atlas" };
 
@@ -30,12 +31,15 @@ export default async function SettingsPage() {
   ]);
   const pricing = runtime.brainDeps.brain.pricing;
   const usd = (n: number) => `US$ ${n.toFixed(n < 1 ? 4 : 2)}`;
+  const destinations = destinationStatus(runtime.exportDeps);
   const rows: [string, string][] = [
     ["Dados (ATLAS_HOME)", runtime.home.root],
     ["Banco", runtime.home.databaseFile],
     ["Arquivos", runtime.home.storageRoot],
     ["Política de URL", runtime.urlPolicy.mode === "local" ? "local — pode capturar localhost e rede interna" : "hosted-safe — bloqueia destinos internos"],
     ["Worker de jobs", process.env.ATLAS_WORKER === "off" ? "desligado neste processo (ATLAS_WORKER=off)" : "embutido no servidor"],
+    ["Entregas — pasta local", `${destinations.folder.label} (ATLAS_EXPORT_DIR)`],
+    ["Entregas — GitHub", destinations.github.available ? `${destinations.github.label} · commits pedidos em Publicar/Portfólio` : "não configurado — defina ATLAS_GITHUB_TOKEN e ATLAS_GITHUB_REPO (opcional: ATLAS_GITHUB_BRANCH, ATLAS_GITHUB_PATH)"],
     ["FFmpeg (vídeo)", ffmpeg ? `${ffmpeg} · ${ffmpegPath()}` : `não encontrado (${ffmpegPath()}) — instale o FFmpeg ou defina ATLAS_FFMPEG para renderizar vídeos`],
   ];
 

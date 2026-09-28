@@ -2,7 +2,7 @@
 
 ## Active phase
 
-**Atlas 2.14 — Publish & Portfolio** (in progress, last phase of the 3.0 roadmap). 2.1–2.3 completed 2026-09-27; 2.4–2.13 completed 2026-09-28.
+**Owner acceptance test of Atlas 3.0.** All roadmap phases are implemented: 2.1–2.3 completed 2026-09-27; 2.4–2.14 completed 2026-09-28. Only fixes from the owner's test are in scope until 3.0 is declared.
 
 **Owner authorization (2026-09-27):** execute the roadmap continuously from 2.2 through 2.14 (Atlas 3.0) without stopping between phases; the owner tests only at the end. Each phase still ends with typecheck/lint/test/build, `BUILD-PLAN.md` + this file updated and a commit.
 
@@ -12,7 +12,7 @@ Introduce the new persistence/domain/job foundation while preserving useful beha
 
 ## Current milestone
 
-**2.14 — Publish & Portfolio**: Export records (package / portfolio), organized packages with a manifest, a v1-compatible portfolio entry, delivery to download / local folder / optional GitHub repository, all started by the owner.
+**Atlas 3.0 acceptance**: the owner runs the full loop (Import → Capture → Understand → Create → Motion → Render → Publish) on real projects. Not yet exercised on this machine: real OpenAI calls (no key) and real GitHub push (no token).
 
 ## State of the code (2026-09-27)
 
@@ -111,6 +111,10 @@ Delivered in 2.12 (Presentation Studio):
 Delivered in 2.13 (Case Builder):
 
 - `case` documents with editorial sections, outline from project material, full-screen structured editor with live preview, optional Brain copywriting (`copy` job, invented-figures guardrail), web page ZIP / PDF / 1400px module outputs.
+
+Delivered in 2.14 (Publish & Portfolio):
+
+- `Export` records and `export` job (migration `0009_exports`), organized packages with `manifest.json`, portfolio export with v1-compatible `portfolio.json`, destinations download ZIP / local folder (`ATLAS_EXPORT_DIR`) / optional GitHub (`ATLAS_GITHUB_*`); "Criar pacote" in Publicar, global Portfólio page, destinations in Settings.
 
 ## Work allowed now
 

@@ -5,6 +5,7 @@ import type { CompositionDeps } from "../modules/create/composition-service";
 import type { DocumentDeps } from "../modules/create/document-service";
 import type { CreativeDeps } from "../modules/creative/creative-service";
 import type { KitDeps } from "../modules/kits/kit-service";
+import type { ExportDeps } from "../modules/publish/export-service";
 import type { LegacyImportDeps } from "../modules/import/legacy/legacy-import-job";
 import type { UploadDeps } from "../modules/import/upload";
 import type { ProjectServiceDeps } from "../modules/projects/project-service";
@@ -18,6 +19,9 @@ import { createUrlPolicy, resolveUrlPolicyMode, type UrlPolicy } from "./net/url
 import { SharpMediaProbe } from "./sharp/media-probe";
 import { thumbCacheKeys, ThumbnailService } from "./sharp/thumbnails";
 import { LocalAssetStorage } from "./storage/local-asset-storage";
+import { GithubApiDestination, LocalFolderDestination, githubConfigFromEnv } from "./publish/destinations";
+import { buildZip } from "./zip/zip-builder";
+import path from "node:path";
 
 /**
  * Composition root do Atlas 2.x para as TELAS e APIs: repositórios, storage e
@@ -45,6 +49,7 @@ export interface AtlasRuntime {
   brainDeps: BrainDeps;
   creativeDeps: CreativeDeps;
   kitDeps: KitDeps;
+  exportDeps: ExportDeps;
 }
 
 export const RUNTIME_SETTINGS = {
@@ -88,7 +93,7 @@ async function createRuntime(): Promise<AtlasRuntime> {
     urlPolicy,
     thumbnails,
     logger,
-    projectDeps: { ...repos, storage, assertUrlAllowed: urlPolicy.assertAllowed, derivedCacheKeys: thumbCacheKeys },
+    projectDeps: { ...repos, storage, exports: repos.exports, assertUrlAllowed: urlPolicy.assertAllowed, derivedCacheKeys: thumbCacheKeys },
     uploadDeps: { ...repos, storage, probe },
     legacyImportDeps: { ...repos, ledger: repos.legacyImports, store: legacyStore, storage, probe },
     compositionDeps: repos,
@@ -96,5 +101,13 @@ async function createRuntime(): Promise<AtlasRuntime> {
     brainDeps: { ...repos, brain: createBrainSettings({ repos, thumbnails }) },
     creativeDeps: repos,
     kitDeps: { ...repos, composition: repos },
+    exportDeps: {
+      ...repos,
+      storage,
+      // Pasta de entregas: ATLAS_EXPORT_DIR ou <ATLAS_HOME>/exports (confinada, nunca sobrescreve).
+      folder: new LocalFolderDestination(path.resolve(process.env.ATLAS_EXPORT_DIR?.trim() || path.join(home.root, "exports"))),
+      github: new GithubApiDestination(githubConfigFromEnv()),
+      zip: (files) => buildZip(files.map((f) => ({ name: f.path, bytes: f.bytes }))),
+    },
   };
 }

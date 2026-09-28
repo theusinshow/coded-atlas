@@ -256,3 +256,12 @@ Accepted (2026-09-28).
 - **Behance-style modules** are 1400px-wide PNG slices of the same page, cut at section boundaries.
 - **Copywriting is optional and bounded**: the `copy` job only fills empty text sections, and the `inventedFigures` guardrail rejects numbers that are not in the project material. Text the owner wrote is never overwritten.
 - **v1 `case-draft.mdx` is not migrated automatically** (it is user-authored free text). It stays on disk, and the new outline is generated from project material.
+
+## ADR-041 — Publish & Portfolio (2.14)
+
+Accepted (2026-09-28).
+
+- **An Export is a record plus a job**. The request validates ownership and destination, creates the record and enqueues a non-destructive `export` job. Every delivery starts from an explicit click, and neither the Brain nor any job starts one on its own.
+- **Packages are not Outputs**. Outputs are render products; a package is a delivery of existing Outputs. The download ZIP is stored content-addressed under `exports/` and referenced by the Export record, and it is removed with the project.
+- **Portfolio compatibility**: `portfolio.json` keeps the v1 manifest fields the site already consumes and adds `pieces` and `case`. The case web page ships as its ZIP; the site decides how to host it.
+- **Destinations behind ports**: `FolderDestination` (confined to `ATLAS_EXPORT_DIR`, new timestamped folder per delivery, `wx` writes, never overwrites) and `GithubDestination` (one commit through the Git Data API on the configured branch and path, no force push). The GitHub token only comes from the environment and is never stored or shown.

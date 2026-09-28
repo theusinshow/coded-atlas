@@ -390,11 +390,36 @@ async function main(): Promise<void> {
       await page.locator("[data-output]", { hasText: /PDF/ }).first().waitFor();
     });
 
+    await step("publicar: pacote ZIP em Publicar + portfólio numa pasta local", async () => {
+      await page.goto(`${BASE}/projects/e2e-${slug}/publish`);
+      const picks = page.locator('input[name="outputId"][form="package-form"]');
+      await picks.nth(0).check();
+      await picks.nth(1).check();
+      await page.locator("[data-export-count='2']").waitFor();
+      await page.getByRole("button", { name: "Criar pacote" }).click();
+      await page.getByText("Concluído").waitFor({ timeout: 60_000 });
+      const row = page.locator('[data-export-status="delivered"]').first();
+      await row.waitFor({ timeout: 15_000 });
+      const link = row.getByRole("link", { name: /Baixar \(\.zip\)/ });
+      const res = await fetch(`${BASE}${await link.getAttribute("href")}`);
+      const zip = Buffer.from(await res.arrayBuffer());
+      assert(res.ok && zip.subarray(0, 2).toString() === "PK" && zip.includes(Buffer.from("manifest.json")), `pacote HTTP ${res.status} sem manifest`);
+
+      await page.goto(`${BASE}/portfolio`);
+      const mine = page.locator(`[data-portfolio-project="e2e-${slug}"]`);
+      await mine.locator('input[name="outputId"]').first().check();
+      await page.getByText("Pasta local", { exact: true }).click();
+      await page.getByRole("button", { name: "Exportar portfólio" }).click();
+      await page.getByText("Concluído").waitFor({ timeout: 60_000 });
+      await page.locator('[data-export-status="delivered"]', { hasText: /pasta: portfolio-/ }).first().waitFor({ timeout: 15_000 });
+    });
+
     await step("jobs e ajustes mostram o estado real", async () => {
       await page.goto(`${BASE}/jobs`);
       await page.getByText("Captura").first().waitFor();
       await page.goto(`${BASE}/settings`);
       await page.getByRole("button", { name: "Sincronizar biblioteca v1" }).waitFor();
+      await page.getByText("Entregas — GitHub").waitFor();
     });
 
     await step("excluir com confirmação digitada", async () => {

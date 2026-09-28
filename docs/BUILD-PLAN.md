@@ -2,8 +2,9 @@
 
 The complete roadmap lives in `ROADMAP.md`. The currently authorized scope lives in `CURRENT.md`.
 
-> **Status (2026-09-28):** fases **2.1 a 2.13 concluídas**. Execução contínua até o Atlas 3.0
-> autorizada pelo Matheus (ADR-028) — ele testa só no final. Próxima: **2.14 — Publish & Portfolio** (última).
+> **Status (2026-09-28):** fases **2.1 a 2.14 concluídas** — roadmap do Atlas 3.0 implementado
+> (execução contínua autorizada pelo Matheus, ADR-028). Próximo passo: **teste do Matheus** no
+> software completo; o que ele encontrar vira correção antes de declarar o 3.0.
 > O Atlas v1 (captura, vitrine, diff, case, ZIP) segue funcionando sem alteração de comportamento.
 
 ## Baseline (antes de qualquer mudança — 2026-09-27, commit `ac93441`)
@@ -320,6 +321,16 @@ Verificação 2.12: typecheck/lint OK; `npm test` 430 testes (30 arquivos; PDF r
 - [x] Saídas (render job, revisão fixada): **página web** (ZIP com `index.html` + assets, DOM serializado do kernel, sem referências internas), **PDF** paginado 1400×1980 e **módulos PNG de 1400px** estilo Behance.
 
 Verificação 2.13: typecheck/lint OK; `npm test` 438 testes (ZIP web sem `atlas.render`, PDF com páginas conferidas, guardrail de números inventados); build OK; `npm run e2e` 23/23 passos (montar case → escrever trecho → exportar web ZIP + PDF).
+
+## Atlas 2.14 — Publish & Portfolio (concluída 2026-09-28)
+
+- [x] `Export` (stateful, migration `0009_exports`): pacote (um projeto) ou portfólio (vários), destino, peças, status e resultado; job `export` não destrutivo; nada sai sem clique.
+- [x] Pacote organizado: pastas por tipo (`imagens/`, `videos/`, `documentos/`, `web/`), nomes legíveis e únicos, `manifest.json` (projeto, dimensões, duração, SHA-256).
+- [x] Portfólio: uma pasta por projeto + `portfolio.json` com os campos do manifesto do v1 (slug, nome, categoria, url, thumbnail/thumbnailMobile, capa, accent, paleta, stack, hasVideo, data) + peças e case web.
+- [x] Destinos: **ZIP** guardado no storage (download em `/api/atlas/exports/[id]/file`), **pasta local** (`ATLAS_EXPORT_DIR`, confinada, nunca sobrescreve) e **GitHub** opcional (um commit via Git Data API; `ATLAS_GITHUB_*`).
+- [x] UI: "Criar pacote" em Publicar (peças marcadas onde estão), histórico de entregas, página global **Portfólio** (nav + ⌘K), destinos em Ajustes. Excluir o projeto apaga os ZIPs dos pacotes dele.
+
+Verificação 2.14: typecheck/lint OK; `npm test` 448 testes (32 arquivos; ZIP real, pasta real com confinamento, GitHub com fetch falso conferindo blobs → tree → commit → ref, falha 401 registrada, GC do ZIP); build OK; `npm run e2e` 24/24 passos (pacote ZIP com manifest em Publicar + portfólio numa pasta local). Push para o GitHub real não exercitado (sem token nesta máquina).
 
 ## Phase completion rule
 

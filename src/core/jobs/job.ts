@@ -8,7 +8,7 @@ import { TimestampSchema, nowIso, parseOrThrow } from "../../shared/validation";
  * local (src/workers). Estado, lock, heartbeat, progresso e pedido de
  * cancelamento são persistidos no SQLite — sobrevivem a reinício de processo.
  */
-export const JobTypeSchema = z.enum(["capture", "import", "render", "plan", "copy"]); // export entra na 2.14
+export const JobTypeSchema = z.enum(["capture", "import", "render", "plan", "copy", "export"]);
 export type JobType = z.infer<typeof JobTypeSchema>;
 
 /**
@@ -21,6 +21,7 @@ export const JOB_TYPE_POLICY: Record<JobType, { destructive: boolean }> = {
   render: { destructive: false }, // render só cria Outputs novos (imutáveis)
   plan: { destructive: false }, // Atlas Brain: só cria um plano (rascunho), nada é aplicado sozinho
   copy: { destructive: false }, // Atlas Brain: preenche só trechos vazios do case (revisão nova)
+  export: { destructive: false }, // entrega: lê Outputs e grava fora (ZIP novo, pasta nova, commit)
 };
 
 export const JobStatusSchema = z.enum(["queued", "preparing", "running", "completed", "failed", "cancelled"]);
