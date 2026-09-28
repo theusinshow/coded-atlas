@@ -52,16 +52,9 @@ Para agentes de desenvolvimento, leia primeiro `CLAUDE.md`.
 
 ## Migração
 
-O repositório existente já possui pipeline funcional de captura, social kit, mockups, vídeo, diff e geração de case. A nova arquitetura não descarta esse trabalho.
-
-Ela migra gradualmente:
-
-```text
-catalog.json + public/generated
-              ↓
-SQLite + AssetStorage + Jobs + Domain Model
-```
-
+O Atlas v1 (`catalog.json` + `public/generated`) foi aposentado na 3.1: tudo o que ele fazia existe no
+modelo novo (SQLite + AssetStorage + Jobs + Domain Model), incluindo captura autenticada e diff visual.
+A biblioteca v1 continua sendo importada (somente leitura) e seus arquivos nunca são alterados.
 Veja `docs/MIGRATION.md`.
 
 ## Desenvolvimento
@@ -71,17 +64,17 @@ npm install          # também instala o Chromium do Playwright
 npm run dev          # app (o start.bat sobe na porta 5000)
 npm run typecheck
 npm run lint
-npm test             # Vitest (nova fundação em src/)
+npm test             # Vitest
 npm run build
+npm run e2e          # smoke pela UI real (E2E_BASE_URL + servidor com ATLAS_HOME temporário)
 npm run db:migrate   # cria/atualiza .atlas/atlas.db (ou $ATLAS_HOME)
 npm run legacy:scan  # relatório (somente leitura) dos projetos v1 no modelo novo
 npm run worker       # worker de jobs avulso (o servidor já sobe um embutido; ATLAS_WORKER=off desliga)
+npm run atlas:login -- <slug> [url]  # login manual para captura autenticada
 ```
 
-Página de verificação da fundação 2.x: `/lab/foundation` (captura via fila de jobs, SQLite e
-AssetStorage). Variáveis: `ATLAS_HOME` (padrão `./.atlas`), `ATLAS_URL_POLICY` (`local` | `hosted-safe`),
-`ATLAS_WORKER=off`, `ATLAS_CAPTURE_JOB_TIMEOUT_MS`. Limites do pipeline v1 (scroll, full page,
-timeouts) ficam em `lib/config.ts`, sobrescrevíveis por env.
-
-O uso do Atlas v1 (formulário, opções de captura, scripts por fase) está documentado em
-`docs/legacy/v1-README.md` enquanto a migração não substitui esses fluxos.
+Variáveis: `ATLAS_HOME` (padrão `./.atlas`), `ATLAS_URL_POLICY` (`local` | `hosted-safe`),
+`ATLAS_WORKER=off`, `ATLAS_CAPTURE_JOB_TIMEOUT_MS`, `ATLAS_OUTPUT_DIR` (biblioteca v1 a importar,
+padrão `public/generated`). Viewports, esperas e limites da captura ficam em
+`src/infrastructure/capture-settings.ts`, sobrescrevíveis pelas mesmas variáveis `ATLAS_*` do v1.
+IA, entregas e vídeo: veja `.env.example`.

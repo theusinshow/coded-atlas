@@ -10,7 +10,7 @@
 import readline from "node:readline/promises";
 import path from "node:path";
 import { chromium } from "playwright";
-import { config as legacyConfig } from "../lib/config";
+import { CAPTURE_SETTINGS } from "../src/infrastructure/capture-settings";
 import { SlugSchema } from "../src/core/projects/project";
 import { resolveAtlasHome } from "../src/infrastructure/atlas-home";
 import { openDatabase } from "../src/infrastructure/db/client";
@@ -39,9 +39,9 @@ async function main(): Promise<void> {
 
     const browser = await chromium.launch({ headless: false });
     try {
-      const context = await browser.newContext({ userAgent: legacyConfig.userAgent, viewport: null });
+      const context = await browser.newContext({ userAgent: CAPTURE_SETTINGS.userAgent, viewport: null });
       const page = await context.newPage();
-      await page.goto(url, { timeout: legacyConfig.navTimeoutMs }).catch((err: unknown) => console.warn(`Aviso: ${err instanceof Error ? err.message : String(err)}`));
+      await page.goto(url, { timeout: CAPTURE_SETTINGS.navTimeoutMs }).catch((err: unknown) => console.warn(`Aviso: ${err instanceof Error ? err.message : String(err)}`));
       console.log(`\nFaça o login no navegador que abriu (${url}).`);
       const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
       await rl.question("Quando estiver logado, volte aqui e aperte Enter para salvar a sessão… ");

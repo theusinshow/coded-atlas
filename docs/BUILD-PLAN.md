@@ -2,8 +2,9 @@
 
 The complete roadmap lives in `ROADMAP.md`. The currently authorized scope lives in `CURRENT.md`.
 
-> **Status (2026-09-28):** **Atlas 3.0 declarado** (tag `v3.0.0`, ADR-042) — fases 2.1 a 2.14
-> concluídas e aceitas pelo Matheus. Nenhuma fase pós-3.0 autorizada ainda (ver `CURRENT.md`).
+> **Status (2026-09-28):** **Atlas 3.0 declarado** (tag `v3.0.0`, ADR-042) e **3.1 — v1 retirement
+> concluída** (captura autenticada e diff visual portados; telas, rotas e pipeline do v1 removidos).
+> Nenhuma fase seguinte autorizada ainda (ver `CURRENT.md`).
 > O Atlas v1 (captura, vitrine, diff, case, ZIP) segue funcionando sem alteração de comportamento.
 
 ## Baseline (antes de qualquer mudança — 2026-09-27, commit `ac93441`)
@@ -342,7 +343,7 @@ Do not start 2.2 until 2.1 exit criteria in `ROADMAP.md` pass.
 - [x] Teste de aceite do Matheus concluído.
 - Pendências conhecidas (fora do critério): chamada real à OpenAI e push real ao GitHub não exercitados nesta máquina; commits só locais (repositório remoto arquivado).
 
-## Atlas 3.1 — v1 retirement (em andamento, autorizada 2026-09-28)
+## Atlas 3.1 — v1 retirement (concluída 2026-09-28)
 
 Decisão do Matheus: portar antes, remover depois (ADR-043).
 
@@ -360,3 +361,12 @@ Decisão do Matheus: portar antes, remover depois (ADR-043).
 - [x] Aba Captura: "Comparar capturas" (padrão: penúltima × última do mesmo grupo) e resultados antes/depois/diferença.
 
 Verificação 3.1.A+B: typecheck/lint OK; `npm test` 457 testes (34 arquivos; captura autenticada com Chromium real contra um site com cookie, diff real com Sharp/pixelmatch); build OK; `npm run e2e` 25/25 passos.
+
+### 3.1.C Remoção do v1 (concluída 2026-09-28)
+
+- [x] Removidos: telas `/legacy`, `/generate`, `/lab/coded-atlas`; rotas `/api/generate`, `/api/projects`, `/api/case`, `/api/diff`, `/api/export`, `/api/zip`, `/api/showcase`; `lib/` (pipeline de geração, storage do catálogo, mockups, diff, validação v1); componentes só do v1; `scripts/login.mjs` e `scripts/test-*.ts`; recuperação de geração v1 no boot; links "v1" da navegação, ⌘K, Ajustes e Visão geral.
+- [x] Movidos para `src/`: rotinas de captura (`src/infrastructure/playwright/routines/`), parâmetros de captura (`src/infrastructure/capture-settings.ts`, mesmas variáveis `ATLAS_*`), categorias de projeto (`src/core/projects/categories.ts`). O schema do `catalog.json` (importador) virou a definição congelada.
+- [x] Mantidos: importação somente leitura da biblioteca v1 (`public/generated`, `ATLAS_OUTPUT_DIR`) e `npm run legacy:scan`.
+- [x] Testes do v1 portados: nomes de seção e guarda de scroll infinito (Vitest).
+
+Verificação 3.1.C: typecheck/lint OK; `npm test` 451 testes (33 arquivos; os testes que só cobriam o código v1 removido saíram junto); build OK; `npm run e2e` 25/25 passos; rotas v1 respondem 404; os 9 projetos v1 continuam importados e `legacy:scan` lê a biblioteca; `public/generated` intacto.

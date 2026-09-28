@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 import type { Metadata } from "next";
 import { NewProjectForm } from "@/components/atlas/new-project-form";
 import { PageHeader } from "@/components/ui/primitives";
-import { PROJECT_CATEGORIES } from "@/lib/categories";
+import { PROJECT_CATEGORIES } from "@/src/core/projects/categories";
 import { getAtlasRuntime } from "@/src/infrastructure/runtime";
 
 export const metadata: Metadata = { title: "Novo projeto — Coded Atlas" };

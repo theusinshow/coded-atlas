@@ -117,21 +117,18 @@ Veja `docs/STACK.md`.
 11. Não duplicar contratos TypeScript/Zod.
 12. Não quebrar funcionalidades legadas durante migração sem adapter ou migração explícita.
 
-## Código legado durante a migração
+## Legado v1 (aposentado na 3.1)
 
-O Atlas v1 (em `app/`, `components/`, `lib/`) continua em produção enquanto a nova
-fundação cresce em `src/`. Regras que seguem valendo para o código legado até ele ser
-migrado (ver `docs/MIGRATION.md` e `docs/legacy/`):
+As telas, rotas e o pipeline de geração do Atlas v1 foram removidos (3.1.C). O que resta do v1:
 
-- rotas que usam Playwright/`fs` declaram `runtime = "nodejs"` — nunca Edge;
-- Playwright e `fs` só no servidor, nunca em Client Component;
-- navegador fecha SEMPRE em `finally`;
-- viewports, delays e timeouts do pipeline legado vivem em `lib/config.ts`;
-- `catalog.json` e a UI usam só caminhos públicos (`/generated/...`), nunca absolutos;
-- visual escuro, técnico e premium da Coded by M.
+- a biblioteca `public/generated` (e `ATLAS_OUTPUT_DIR`) é **somente leitura**: o importador
+  (`src/modules/import/legacy`) a traz para SQLite/AssetStorage e nunca altera nada nela;
+- as rotinas de captura herdadas do v1 vivem em `src/infrastructure/playwright/routines/` e os
+  parâmetros de captura em `src/infrastructure/capture-settings.ts` (mesmas variáveis `ATLAS_*`).
 
-Código novo vai para `src/` e depende de `src/core` (domínio) — nunca o contrário.
-Testes novos: `npm test` (Vitest). Scripts legados: `npx tsx scripts/test-*.ts`.
+Todo código vive em `src/` (domínio em `src/core`), `app/` e `components/`. Rotas que usam
+Playwright, Sharp ou `fs` declaram `runtime = "nodejs"`; o navegador fecha sempre em `finally`.
+Testes: `npm test` (Vitest) e `npm run e2e`.
 
 ## Regra final
 

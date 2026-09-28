@@ -1,4 +1,4 @@
-import { config as legacyConfig } from "../../lib/config";
+import { CAPTURE_SETTINGS } from "./capture-settings";
 import { createCaseCopyJobHandler } from "../modules/brain/case-copy";
 import { createPlanJobHandler } from "../modules/brain/plan-service";
 import { createCaptureJobHandler } from "../modules/capture/capture-job";
@@ -24,21 +24,21 @@ import { SharpImageTransformer } from "./sharp/image-transformer";
 export function createAtlasWorker(runtime: AtlasRuntime, options: { workerId?: string } = {}): JobWorker {
   const { repos, storage, urlPolicy, logger } = runtime;
   const engine = new PlaywrightCaptureEngine({
-    headless: legacyConfig.headless,
-    navTimeoutMs: legacyConfig.navTimeoutMs,
-    userAgent: legacyConfig.userAgent,
+    headless: CAPTURE_SETTINGS.headless,
+    navTimeoutMs: CAPTURE_SETTINGS.navTimeoutMs,
+    userAgent: CAPTURE_SETTINGS.userAgent,
     // Em modo local a política só checa protocolo: interceptar toda requisição seria custo sem ganho.
     ...(urlPolicy.mode === "hosted-safe" ? { urlGuard: urlPolicy.assertAllowed } : {}),
     limits: {
-      actionTimeoutMs: legacyConfig.actionTimeoutMs,
-      sectionMinHeight: legacyConfig.sectionMinHeight,
-      sectionDelayMs: legacyConfig.sectionDelayMs,
-      sectionScrollRatio: legacyConfig.sectionScrollRatio,
-      maxSections: legacyConfig.maxSections,
-      stateSettleMs: legacyConfig.stateSettleMs,
-      maxFullPageHeightPx: legacyConfig.maxFullPageHeightPx,
-      scrollMaxHeightPx: legacyConfig.scrollMaxHeightPx,
-      scrollMaxMs: legacyConfig.scrollMaxMs,
+      actionTimeoutMs: CAPTURE_SETTINGS.actionTimeoutMs,
+      sectionMinHeight: CAPTURE_SETTINGS.sectionMinHeight,
+      sectionDelayMs: CAPTURE_SETTINGS.sectionDelayMs,
+      sectionScrollRatio: CAPTURE_SETTINGS.sectionScrollRatio,
+      maxSections: CAPTURE_SETTINGS.maxSections,
+      stateSettleMs: CAPTURE_SETTINGS.stateSettleMs,
+      maxFullPageHeightPx: CAPTURE_SETTINGS.maxFullPageHeightPx,
+      scrollMaxHeightPx: CAPTURE_SETTINGS.scrollMaxHeightPx,
+      scrollMaxMs: CAPTURE_SETTINGS.scrollMaxMs,
     },
   });
 

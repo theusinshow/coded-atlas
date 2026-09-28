@@ -1,4 +1,4 @@
-import { config as legacyConfig } from "../../lib/config";
+import { CAPTURE_SETTINGS, legacyLibraryDir } from "./capture-settings";
 import type { ViewportSpec } from "../modules/capture/capture-engine";
 import type { BrainDeps } from "../modules/brain/plan-service";
 import type { CompositionDeps } from "../modules/create/composition-service";
@@ -59,8 +59,8 @@ export interface AtlasRuntime {
 export const RUNTIME_SETTINGS = {
   /** Viewports da captura: os mesmos do pipeline v1 (lib/config.ts). */
   captureViewports: {
-    desktop: legacyConfig.viewports.desktop,
-    mobile: legacyConfig.viewports.mobile,
+    desktop: CAPTURE_SETTINGS.viewports.desktop,
+    mobile: CAPTURE_SETTINGS.viewports.mobile,
   } satisfies Record<"desktop" | "mobile", ViewportSpec>,
   /** Teto de um job de captura completa (2 devices, seções, páginas, vídeo), com folga. */
   captureJobTimeoutMs: Number(process.env.ATLAS_CAPTURE_JOB_TIMEOUT_MS ?? 15 * 60_000),
@@ -86,7 +86,7 @@ async function createRuntime(): Promise<AtlasRuntime> {
   const storage = await LocalAssetStorage.open(home.storageRoot, { logger });
   const urlPolicy = createUrlPolicy(resolveUrlPolicyMode());
   const probe = new SharpMediaProbe();
-  const legacyStore = await GeneratedDirStore.open(legacyConfig.outputDir);
+  const legacyStore = await GeneratedDirStore.open(legacyLibraryDir());
   const thumbnails = new ThumbnailService(storage);
   const sessions = new FileSessionStore(path.join(home.root, "auth"));
 

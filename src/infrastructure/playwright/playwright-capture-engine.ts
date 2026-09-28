@@ -3,12 +3,12 @@ import os from "node:os";
 import path from "node:path";
 import { chromium, type Browser, type BrowserContext, type BrowserContextOptions, type Page, type Request } from "playwright";
 import sharp from "sharp";
-import { detectPageSections, type SectionCandidate } from "../../../lib/capture/detect-sections";
-import { dismissOverlays } from "../../../lib/capture/dismiss-overlays";
-import { inspectSite } from "../../../lib/capture/inspect-site";
-import { smoothScrollTo } from "../../../lib/capture/record-scroll";
-import { scrollToBottom } from "../../../lib/capture/scroll-to-bottom";
-import { waitForPageStability } from "../../../lib/capture/wait-for-stability";
+import { detectPageSections, type SectionCandidate } from "./routines/detect-sections";
+import { dismissOverlays } from "./routines/dismiss-overlays";
+import { inspectSite } from "./routines/inspect-site";
+import { smoothScrollTo } from "./routines/record-scroll";
+import { scrollToBottom } from "./routines/scroll-to-bottom";
+import { waitForPageStability } from "./routines/wait-for-stability";
 import type {
   CapturedMedia,
   CaptureEngine,

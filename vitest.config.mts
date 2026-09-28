@@ -8,7 +8,7 @@ export default defineConfig({
   resolve: { alias: { "@": fileURLToPath(new URL(".", import.meta.url)) } },
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts", "lib/**/*.test.ts"],
+    include: ["src/**/*.test.ts"],
     // better-sqlite3 é módulo nativo: processos (forks) são mais estáveis que worker threads.
     pool: "forks",
   },

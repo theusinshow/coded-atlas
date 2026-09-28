@@ -1,5 +1,4 @@
 import { z } from "zod";
-import type { Catalog } from "../../../../lib/types";
 
 /**
  * Schema de runtime do `catalog.json` do Atlas v1 (versões 0.1.0–0.2.0, features
@@ -10,8 +9,9 @@ import type { Catalog } from "../../../../lib/types";
  * pode ter sido editado à mão ou vir de um build intermediário) — o que importa é
  * que os campos usados tenham o tipo certo.
  *
- * Contrato único: `lib/types.ts` continua sendo a definição do v1; a asserção de
- * tipo no fim do arquivo quebra a compilação se os dois divergirem.
+ * Definição congelada: o v1 foi aposentado (3.1.C) e não grava mais catálogos,
+ * então este schema é agora a única descrição do formato (antes espelhava
+ * `lib/types.ts` com uma asserção de compilação).
  */
 const PublicPathSchema = z.string().startsWith("/generated/").max(1024);
 
@@ -123,8 +123,3 @@ export const LegacyCatalogSchema = z.object({
 });
 
 export type LegacyCatalog = z.infer<typeof LegacyCatalogSchema>;
-
-// Asserção de compilação: o schema e a interface do v1 descrevem exatamente o mesmo formato.
-type Equals<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
-const legacyCatalogInSync: Equals<LegacyCatalog, Catalog> = true;
-void legacyCatalogInSync;

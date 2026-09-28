@@ -24,8 +24,6 @@ const ACTIONS = [
   { id: "go-portfolio", label: "Exportar portfólio", href: "/portfolio", hint: "Ação" },
   { id: "go-jobs", label: "Jobs", href: "/jobs", hint: "Ação" },
   { id: "go-settings", label: "Ajustes", href: "/settings", hint: "Ação" },
-  { id: "go-legacy", label: "Catálogos v1", href: "/legacy", hint: "v1" },
-  { id: "go-generate", label: "Geração v1", href: "/generate", hint: "v1" },
 ];
 
 function matches(q: string, ...fields: (string | undefined)[]) {

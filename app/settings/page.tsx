@@ -1,7 +1,6 @@
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-import Link from "next/link";
 import type { Metadata } from "next";
 import { SyncLegacyButton } from "@/components/atlas/job-controls";
 import { MemoryPanel } from "@/components/creative/memory-panel";
@@ -153,14 +152,9 @@ export default async function SettingsPage() {
           )}
           <div className="flex flex-wrap items-start justify-between gap-4">
             <SyncLegacyButton />
-            <div className="text-[12px] text-zinc-500 space-y-1 text-right">
-              <p>
-                <Link href="/legacy" className="text-zinc-300 hover:text-accent">Catálogos v1</Link>
-                {" · "}
-                <Link href="/generate" className="text-zinc-300 hover:text-accent">Geração v1</Link>
-              </p>
-              <p>Continuam disponíveis durante a migração.</p>
-            </div>
+            <p className="text-[12px] text-zinc-500 max-w-sm text-right">
+              As telas do v1 foram aposentadas (3.1). A biblioteca v1 em public/generated só é lida — nunca alterada.
+            </p>
           </div>
         </Panel>
       </section>

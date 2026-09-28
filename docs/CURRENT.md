@@ -2,7 +2,7 @@
 
 ## Active phase
 
-**Atlas 3.0 — declared 2026-09-28** (tag `v3.0.0`, ADR-042) after the owner's acceptance test. All roadmap phases are complete: 2.1–2.3 on 2026-09-27, 2.4–2.14 on 2026-09-28. Post-3.0 milestone **3.1 — v1 retirement** authorized by the owner on 2026-09-28 (in progress).
+**Atlas 3.0 — declared 2026-09-28** (tag `v3.0.0`, ADR-042) after the owner's acceptance test. All roadmap phases are complete: 2.1–2.3 on 2026-09-27, 2.4–2.14 on 2026-09-28. Post-3.0 milestone **3.1 — v1 retirement** completed 2026-09-28. No further milestone is authorized yet.
 
 **Owner authorization (2026-09-27):** execute the roadmap continuously from 2.2 through 2.14 (Atlas 3.0) without stopping between phases; the owner tests only at the end. Each phase still ends with typecheck/lint/test/build, `BUILD-PLAN.md` + this file updated and a commit.
 
@@ -16,7 +16,7 @@ Keep the 3.0 loop (Import → Capture → Understand → Create → Motion → R
 
 1. ✅ **3.1.A Authenticated capture in 2.x** (done 2026-09-28): a session saved per project outside AssetStorage and never exported, a login command (headed browser), used by every capture context, and session status plus removal in the Capture tab.
 2. ✅ **3.1.B Visual diff in 2.x** (done 2026-09-28): a `diff` job comparing two captures (same device and role); the result is a derived Asset (diff image, percent changed, lineage to both), shown in the Capture tab.
-3. **3.1.C Remove v1**: v1 screens (`/legacy`, `/generate`, `/lab/coded-atlas`), v1 API routes (`/api/generate`, `/api/projects`, `/api/case`, `/api/diff`, `/api/export`, `/api/zip`, `/api/showcase`), the v1 generation pipeline and its scripts. Kept: the importer of the v1 library (read-only) and the capture routines the 2.x engine reuses (moved under `src/`).
+3. ✅ **3.1.C Remove v1** (done 2026-09-28): v1 screens (`/legacy`, `/generate`, `/lab/coded-atlas`), v1 API routes (`/api/generate`, `/api/projects`, `/api/case`, `/api/diff`, `/api/export`, `/api/zip`, `/api/showcase`), the v1 generation pipeline and its scripts. Kept: the importer of the v1 library (read-only) and the capture routines the 2.x engine reuses (moved under `src/`).
 
 Still unexercised on this machine: real OpenAI calls (no key) and a real GitHub push (no token).
 
@@ -124,7 +124,6 @@ Delivered in 2.14 (Publish & Portfolio):
 
 ## Work allowed now
 
-- milestone 3.1 (above);
 - bug fixes and hardening of what 2.1–2.14 delivered;
 - documentation and test improvements;
 - small polish items the owner reports.
@@ -135,7 +134,7 @@ Other new phases or features (cloud storage, desktop packaging, multi-user, auto
 
 ## Preservation rule
 
-Until 3.1.C, the v1 screens and routes stay operational. 3.1.C removes them only after 3.1.A and 3.1.B have shipped. The v1 library importer stays, and so do the files in `public/generated` (they are never touched).
+The v1 library in `public/generated` (or `ATLAS_OUTPUT_DIR`) is read-only input for the importer. Never write, move or delete it.
 
 ## Completion criteria
 

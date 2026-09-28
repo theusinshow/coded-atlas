@@ -282,3 +282,12 @@ Accepted (2026-09-28).
 - **Sessions are secrets, not assets**. They live in `<ATLAS_HOME>/auth/<projectId>.json` behind a `SessionStore` port, outside AssetStorage, never in SQLite, never exported, and are shown only as a summary (cookie count and domains). They are created by a manual headed login (`npm run atlas:login`), never by an automated flow. v1 sessions (`auth/<slug>.json`) are not copied automatically: the owner logs in again.
 - **A diff is a derived Asset** (role `diff`), with lineage to both captures and the changed percentage in its metadata. It runs as a `diff` job, never inside a request.
 - The v1 "recapture now and compare" button becomes two steps (capture, then compare the latest two captures). The capture is a real job with a plan and history, instead of an ad-hoc recapture.
+
+## ADR-044 — v1 removed (3.1.C)
+
+Accepted (2026-09-28).
+
+- The v1 code is deleted, not archived in the tree. Git history (and the `v1-social-kit` branch) keeps it recoverable.
+- The v1 library on disk stays readable forever through the importer. Its catalog schema is now a frozen definition in `src/modules/import/legacy`, and no code writes `catalog.json` anymore.
+- Capture parameters keep the v1 environment variable names, so existing installations behave the same.
+- Interrupted v1 generations are no longer recovered at boot. Leftover `.trash` folders are dot folders, which the importer ignores.

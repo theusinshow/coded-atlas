@@ -5,19 +5,19 @@
  * Uso: npm run legacy:scan            (resumo legível)
  *      npm run legacy:scan -- --json  (relatório completo em JSON)
  */
-import { config } from "../lib/config";
+import { legacyLibraryDir } from "../src/infrastructure/capture-settings";
 import { GeneratedDirStore } from "../src/infrastructure/legacy/generated-dir-store";
 import { scanLegacyLibrary } from "../src/modules/import/legacy/scan-legacy-library";
 
 async function main(): Promise<void> {
-  const report = await scanLegacyLibrary(await GeneratedDirStore.open(config.outputDir));
+  const report = await scanLegacyLibrary(await GeneratedDirStore.open(legacyLibraryDir()));
 
   if (process.argv.includes("--json")) {
     console.log(JSON.stringify(report, null, 2));
     return;
   }
 
-  console.log(`\nBiblioteca legada: ${config.outputDir}`);
+  console.log(`\nBiblioteca legada: ${legacyLibraryDir()}`);
   console.log(`Pastas analisadas: ${report.scannedFolders} · projetos legíveis: ${report.projects.length}\n`);
 
   for (const p of report.projects) {

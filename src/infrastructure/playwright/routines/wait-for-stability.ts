@@ -1,5 +1,5 @@
 import type { Page } from "playwright";
-import { config } from "../config";
+import { CAPTURE_SETTINGS as config } from "../../capture-settings";
 
 /**
  * Aguarda a página estabilizar antes de capturar.

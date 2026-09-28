@@ -1,5 +1,5 @@
 import type { Page } from "playwright";
-import { config } from "../config";
+import { CAPTURE_SETTINGS as config } from "../../capture-settings";
 
 /**
  * Scroll suave com easeInOutQuad executado inteiramente no browser.

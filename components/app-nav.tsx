@@ -11,8 +11,6 @@ const LINKS = [
   { href: "/settings", label: "Ajustes", match: (p: string) => p.startsWith("/settings") },
 ];
 
-const LEGACY = (p: string) => p.startsWith("/legacy") || p.startsWith("/generate") || p.startsWith("/lab");
-
 export function AppNav() {
   const pathname = usePathname() || "/";
 
@@ -55,16 +53,6 @@ export function AppNav() {
                 </li>
               );
             })}
-            <li>
-              <Link
-                href="/legacy"
-                aria-current={LEGACY(pathname) ? "page" : undefined}
-                title="Catálogos e geração do Atlas v1"
-                className={`px-2 py-1.5 text-[11px] font-mono uppercase tracking-wider ${LEGACY(pathname) ? "text-accent-bright" : "text-zinc-600 hover:text-zinc-300"}`}
-              >
-                v1
-              </Link>
-            </li>
           </ul>
         </div>
       </nav>

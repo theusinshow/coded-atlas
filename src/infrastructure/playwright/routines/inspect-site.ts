@@ -1,6 +1,10 @@
 import type { Page } from "playwright";
-import { warning, type WarnFn } from "../warnings";
-import type { SiteInspection } from "../types";
+import type { CaptureWarning, SiteInspection } from "../../../modules/capture/capture-engine";
+
+/** Avisos de etapas opcionais (a captura segue sem elas). */
+export type WarnFn = (warning: Pick<CaptureWarning, "code" | "message">) => void;
+
+const detailOf = (err: unknown) => (err instanceof Error ? err.message : String(err)).slice(0, 300);
 
 /**
  * Inspeciona a página para extrair paleta, tipografia e tech stack.
@@ -131,7 +135,7 @@ export async function inspectSite(page: Page, onWarning?: WarnFn): Promise<SiteI
       };
     })
     .catch((err: unknown) => {
-      onWarning?.(warning("INSPECTION_FAILED", "Paleta, fontes e tecnologias não puderam ser lidas.", err));
+      onWarning?.({ code: "INSPECTION_FAILED", message: `Paleta, fontes e tecnologias não puderam ser lidas (${detailOf(err)}).` });
       return { colors: [] as string[], fonts: [] as string[], techStack: [] as string[] };
     });
 

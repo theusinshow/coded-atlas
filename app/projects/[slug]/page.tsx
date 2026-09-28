@@ -71,12 +71,7 @@ export default async function ProjectOverviewPage({ params }: Props) {
             </div>
           )}
           {o.project.origin === "legacy" && (
-            <p className="text-[12px] text-zinc-500">
-              Importado da biblioteca v1 ·{" "}
-              <Link href={`/legacy/${o.project.slug}`} className="text-zinc-300 hover:text-accent">
-                ver catálogo v1
-              </Link>
-            </p>
+            <p className="text-[12px] text-zinc-500">Importado da biblioteca v1 (arquivos originais preservados em public/generated).</p>
           )}
         </div>
       </section>

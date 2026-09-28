@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AppNav } from "@/components/app-nav";
-import { GenerationToast } from "@/components/generation-toast";
 import { CommandPalette } from "@/components/command-palette";
 
 export const metadata: Metadata = {
@@ -20,7 +19,6 @@ export default function RootLayout({
         <AppNav />
         {children}
         <CommandPalette />
-        <GenerationToast />
       </body>
     </html>
   );
