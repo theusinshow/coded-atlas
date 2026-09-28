@@ -162,3 +162,15 @@ Accepted (2026-09-28).
 - **Fonts are a curated local set** (@fontsource, latin subset); project fonts that are not in the set fall back to a curated family (serif hint → Playfair Display, otherwise the Atlas default). The preview loads the same files through `/api/atlas/fonts/[file]` (closed list).
 - **Outputs are immutable and outlive their instance**: deleting a composition keeps its renders in Publicar. Output thumbnails use the whole image (`fit: "whole"`); asset grid thumbnails keep the top crop.
 - **Composition definitions never cross the server→client boundary** (they carry functions): client components resolve them by id from the same module.
+
+## ADR-032 — Studio Canvas documents and revisions (2.5)
+
+Accepted (2026-09-28).
+
+- **One table for every creative document** (`creative_documents`) and one for revisions (`document_revisions`, JSON content validated by Zod on write and read). `kind` distinguishes canvas now and carousel/motion/presentation/case later.
+- **A revision is a complete render input**: artboard + style (mode, accent, VisualProfile revision) + format. Assets and profile revisions are immutable, so re-rendering a revision is reproducible.
+- **Autosave coalesces**: consecutive `edit` saves within 2 minutes rewrite the head revision, unless it is pinned. Rendering pins the revision; restoring creates a new revision. History is never rewritten backwards.
+- **Optimistic concurrency**: saves carry the base revision; a stale base returns CONFLICT and the editor freezes until reload (no silent overwrite between tabs).
+- **Zustand holds only the session** (content being edited, selection, undo stack). Undo coalesces changes with the same gesture key within 800 ms, so a drag or a typed word is one step.
+- **The Studio runs full-screen at `/studio/[id]`**, outside the project layout, because it needs the whole viewport.
+- **The canvas is constrained on purpose**: curated shadows, token colors first, local fonts. It is not a general-purpose design tool (PRINCIPLES → Taste over randomness).

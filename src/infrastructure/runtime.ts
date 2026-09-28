@@ -1,6 +1,7 @@
 import { config as legacyConfig } from "../../lib/config";
 import type { ViewportSpec } from "../modules/capture/capture-engine";
 import type { CompositionDeps } from "../modules/create/composition-service";
+import type { DocumentDeps } from "../modules/create/document-service";
 import type { LegacyImportDeps } from "../modules/import/legacy/legacy-import-job";
 import type { UploadDeps } from "../modules/import/upload";
 import type { ProjectServiceDeps } from "../modules/projects/project-service";
@@ -36,6 +37,7 @@ export interface AtlasRuntime {
   uploadDeps: UploadDeps;
   legacyImportDeps: LegacyImportDeps;
   compositionDeps: CompositionDeps;
+  documentDeps: DocumentDeps;
 }
 
 export const RUNTIME_SETTINGS = {
@@ -82,5 +84,6 @@ async function createRuntime(): Promise<AtlasRuntime> {
     uploadDeps: { ...repos, storage, probe },
     legacyImportDeps: { ...repos, ledger: repos.legacyImports, store: legacyStore, storage, probe },
     compositionDeps: repos,
+    documentDeps: repos,
   };
 }

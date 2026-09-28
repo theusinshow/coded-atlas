@@ -19,11 +19,20 @@ export default async function ProjectCreatePage({ params }: Props) {
   const { slug } = await params;
   const { repos, compositionDeps } = await getAtlasRuntime();
   const project = await requireProjectBySlug(repos.projects, slug);
-  const [assets, profiles, instances] = await Promise.all([
+  const [assets, profiles, instances, documentList] = await Promise.all([
     repos.assets.listByProject(project.id),
     repos.visualProfiles.listByProject(project.id),
     repos.compositionInstances.listByProject(project.id),
+    repos.documents.listByProject(project.id),
   ]);
+  const documents = (
+    await Promise.all(
+      documentList.map(async (d) => {
+        const head = await repos.documents.getRevision(d.id, d.headRevision);
+        return head ? { id: d.id, name: d.name, headRevision: d.headRevision, content: head.content } : null;
+      })
+    )
+  ).filter((d) => d !== null);
   const images = studioAssets(assets);
   if (images.length === 0) {
     return (
@@ -55,6 +64,7 @@ export default async function ProjectCreatePage({ params }: Props) {
       profilesByRevision={profilesByRevision}
       suggestions={suggestions}
       instances={[...instances].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))}
+      documents={documents}
     />
   );
 }

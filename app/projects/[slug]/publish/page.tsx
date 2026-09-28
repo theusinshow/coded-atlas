@@ -45,6 +45,11 @@ export default async function ProjectPublishPage({ params }: Props) {
             {rendered.map((o) => (
               <li key={o.id}>
                 <OutputCard output={o} />
+                {o.metadata.documentId && (
+                  <Link href={`/studio/${o.metadata.documentId}`} className="text-[11px] text-zinc-500 hover:text-zinc-200">
+                    Abrir no canvas (rev {o.metadata.documentRevision}) →
+                  </Link>
+                )}
                 {o.metadata.instanceId && (
                   <Link href={`/projects/${project.slug}/create/${o.metadata.instanceId}`} className="text-[11px] text-zinc-500 hover:text-zinc-200">
                     Abrir composição →

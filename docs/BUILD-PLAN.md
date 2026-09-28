@@ -2,8 +2,8 @@
 
 The complete roadmap lives in `ROADMAP.md`. The currently authorized scope lives in `CURRENT.md`.
 
-> **Status (2026-09-28):** fases **2.1 a 2.4 concluídas**. Execução contínua até o Atlas 3.0
-> autorizada pelo Matheus (ADR-028) — ele testa só no final. Próxima: **2.5 — Studio Canvas**.
+> **Status (2026-09-28):** fases **2.1 a 2.5 concluídas**. Execução contínua até o Atlas 3.0
+> autorizada pelo Matheus (ADR-028) — ele testa só no final. Próxima: **2.6 — Atlas Brain**.
 > O Atlas v1 (captura, vitrine, diff, case, ZIP) segue funcionando sem alteração de comportamento.
 
 ## Baseline (antes de qualquer mudança — 2026-09-27, commit `ac93441`)
@@ -218,6 +218,19 @@ Verificação 2.3: typecheck/lint OK; `npm test` 328 testes (18 arquivos; captur
 - [x] UI: aba **Criar** (galeria já preenchida com o material do projeto, filtro por formato, peças salvas) e editor com inspetor rápido (formato, variante, estilo, cor de destaque, troca de imagem por slot, textos, salvar/renderizar/excluir, acompanhamento do job); aba **Publicar** (renders e peças do v1, miniatura inteira, download com nome legível).
 
 Verificação 2.4: typecheck/lint OK; `npm test` 350 testes (20 arquivos; render real com Chromium em PNG/JPG/WebP na dimensão exata); build OK; `npm run e2e` 12/12 passos (inclui criar composição → ajustar → renderizar → baixar em Publicar com 1080×1350 conferido); revisão visual das composições em 4:5, 9:16 e 16:9 com a biblioteca v1 real.
+
+## Atlas 2.5 — Studio Canvas (concluída 2026-09-28)
+
+- [x] `CreativeDocument` (kind `canvas`) + `document_revisions`: cada revisão é uma entrada de render completa (artboard + estilo + formato). Migration `0005_documents`.
+- [x] Concorrência otimista (CONFLICT entre abas), autosave coalescido numa janela de 2 min, revisão fixada ao renderizar (nunca reescrita), restaurar = revisão nova.
+- [x] Criação: canvas em branco (5 formatos) ou "Editar no canvas" a partir de uma composição (congela o artboard da receita e guarda a origem).
+- [x] Studio em tela cheia (`/studio/[id]`): camadas (ordem, visibilidade, trava), adicionar texto/formas/navegador/celular/imagens do projeto, canvas com seleção, arrasto, redimensionar (8 alças, Shift mantém proporção, funciona com rotação), ímã nas bordas/centros com guias, zoom.
+- [x] Inspetor: posição/tamanho/rotação/raio/opacidade/sombra/desfoque; texto (fonte, tamanho, peso, entrelinha, espaçamento, alinhamento, cor por token ou hex, caixa alta); forma (tipo, preenchimento, contorno); imagem/celular/navegador (trocar imagem, encaixe, foco vertical, moldura/tema, endereço); documento (fundo, textura, modo de estilo, cor de destaque, identidade).
+- [x] Estado efêmero em Zustand; undo/redo com agrupamento de gestos (arrasto e digitação viram um passo); atalhos (Ctrl+Z/Y, setas, Ctrl+D, Delete, Ctrl+[ ]).
+- [x] Render de uma revisão concreta pelo mesmo job/kernel; Outputs rastreiam documento + revisão; Publicar abre o canvas da revisão.
+- [x] Operações de árvore de layers puras em `core/documents/layer-tree.ts` (base para Motion).
+
+Verificação 2.5: typecheck/lint OK; `npm test` 362 testes (22 arquivos; revisões/coalescência/conflito/fixação/restauração e render de revisão com Chromium real); build OK; `npm run e2e` 14/14 passos (abrir composição no canvas, adicionar texto, autosave rev 2, arrastar e desfazer, renderizar e abrir em Publicar).
 
 ## Phase completion rule
 

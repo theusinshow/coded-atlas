@@ -182,6 +182,44 @@ async function main(): Promise<void> {
       assert(meta.width === 1080 && meta.height === 1350, `dimensão ${meta.width}×${meta.height}`);
     });
 
+    await step("studio: abrir composição no canvas, editar, autosave e desfazer", async () => {
+      await page.goto(`${BASE}/projects/e2e-${slug}/create`);
+      await page.locator(`a[href*="/projects/e2e-${slug}/create/"]`).first().click();
+      await page.getByRole("button", { name: "Editar no canvas" }).click();
+      await page.waitForURL(/\/studio\/[0-9A-Z]{26}$/);
+      await page.locator("[data-studio-artboard] [data-atlas-artboard]").waitFor();
+      await page.getByRole("tab", { name: "Adicionar" }).click();
+      await page.getByRole("complementary", { name: "Camadas e material" }).getByRole("button", { name: "Texto", exact: true }).click();
+      await page.locator("#layer-text").fill("Texto do canvas E2E");
+      await page.locator('[data-save-state="saved"]').waitFor({ timeout: 15_000 });
+      assert((await page.locator("[data-save-state]").textContent())?.includes("rev 2"), "autosave não gerou a revisão 2");
+
+      // Arrastar o layer selecionado muda X; Ctrl+Z desfaz o arrasto inteiro.
+      const xField = page.getByLabel("X", { exact: true });
+      const before = Number(await xField.inputValue());
+      const frame = page.locator("[data-selection]");
+      const b = (await frame.boundingBox())!;
+      await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(b.x + b.width / 2 + 60, b.y + b.height / 2 + 5, { steps: 6 });
+      await page.mouse.up();
+      const moved = Number(await xField.inputValue());
+      assert(moved !== before, `arrastar não moveu (x=${moved})`);
+      await page.keyboard.press("Escape");
+      await page.keyboard.press("Control+z");
+      await page.getByRole("tab", { name: "Camadas" }).click();
+      await page.locator("[data-layer-row]").first().click();
+      assert(Number(await page.getByLabel("X", { exact: true }).inputValue()) === before, "desfazer não voltou a posição");
+    });
+
+    await step("studio: renderizar a revisão e abrir a peça em Publicar", async () => {
+      await page.getByRole("button", { name: "Renderizar", exact: true }).click();
+      await page.getByRole("button", { name: "Renderizar agora" }).click();
+      await page.getByText("Concluído").waitFor({ timeout: 120_000 });
+      await page.goto(`${BASE}/projects/e2e-${slug}/publish`);
+      await page.getByText(/Abrir no canvas \(rev \d+\)/).first().waitFor();
+    });
+
     await step("jobs e ajustes mostram o estado real", async () => {
       await page.goto(`${BASE}/jobs`);
       await page.getByText("Captura").first().waitFor();

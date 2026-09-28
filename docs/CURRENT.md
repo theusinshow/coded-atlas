@@ -2,7 +2,7 @@
 
 ## Active phase
 
-**Atlas 2.5 — Studio Canvas** (in progress). 2.1 Foundation, 2.2 Project System and 2.3 Asset & Capture System completed 2026-09-27; 2.4 Composition Engine completed 2026-09-28.
+**Atlas 2.6 — Atlas Brain** (in progress). 2.1 Foundation, 2.2 Project System and 2.3 Asset & Capture System completed 2026-09-27; 2.4 Composition Engine and 2.5 Studio Canvas completed 2026-09-28.
 
 **Owner authorization (2026-09-27):** execute the roadmap continuously from 2.2 through 2.14 (Atlas 3.0) without stopping between phases; the owner tests only at the end. Each phase still ends with typecheck/lint/test/build, `BUILD-PLAN.md` + this file updated and a commit.
 
@@ -12,7 +12,7 @@ Introduce the new persistence/domain/job foundation while preserving useful beha
 
 ## Current milestone
 
-**2.5 — Studio Canvas**: editable CanvasDocument (created blank or from a CompositionInstance), layer editing (select, move, resize, text, order, visibility, lock), Zustand editor state, undo/redo, autosave with document revisions, rendering through the same kernel and render job.
+**2.6 — Atlas Brain**: `ModelGateway` port, OpenAI Responses adapter (only when `OPENAI_API_KEY` is set; deterministic fallback otherwise), ContextBuilder, structured outputs validated by Zod, smart asset selection, composition recommendation, `CreativePlan` and AI usage tracking. The AI proposes; services validate and apply.
 
 ## State of the code (2026-09-27)
 
@@ -73,6 +73,11 @@ Delivered in 2.4 (Composition Engine):
 - `Artboard`/layer document model, 10 curated versioned compositions, 5 formats, style modes through the Brand Adapter, deterministic auto-binding, `CompositionInstance` (migration `0004_composition`).
 - Single React render kernel used by the live preview and by the static renderer (Chromium runs an esbuild bundle of the kernel; no `react-dom/server` in the Next graph). Render jobs produce PNG/JPG/WebP Outputs.
 - Project tabs **Criar** (gallery + quick inspector) and **Publicar** (outputs, download).
+
+Delivered in 2.5 (Studio Canvas):
+
+- `CreativeDocument` + revisions (migration `0005_documents`): optimistic concurrency, coalesced autosave, pinned rendered revisions, restore as a new revision.
+- Full-screen Studio (`/studio/[id]`) with Zustand editor state, undo/redo, layers, add panel, drag/resize/snap canvas and inspector; render of a concrete revision.
 
 ## Work allowed now
 

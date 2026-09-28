@@ -233,3 +233,37 @@ export const compositionInstances = sqliteTable(
   },
   (t) => [index("composition_instances_project_idx").on(t.projectId)]
 );
+
+/** Documentos criativos editáveis (Canvas agora; carrossel/motion depois). Conteúdo vive nas revisões. */
+export const creativeDocuments = sqliteTable(
+  "creative_documents",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    name: text("name").notNull(),
+    source: text("source", { mode: "json" }).$type<Record<string, unknown>>().notNull(),
+    headRevision: integer("head_revision").notNull(),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => [index("creative_documents_project_idx").on(t.projectId)]
+);
+
+export const documentRevisions = sqliteTable(
+  "document_revisions",
+  {
+    documentId: text("document_id")
+      .notNull()
+      .references(() => creativeDocuments.id, { onDelete: "cascade" }),
+    revision: integer("revision").notNull(),
+    content: text("content", { mode: "json" }).$type<Record<string, unknown>>().notNull(),
+    origin: text("origin").notNull(),
+    pinned: integer("pinned", { mode: "boolean" }).notNull().default(false),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.documentId, t.revision] })]
+);

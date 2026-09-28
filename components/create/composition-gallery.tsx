@@ -2,6 +2,9 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { createInstanceAction } from "@/app/actions/create";
+import { createBlankCanvasAction } from "@/app/actions/studio";
+import type { CanvasContent } from "@/src/core/documents/creative-document";
+import { resolveTokens } from "@/src/core/creative/tokens";
 import type { Binding, CompositionInstance } from "@/src/core/creative/composition";
 import { COMPOSITIONS } from "@/src/core/creative/compositions";
 import { FORMAT_IDS, FORMATS, type FormatId } from "@/src/core/creative/formats";
@@ -18,6 +21,7 @@ interface Props {
   profilesByRevision: Record<number, VisualProfile>;
   suggestions: Record<string, Record<string, Binding>>;
   instances: CompositionInstance[];
+  documents: { id: string; name: string; headRevision: number; content: CanvasContent }[];
 }
 
 const GRID: Record<FormatId, string> = {
@@ -29,13 +33,57 @@ const GRID: Record<FormatId, string> = {
 };
 
 /** Galeria de composições curadas, já com o material do projeto, + peças salvas. */
-export function CompositionGallery({ projectId, slug, assets, profile, profilesByRevision, suggestions, instances }: Props) {
+export function CompositionGallery({ projectId, slug, assets, profile, profilesByRevision, suggestions, instances, documents }: Props) {
   const [format, setFormat] = useState<FormatId>("post-4x5");
   const assetMap = useMemo(() => new Map(assets.map((a) => [a.id, a])), [assets]);
   const available = COMPOSITIONS.filter((c) => c.formats.includes(format));
 
   return (
     <div className="space-y-10">
+      <section aria-labelledby="canvas" className="space-y-3">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <h2 id="canvas" className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+            Canvas ({documents.length})
+          </h2>
+          <form action={createBlankCanvasAction} className="flex items-center gap-2">
+            <input type="hidden" name="projectId" value={projectId} />
+            <label htmlFor="blank-format" className="text-[12px] text-zinc-500">
+              Canvas em branco
+            </label>
+            <select id="blank-format" name="formatId" defaultValue={format} className="h-8 bg-surface border border-line text-[12px] text-zinc-300 px-2">
+              {FORMAT_IDS.map((id) => (
+                <option key={id} value={id}>
+                  {FORMATS[id].label}
+                </option>
+              ))}
+            </select>
+            <button type="submit" className={buttonClass("secondary", "sm")}>
+              Criar
+            </button>
+          </form>
+        </div>
+        {documents.length === 0 ? (
+          <p className="text-[12px] text-zinc-500">Edição livre: abra uma composição com “Editar no canvas” ou comece em branco.</p>
+        ) : (
+          <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 items-end">
+            {documents.map((doc) => {
+              const { style } = doc.content;
+              const tokens = resolveTokens((style.profileRevision && profilesByRevision[style.profileRevision]) || null, style.mode, style.primary ? { primary: style.primary } : {});
+              return (
+                <li key={doc.id}>
+                  <Link href={`/studio/${doc.id}`} className="group block space-y-2" data-document={doc.id}>
+                    <ArtboardPreview artboard={doc.content.artboard} tokens={tokens} className="border border-line group-hover:border-zinc-500 transition-colors" />
+                    <p className="text-[12px] text-zinc-200 truncate">
+                      {doc.name} <span className="text-zinc-600 font-mono text-[10px]">rev {doc.headRevision}</span>
+                    </p>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
       {instances.length > 0 && (
         <section aria-labelledby="pecas">
           <h2 id="pecas" className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-3">

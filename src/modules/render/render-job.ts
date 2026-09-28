@@ -5,6 +5,7 @@ import { createOutput, type Output } from "../../core/assets/output";
 import type { AssetRepository, OutputRepository } from "../../core/assets/repositories";
 import { contentStorageKey } from "../../core/assets/storage-key";
 import type { Artboard } from "../../core/documents/artboard";
+import { CreativeDocumentIdSchema, type CreativeDocumentId, type CreativeDocumentRepository } from "../../core/documents/creative-document";
 import { artboardAssetIds } from "../../core/documents/artboard";
 import { CompositionInstanceIdSchema, type CompositionInstanceRepository } from "../../core/creative/composition";
 import { getComposition } from "../../core/creative/compositions";
@@ -22,8 +23,11 @@ import type { RasterFormat, StaticRenderer } from "./static-renderer";
 
 export const RasterFormatSchema = z.enum(["png", "jpg", "webp"]);
 
-/** O que renderizar. Composições agora; documentos de Canvas/carrossel entram nas fases seguintes. */
-export const RenderTargetSchema = z.discriminatedUnion("kind", [z.strictObject({ kind: z.literal("composition"), instanceId: CompositionInstanceIdSchema })]);
+/** O que renderizar: uma composição (estado atual) ou uma revisão CONCRETA de um documento. */
+export const RenderTargetSchema = z.discriminatedUnion("kind", [
+  z.strictObject({ kind: z.literal("composition"), instanceId: CompositionInstanceIdSchema }),
+  z.strictObject({ kind: z.literal("document"), documentId: CreativeDocumentIdSchema, revision: z.number().int().positive() }),
+]);
 
 export const RenderJobPayloadSchema = z.strictObject({
   target: RenderTargetSchema,
@@ -33,6 +37,7 @@ export type RenderJobPayload = z.infer<typeof RenderJobPayloadSchema>;
 
 export interface RenderDeps {
   compositionInstances: CompositionInstanceRepository;
+  documents: CreativeDocumentRepository;
   assets: AssetRepository;
   outputs: OutputRepository;
   visualProfiles: VisualProfileRepository;
@@ -50,6 +55,7 @@ export interface RenderUnit {
 
 /** Resolve um alvo de render em artboard + tokens + rótulo, a partir do estado persistido. */
 async function resolveTarget(deps: RenderDeps, target: RenderJobPayload["target"]): Promise<RenderUnit[]> {
+  if (target.kind === "document") return resolveDocument(deps, target.documentId, target.revision);
   const instance = await deps.compositionInstances.getById(target.instanceId);
   if (!instance) throw new DomainError("NOT_FOUND", "Composição não encontrada.");
   const definition = getComposition(instance.compositionId);
@@ -73,6 +79,31 @@ async function resolveTarget(deps: RenderDeps, target: RenderJobPayload["target"
         formatId: instance.formatId,
         variant: instance.variant,
         styleMode: instance.styleMode,
+      },
+    },
+  ];
+}
+
+async function resolveDocument(deps: RenderDeps, documentId: CreativeDocumentId, revisionNumber: number): Promise<RenderUnit[]> {
+  const document = await deps.documents.getById(documentId);
+  if (!document) throw new DomainError("NOT_FOUND", "Documento não encontrado.");
+  const revision = await deps.documents.getRevision(document.id, revisionNumber);
+  if (!revision) throw new DomainError("NOT_FOUND", `Revisão ${revisionNumber} do documento não existe.`);
+  const { artboard, style, formatId } = revision.content;
+  const profile = style.profileRevision ? await deps.visualProfiles.getRevision(document.projectId, style.profileRevision) : null;
+  return [
+    {
+      projectId: document.projectId,
+      artboard,
+      tokens: resolveTokens(profile, style.mode, style.primary ? { primary: style.primary } : {}),
+      label: `${document.name} · rev ${revision.revision}`,
+      metadata: {
+        origin: "render",
+        documentId: document.id,
+        documentRevision: revision.revision,
+        ...(formatId ? { formatId } : {}),
+        styleMode: style.mode,
+        ...(document.source.compositionId ? { compositionId: document.source.compositionId } : {}),
       },
     },
   ];

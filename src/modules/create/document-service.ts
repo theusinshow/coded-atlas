@@ -1,0 +1,140 @@
+import type { AssetRepository } from "../../core/assets/repositories";
+import type { CompositionInstanceId, CompositionInstanceRepository } from "../../core/creative/composition";
+import { getComposition } from "../../core/creative/compositions";
+import { FORMATS, formatSize, type FormatId } from "../../core/creative/formats";
+import { buildArtboard } from "../../core/creative/instance-artboard";
+import type { StyleMode } from "../../core/creative/tokens";
+import type { VisualProfileRepository } from "../../core/creative/visual-profile";
+import {
+  CanvasContentSchema,
+  contentAssetIds,
+  CreativeDocumentSchema,
+  type CanvasContent,
+  type CommitResult,
+  type CreativeDocument,
+  type CreativeDocumentId,
+  type CreativeDocumentRepository,
+} from "../../core/documents/creative-document";
+import { createJob, type Job } from "../../core/jobs/job";
+import type { JobRepository } from "../../core/jobs/repository";
+import type { ProjectRepository } from "../../core/projects/repositories";
+import { DomainError } from "../../shared/errors";
+import { newId, type ProjectId } from "../../shared/id";
+import { nowIso, parseOrThrow } from "../../shared/validation";
+import type { RenderJobPayload } from "../render/render-job";
+import type { RasterFormat } from "../render/static-renderer";
+
+export interface DocumentDeps {
+  projects: ProjectRepository;
+  assets: AssetRepository;
+  visualProfiles: VisualProfileRepository;
+  compositionInstances: CompositionInstanceRepository;
+  documents: CreativeDocumentRepository;
+  jobs: JobRepository;
+}
+
+async function requireDocument(deps: DocumentDeps, id: CreativeDocumentId): Promise<CreativeDocument> {
+  const document = await deps.documents.getById(id);
+  if (!document) throw new DomainError("NOT_FOUND", "Documento não encontrado.");
+  return document;
+}
+
+/** Todo asset usado no documento precisa existir e ser do mesmo projeto. */
+async function checkContent(deps: DocumentDeps, projectId: ProjectId, raw: unknown): Promise<CanvasContent> {
+  const content = parseOrThrow(CanvasContentSchema, raw, "Conteúdo do documento");
+  for (const id of contentAssetIds(content)) {
+    const asset = await deps.assets.getById(id as Parameters<AssetRepository["getById"]>[0]);
+    if (!asset || asset.projectId !== projectId) throw new DomainError("VALIDATION", "O documento usa uma imagem que não é deste projeto.");
+    if (!asset.mimeType.startsWith("image/")) throw new DomainError("VALIDATION", "Só imagens podem ser usadas no canvas.");
+  }
+  return content;
+}
+
+function newDocument(projectId: ProjectId, name: string, source: CreativeDocument["source"]): CreativeDocument {
+  const now = nowIso();
+  return parseOrThrow(CreativeDocumentSchema, { id: newId(), projectId, kind: "canvas", name, source, headRevision: 1, createdAt: now, updatedAt: now }, "Documento");
+}
+
+/** Canvas em branco num formato, com a identidade mais recente do projeto. */
+export async function createBlankCanvas(deps: DocumentDeps, projectId: ProjectId, input: { formatId: FormatId; name?: string; styleMode?: StyleMode }): Promise<CommitResult> {
+  const project = await deps.projects.getById(projectId);
+  if (!project) throw new DomainError("NOT_FOUND", "Projeto não encontrado.");
+  const profile = await deps.visualProfiles.latest(projectId);
+  const { width, height } = formatSize(input.formatId);
+  const content = parseOrThrow(
+    CanvasContentSchema,
+    {
+      artboard: { width, height, background: { fill: "background", pattern: "none" }, layers: [] },
+      style: { mode: input.styleMode ?? "hybrid", profileRevision: profile?.revision ?? null },
+      formatId: input.formatId,
+    },
+    "Conteúdo do documento"
+  );
+  const name = input.name?.trim() || `Canvas ${FORMATS[input.formatId].label}`;
+  return deps.documents.create(newDocument(projectId, name, {}), content, "create");
+}
+
+/**
+ * Composição → Canvas: congela o artboard montado pela receita (mesma revisão da
+ * identidade que a instância usa) num documento livre para editar.
+ */
+export async function materializeInstance(deps: DocumentDeps, instanceId: CompositionInstanceId): Promise<CommitResult> {
+  const instance = await deps.compositionInstances.getById(instanceId);
+  if (!instance) throw new DomainError("NOT_FOUND", "Composição não encontrada.");
+  const definition = getComposition(instance.compositionId);
+  if (!definition) throw new DomainError("NOT_FOUND", `Receita "${instance.compositionId}" não existe mais.`);
+  const profile =
+    (instance.visualProfileRevision ? await deps.visualProfiles.getRevision(instance.projectId, instance.visualProfileRevision) : null) ??
+    (await deps.visualProfiles.latest(instance.projectId));
+  const assets = await deps.assets.listByProject(instance.projectId);
+  const artboard = buildArtboard(definition, instance, new Map(assets.map((a) => [a.id as string, a])), profile);
+  const content = parseOrThrow(
+    CanvasContentSchema,
+    {
+      artboard,
+      style: { mode: instance.styleMode, ...(instance.overrides.primary ? { primary: instance.overrides.primary } : {}), profileRevision: profile?.revision ?? null },
+      formatId: instance.formatId,
+    },
+    "Conteúdo do documento"
+  );
+  return deps.documents.create(
+    newDocument(instance.projectId, instance.name, { instanceId: instance.id, compositionId: definition.id, compositionVersion: definition.version }),
+    content,
+    "create"
+  );
+}
+
+/** Autosave/salvar: concorrência otimista sobre `baseRevision`. */
+export async function saveCanvas(deps: DocumentDeps, id: CreativeDocumentId, baseRevision: number, content: unknown): Promise<CommitResult> {
+  const document = await requireDocument(deps, id);
+  return deps.documents.commit(document.id, baseRevision, await checkContent(deps, document.projectId, content), "edit");
+}
+
+/** Voltar a uma revisão = revisão NOVA com aquele conteúdo (o histórico nunca é reescrito para trás). */
+export async function restoreRevision(deps: DocumentDeps, id: CreativeDocumentId, revision: number): Promise<CommitResult> {
+  const document = await requireDocument(deps, id);
+  const old = await deps.documents.getRevision(document.id, revision);
+  if (!old) throw new DomainError("NOT_FOUND", `Revisão ${revision} não existe.`);
+  return deps.documents.commit(document.id, document.headRevision, await checkContent(deps, document.projectId, old.content), "restore");
+}
+
+export async function renameDocument(deps: DocumentDeps, id: CreativeDocumentId, name: string): Promise<CreativeDocument> {
+  const document = await requireDocument(deps, id);
+  return deps.documents.rename(document.id, name);
+}
+
+/** Remove o documento e suas revisões; Outputs já renderizados continuam (imutáveis). */
+export async function deleteDocument(deps: DocumentDeps, id: CreativeDocumentId): Promise<CreativeDocument> {
+  const document = await requireDocument(deps, id);
+  await deps.documents.delete(document.id);
+  return document;
+}
+
+/** Renderiza uma revisão concreta: ela é fixada para nunca mais ser reescrita pelo autosave. */
+export async function enqueueDocumentRender(deps: DocumentDeps, id: CreativeDocumentId, revision: number, formats: readonly RasterFormat[]): Promise<Job> {
+  const document = await requireDocument(deps, id);
+  if (!(await deps.documents.getRevision(document.id, revision))) throw new DomainError("NOT_FOUND", `Revisão ${revision} não existe.`);
+  await deps.documents.pin(document.id, revision);
+  const payload: RenderJobPayload = { target: { kind: "document", documentId: document.id, revision }, formats: [...new Set(formats)] };
+  return deps.jobs.create(createJob({ type: "render", projectId: document.projectId, payload }));
+}

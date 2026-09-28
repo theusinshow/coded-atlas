@@ -3,13 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { BindingSchema, CompositionInstanceIdSchema } from "@/src/core/creative/composition";
+import { CompositionInstanceIdSchema } from "@/src/core/creative/composition";
 import { FormatIdSchema } from "@/src/core/creative/formats";
-import { StyleModeSchema } from "@/src/core/creative/tokens";
 import { getAtlasRuntime } from "@/src/infrastructure/runtime";
 import { RasterFormatSchema } from "@/src/modules/render/render-job";
 import { createInstance, deleteInstance, enqueueRender, updateInstance } from "@/src/modules/create/composition-service";
 import { isDomainError } from "@/src/shared/errors";
+import { PatchSchema, type InstancePatch } from "./schemas";
 import { ProjectIdSchema } from "@/src/shared/id";
 
 export type CreateActionResult = { ok: true; jobId?: string; message?: string } | { ok: false; error: string };
@@ -21,17 +21,7 @@ function failure(err: unknown): { ok: false; error: string } {
   return { ok: false, error: "Algo deu errado. Tente novamente." };
 }
 
-/** Alterações do inspetor rápido (validadas de novo no serviço). */
-const PatchSchema = z.strictObject({
-  name: z.string().max(120).optional(),
-  formatId: FormatIdSchema.optional(),
-  variant: z.string().min(1).max(40).optional(),
-  styleMode: StyleModeSchema.optional(),
-  bindings: z.record(z.string().min(1).max(40), BindingSchema).optional(),
-  overrides: z.strictObject({ primary: z.string().regex(/^#[0-9a-f]{6}$/).optional() }).optional(),
-  refreshProfile: z.boolean().optional(),
-});
-export type InstancePatch = z.infer<typeof PatchSchema>;
+export type { InstancePatch };
 
 async function projectPath(projectId: string): Promise<string> {
   const { repos } = await getAtlasRuntime();
