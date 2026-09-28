@@ -1,7 +1,7 @@
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { chromium, type Browser, type BrowserContext, type Page, type Request } from "playwright";
+import { chromium, type Browser, type BrowserContext, type BrowserContextOptions, type Page, type Request } from "playwright";
 import sharp from "sharp";
 import { detectPageSections, type SectionCandidate } from "../../../lib/capture/detect-sections";
 import { dismissOverlays } from "../../../lib/capture/dismiss-overlays";
@@ -19,6 +19,7 @@ import type {
   ViewportShot,
   ViewportSpec,
 } from "../../modules/capture/capture-engine";
+import type { SessionState } from "../../modules/capture/session-store";
 import { DomainError } from "../../shared/errors";
 
 export interface CaptureLimits {
@@ -76,9 +77,9 @@ export class PlaywrightCaptureEngine implements CaptureEngine {
     this.limits = { ...DEFAULT_LIMITS, ...options.limits };
   }
 
-  async captureViewport(request: { url: string; viewport: ViewportSpec; signal: AbortSignal }): Promise<ViewportShot> {
+  async captureViewport(request: { url: string; viewport: ViewportSpec; session?: SessionState | null; signal: AbortSignal }): Promise<ViewportShot> {
     return this.withBrowser(request.signal, async (browser) => {
-      const context = await this.newContext(browser, request.viewport);
+      const context = await this.newContext(browser, request.viewport, null, request.session);
       try {
         const page = await this.openPage(context, request.url);
         const png = await page.screenshot({ type: "png" });
@@ -106,7 +107,7 @@ export class PlaywrightCaptureEngine implements CaptureEngine {
         for (const vp of req.viewports) {
           const device = deviceOf(vp);
           tick(`Capturando ${device} (${vp.width}×${vp.height})…`);
-          const context = await this.newContext(browser, vp, videoDir);
+          const context = await this.newContext(browser, vp, videoDir, req.session);
           let page: Page | undefined;
           try {
             page = await this.openPage(context, req.url);
@@ -155,7 +156,7 @@ export class PlaywrightCaptureEngine implements CaptureEngine {
             const device = deviceOf(vp);
             const pagePath = safePath(pageUrl);
             tick(`Página ${pagePath} (${device})…`);
-            const context = await this.newContext(browser, vp);
+            const context = await this.newContext(browser, vp, null, req.session);
             try {
               const page = await this.openPage(context, pageUrl);
               media.push(await this.shot(page, { kind: "screenshot", role: "page-viewport", device, vp, label: `${pagePath} · ${device}`, pagePath }));
@@ -177,7 +178,7 @@ export class PlaywrightCaptureEngine implements CaptureEngine {
         const stateViewport = req.viewports.find((vp) => deviceOf(vp) === "desktop") ?? req.viewports[0];
         for (const state of req.states) {
           tick(`Estado "${state.name}"…`);
-          const context = await this.newContext(browser, stateViewport);
+          const context = await this.newContext(browser, stateViewport, null, req.session);
           try {
             const page = await this.openPage(context, req.url);
             await page.click(state.selector, { timeout: 5000 });
@@ -230,8 +231,10 @@ export class PlaywrightCaptureEngine implements CaptureEngine {
     }
   }
 
-  private async newContext(browser: Browser, vp: ViewportSpec, videoDir?: string | null): Promise<BrowserContext> {
+  private async newContext(browser: Browser, vp: ViewportSpec, videoDir?: string | null, session?: SessionState | null): Promise<BrowserContext> {
     const context = await browser.newContext({
+      // Sessão do login manual: o navegador já entra autenticado (cookies + localStorage).
+      ...(session ? { storageState: session as unknown as Exclude<BrowserContextOptions["storageState"], string | undefined> } : {}),
       viewport: { width: vp.width, height: vp.height },
       deviceScaleFactor: vp.deviceScaleFactor,
       userAgent: this.options.userAgent,

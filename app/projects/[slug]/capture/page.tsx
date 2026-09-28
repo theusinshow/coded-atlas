@@ -4,6 +4,9 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { AssetThumb } from "@/components/atlas/asset-image";
 import { CaptureForm } from "@/components/atlas/capture-form";
+import { SessionPanel, type SessionView } from "@/components/atlas/session-panel";
+import { VisualDiffForm, type DiffCandidate } from "@/components/atlas/visual-diff-panel";
+import { isDiffable } from "@/src/modules/capture/visual-diff";
 import { EmptyState, Panel, SectionTitle } from "@/components/ui/primitives";
 import { getAtlasRuntime } from "@/src/infrastructure/runtime";
 import { requireProjectBySlug } from "@/src/modules/projects/project-service";
@@ -40,10 +43,29 @@ function summarizePlan(params: {
 
 export default async function ProjectCapturePage({ params }: Props) {
   const { slug } = await params;
-  const { repos } = await getAtlasRuntime();
+  const { repos, sessions } = await getAtlasRuntime();
   const project = await requireProjectBySlug(repos.projects, slug);
+  let session: SessionView | null = null;
+  let sessionError: string | undefined;
+  try {
+    session = await sessions.info(project.id);
+  } catch (err) {
+    sessionError = err instanceof Error ? err.message : "Não foi possível ler a sessão salva.";
+  }
   const [sources, captures] = await Promise.all([repos.sources.listByProject(project.id), repos.captures.listByProject(project.id)]);
   const capturable = sources.filter((s) => s.type === "url" || s.type === "local");
+  const allAssets = [...(await repos.assets.listByProject(project.id))].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const ROLE: Record<string, string> = { viewport: "viewport", fullpage: "página inteira", page: "página extra", state: "estado", section: "seção" };
+  const candidates: DiffCandidate[] = allAssets.filter(isDiffable).map((a) => {
+    const detail = a.metadata.sectionName ?? a.metadata.pagePath ?? a.metadata.stateName;
+    return {
+      id: a.id,
+      group: [a.metadata.device ?? "sem device", ROLE[a.metadata.role ?? ""] ?? a.metadata.role, detail].filter(Boolean).join(" · "),
+      label: `${new Date(a.createdAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })} · ${a.width ?? "?"}×${a.height ?? "?"}`,
+    };
+  });
+  const byId = new Map(allAssets.map((a) => [a.id as string, a]));
+  const diffs = allAssets.filter((a) => a.metadata.role === "diff").slice(0, 6);
   const history = await Promise.all(
     [...captures].reverse().map(async (c) => {
       const job = c.jobId ? await repos.jobs.getById(c.jobId) : null;
@@ -65,6 +87,56 @@ export default async function ProjectCapturePage({ params }: Props) {
             Adicionar origem na visão geral →
           </Link>
         )}
+        <div className="mt-6">
+          <SessionPanel projectId={project.id} slug={project.slug} session={session} error={sessionError} />
+        </div>
+      </section>
+
+      <div className="space-y-10 min-w-0">
+      <section aria-labelledby="diff">
+        <SectionTitle id="diff">Comparar capturas</SectionTitle>
+        <Panel className="p-4 space-y-5">
+          <p className="text-[12px] text-zinc-400">Diff visual pixel a pixel — bom para vigiar um site já entregue: recapture e compare com a captura anterior.</p>
+          <VisualDiffForm candidates={candidates} />
+          {diffs.length > 0 && (
+            <ul className="space-y-5" data-diff-results>
+              {diffs.map((d) => {
+                const before = d.metadata.comparedTo ? byId.get(d.metadata.comparedTo) : undefined;
+                const after = d.parentAssetId ? byId.get(d.parentAssetId) : undefined;
+                const percent = d.metadata.changedPercent ?? 0;
+                return (
+                  <li key={d.id} className="space-y-2" data-diff={d.id}>
+                    <p className="flex flex-wrap items-baseline gap-2">
+                      <span className={`text-xl font-semibold tabular-nums ${percent < 0.1 ? "text-ok" : "text-warn"}`}>{percent.toLocaleString("pt-BR")}%</span>
+                      <span className="text-[12px] text-zinc-400">{percent < 0.1 ? "praticamente sem mudanças" : "da página mudou"} · {d.label}</span>
+                    </p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { label: "Antes", asset: before },
+                        { label: "Depois", asset: after },
+                        { label: "Diferença", asset: d },
+                      ].map((col) => (
+                        <div key={col.label} className="space-y-1">
+                          <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">
+                            {col.label}
+                            {col.asset && col.label !== "Diferença" ? ` · ${new Date(col.asset.createdAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}` : ""}
+                          </p>
+                          {col.asset ? (
+                            <Link href={`/projects/${project.slug}/assets/${col.asset.id}`} className="block aspect-[16/10] border border-line overflow-hidden hover:border-zinc-500">
+                              <AssetThumb id={col.asset.id} alt={col.label} width={640} className="w-full h-full" />
+                            </Link>
+                          ) : (
+                            <div className="aspect-[16/10] border border-line grid place-items-center text-[11px] text-zinc-600">removida</div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Panel>
       </section>
 
       <section aria-labelledby="historico">
@@ -98,7 +170,7 @@ export default async function ProjectCapturePage({ params }: Props) {
                   )}
                   {assets.length > 0 && (
                     <ul className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                      {assets.filter((a) => a.mimeType.startsWith("image/")).slice(0, 12).map((a) => (
+                      {assets.filter((a) => a.mimeType.startsWith("image/") && a.metadata.role !== "diff").slice(0, 12).map((a) => (
                         <li key={a.id} className="aspect-[16/10] border border-line overflow-hidden" title={a.label ?? a.kind}>
                           <Link href={`/projects/${project.slug}/assets/${a.id}`}>
                             <AssetThumb id={a.id} alt={a.label ?? a.kind} width={320} className="w-full h-full" />
@@ -113,6 +185,7 @@ export default async function ProjectCapturePage({ params }: Props) {
           </ul>
         )}
       </section>
+      </div>
     </div>
   );
 }

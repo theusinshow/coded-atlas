@@ -29,6 +29,7 @@ export const JOB_TYPE_LABEL: Record<string, string> = {
   plan: "Plano criativo",
   copy: "Redação do case",
   export: "Exportação",
+  diff: "Diff visual",
 };
 
 export function ProjectStatusBadge({ status }: { status: "active" | "archived" }) {

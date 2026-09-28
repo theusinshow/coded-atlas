@@ -15,6 +15,7 @@
     "db:migrate": "tsx scripts/atlas-db-migrate.ts",
     "legacy:scan": "tsx scripts/legacy-scan.ts",
     "worker": "tsx scripts/atlas-worker.ts",
+    "atlas:login": "tsx scripts/atlas-login.ts",
     "e2e": "tsx e2e/smoke.ts"
   },
   "dependencies": {

@@ -2,7 +2,7 @@
 
 ## Active phase
 
-**Atlas 3.0 — declared 2026-09-28** (tag `v3.0.0`, ADR-042) after the owner's acceptance test. All roadmap phases are complete: 2.1–2.3 on 2026-09-27, 2.4–2.14 on 2026-09-28. No post-3.0 phase is authorized yet.
+**Atlas 3.0 — declared 2026-09-28** (tag `v3.0.0`, ADR-042) after the owner's acceptance test. All roadmap phases are complete: 2.1–2.3 on 2026-09-27, 2.4–2.14 on 2026-09-28. Post-3.0 milestone **3.1 — v1 retirement** authorized by the owner on 2026-09-28 (in progress).
 
 **Owner authorization (2026-09-27):** execute the roadmap continuously from 2.2 through 2.14 (Atlas 3.0) without stopping between phases; the owner tests only at the end. Each phase still ends with typecheck/lint/test/build, `BUILD-PLAN.md` + this file updated and a commit.
 
@@ -12,7 +12,13 @@ Keep the 3.0 loop (Import → Capture → Understand → Create → Motion → R
 
 ## Current milestone
 
-**None active — Atlas 3.0 maintenance.** Candidates awaiting the owner's decision: retire the v1 screens/routes (all have 2.x equivalents), consume `portfolio.json` on the site, minor polish found in testing (local-time delivery folder names, piece names on compact Portfolio cards). Still unexercised on this machine: real OpenAI calls (no key) and a real GitHub push (no token).
+**3.1 — v1 retirement** (authorized 2026-09-28; the owner chose "port first, then remove"):
+
+1. ✅ **3.1.A Authenticated capture in 2.x** (done 2026-09-28): a session saved per project outside AssetStorage and never exported, a login command (headed browser), used by every capture context, and session status plus removal in the Capture tab.
+2. ✅ **3.1.B Visual diff in 2.x** (done 2026-09-28): a `diff` job comparing two captures (same device and role); the result is a derived Asset (diff image, percent changed, lineage to both), shown in the Capture tab.
+3. **3.1.C Remove v1**: v1 screens (`/legacy`, `/generate`, `/lab/coded-atlas`), v1 API routes (`/api/generate`, `/api/projects`, `/api/case`, `/api/diff`, `/api/export`, `/api/zip`, `/api/showcase`), the v1 generation pipeline and its scripts. Kept: the importer of the v1 library (read-only) and the capture routines the 2.x engine reuses (moved under `src/`).
+
+Still unexercised on this machine: real OpenAI calls (no key) and a real GitHub push (no token).
 
 ## State of the code (2026-09-27)
 
@@ -118,17 +124,18 @@ Delivered in 2.14 (Publish & Portfolio):
 
 ## Work allowed now
 
+- milestone 3.1 (above);
 - bug fixes and hardening of what 2.1–2.14 delivered;
 - documentation and test improvements;
 - small polish items the owner reports.
 
 ## Work NOT allowed now
 
-New phases or features beyond 3.0 (including v1 retirement, cloud storage, desktop packaging, multi-user or autonomous publishing) until the owner authorizes them.
+Other new phases or features (cloud storage, desktop packaging, multi-user, autonomous publishing, site integration) until the owner authorizes them.
 
 ## Preservation rule
 
-The v1 screens and routes (`/legacy`, `/generate`, `/api/export`, `/api/zip`) stay operational until a retirement task explicitly removes them.
+Until 3.1.C, the v1 screens and routes stay operational. 3.1.C removes them only after 3.1.A and 3.1.B have shipped. The v1 library importer stays, and so do the files in `public/generated` (they are never touched).
 
 ## Completion criteria
 

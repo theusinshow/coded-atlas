@@ -1,4 +1,5 @@
 import type { AssetMetadata } from "../../core/assets/asset";
+import type { SessionState } from "./session-store";
 
 /**
  * Porta da engine de captura. A aplicação pede fotos/vídeos e recebe bytes;
@@ -32,6 +33,8 @@ export interface SiteCaptureRequest {
   /** URLs absolutas de páginas extras (já resolvidas e validadas). */
   pages: string[];
   states: { name: string; selector: string }[];
+  /** Sessão autenticada do projeto (login salvo); ausente = visita anônima. */
+  session?: SessionState | null;
   signal: AbortSignal;
   onProgress?: (fraction: number, message: string) => void;
 }
@@ -68,6 +71,6 @@ export interface SiteCaptureResult {
 }
 
 export interface CaptureEngine {
-  captureViewport(request: { url: string; viewport: ViewportSpec; signal: AbortSignal }): Promise<ViewportShot>;
+  captureViewport(request: { url: string; viewport: ViewportSpec; session?: SessionState | null; signal: AbortSignal }): Promise<ViewportShot>;
   captureSite(request: SiteCaptureRequest): Promise<SiteCaptureResult>;
 }

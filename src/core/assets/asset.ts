@@ -40,6 +40,8 @@ export const AssetMetadataSchema = z.strictObject({
   origin: z.enum(["capture", "upload", "legacy", "derived"]).optional(),
   legacyPath: z.string().max(1024).optional(),         // /generated/... de onde veio (importação v1)
   originalName: z.string().max(255).optional(),        // nome do arquivo enviado
+  comparedTo: z.string().max(40).optional(),           // diff visual: Asset "antes" (o "depois" é o parentAssetId)
+  changedPercent: z.number().min(0).max(100).optional(), // diff visual: % de pixels alterados
 });
 export type AssetMetadata = z.infer<typeof AssetMetadataSchema>;
 

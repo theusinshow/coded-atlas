@@ -115,6 +115,16 @@ async function main(): Promise<void> {
       await page.getByText("página(s) extra(s)").first().waitFor();
     });
 
+    await step("captura: sessão anônima + diff visual entre as duas capturas", async () => {
+      await page.goto(`${BASE}/projects/e2e-${slug}/capture`);
+      await page.locator('[data-session="none"]').getByText(`npm run atlas:login -- e2e-${slug}`).waitFor();
+      const form = page.locator("[data-diff-form]");
+      await form.getByRole("button", { name: "Comparar" }).click();
+      await form.getByText("Concluído").waitFor({ timeout: 60_000 });
+      await page.locator("[data-diff-results] [data-diff]").first().waitFor({ timeout: 15_000 });
+      assert((await page.locator("[data-diff-results] [data-diff] img").count()) === 3, "diff deveria mostrar antes, depois e diferença");
+    });
+
     await step("detalhe do asset: linhagem e trocar a capa", async () => {
       await page.goto(`${BASE}/projects/e2e-${slug}/assets?kind=section`);
       await page.locator(`a[href*="/projects/e2e-${slug}/assets/"]`).first().click();

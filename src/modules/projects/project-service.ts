@@ -1,4 +1,5 @@
 import type { ExportRepository } from "../../core/publish/export";
+import type { SessionStore } from "../capture/session-store";
 import type { AssetStorage } from "../../core/assets/asset-storage";
 import type { AssetRepository, OutputRepository } from "../../core/assets/repositories";
 import type { StorageKey } from "../../core/assets/storage-key";
@@ -34,6 +35,8 @@ export interface ProjectServiceDeps {
   derivedCacheKeys?: (key: StorageKey, sha256: string) => StorageKey[];
   /** Pacotes gerados (2.14): o ZIP de cada exportação do projeto sai junto. */
   exports?: Pick<ExportRepository, "listByProject">;
+  /** Sessão autenticada de captura: sai junto com o projeto. */
+  sessions?: Pick<SessionStore, "remove">;
 }
 
 /** Slug a partir do nome (mesmo algoritmo do v1), garantindo unicidade com sufixo. */
@@ -185,6 +188,7 @@ export async function deleteProjectPermanently(
   for (const record of (await deps.exports?.listByProject(projectId)) ?? []) if (record.result.archive) archives.add(record.result.archive.storageKey);
 
   await deps.projects.delete(projectId);
+  await deps.sessions?.remove(projectId);
   if (project.origin === "legacy") {
     await deps.legacyImports.record({
       slug: project.slug,

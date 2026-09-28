@@ -16,6 +16,7 @@ import { nowIso, parseOrThrow } from "../../shared/validation";
 import type { JobContext, JobHandler } from "../../workers/job-worker";
 import type { ImageTransformer } from "../assets/image-transformer";
 import type { CaptureEngine, CapturedMedia, CaptureWarning, ViewportSpec } from "./capture-engine";
+import type { SessionState, SessionStore } from "./session-store";
 
 export const CaptureJobPayloadSchema = z.strictObject({
   sourceId: SourceIdSchema,
@@ -37,6 +38,8 @@ export interface CaptureJobDeps {
   viewports: Record<CaptureDevice, ViewportSpec>;
   timeoutMs: number;
   assertUrlAllowed?: (url: string) => Promise<void>;
+  /** Sessões autenticadas por projeto (login manual). Ausente = sempre anônimo. */
+  sessions?: Pick<SessionStore, "get">;
 }
 
 /** Capa derivada: 1.91:1 (padrão Open Graph), boa para portfólio e redes. */
@@ -84,13 +87,14 @@ export function createCaptureJobHandler(deps: CaptureJobDeps): JobHandler {
       );
       capture = await deps.captures.update({ ...capture, status: "running", startedAt: nowIso() });
 
+      const session = (await deps.sessions?.get(project.id)) ?? null;
       const staging = await deps.storage.beginStaging();
       try {
         const result = plan
-          ? await captureFull(deps, ctx, project, source, capture, staging, plan)
-          : await captureViewportOnly(deps, ctx, project, source, capture, staging);
+          ? await captureFull(deps, ctx, project, source, capture, staging, plan, session)
+          : await captureViewportOnly(deps, ctx, project, source, capture, staging, session);
         capture = await deps.captures.update({ ...capture, status: "completed", completedAt: nowIso() });
-        return { captureId: capture.id, ...result };
+        return { captureId: capture.id, authenticated: session !== null, ...result };
       } catch (err) {
         await staging.discard();
         // Registrar a falha não pode mascarar o erro original.
@@ -109,11 +113,12 @@ async function captureViewportOnly(
   project: Project,
   source: Source,
   capture: Capture,
-  staging: StagingArea
+  staging: StagingArea,
+  session: SessionState | null
 ): Promise<Record<string, unknown>> {
   const vp = deps.viewports.desktop;
   await ctx.progress(10, `Capturando ${vp.label} (${vp.width}×${vp.height})…`);
-  const shot = await deps.engine.captureViewport({ url: source.locator, viewport: vp, signal: ctx.signal });
+  const shot = await deps.engine.captureViewport({ url: source.locator, viewport: vp, session, signal: ctx.signal });
   ctx.throwIfAborted();
   await ctx.progress(70, "Validando e guardando…");
   if (!PNG_SIGNATURE.every((byte, i) => shot.png[i] === byte)) {
@@ -143,7 +148,8 @@ async function captureFull(
   source: Source,
   capture: Capture,
   staging: StagingArea,
-  plan: CapturePlan
+  plan: CapturePlan,
+  session: SessionState | null
 ): Promise<Record<string, unknown>> {
   const pages: string[] = [];
   const warnings: CaptureWarning[] = [];
@@ -167,6 +173,7 @@ async function captureFull(
     inspect: plan.inspect,
     pages,
     states: plan.states,
+    session,
     signal: ctx.signal,
     onProgress: (fraction, message) => {
       ctx.progress(5 + Math.round(fraction * 80), message).catch((err: unknown) => ctx.logger.warn("progresso não registrado", { error: err }));

@@ -134,3 +134,7 @@ Render
 ↓
 Export
 ```
+
+## Atlas 3.1 — v1 retirement (authorized 2026-09-28)
+
+Port the last v1-only capabilities (authenticated capture, visual diff) to 2.x, then remove the v1 screens, routes and generation pipeline. The read-only importer of the v1 library stays.

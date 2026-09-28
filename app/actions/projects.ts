@@ -19,6 +19,7 @@ import {
   updateProjectDetails,
 } from "@/src/modules/projects/project-service";
 import { CAPTURE_PROFILES, CapturePlanSchema } from "@/src/core/assets/capture-plan";
+import { requestVisualDiff } from "@/src/modules/capture/visual-diff";
 import { isDomainError } from "@/src/shared/errors";
 import { AssetIdSchema, JobIdSchema, ProjectIdSchema, SourceIdSchema } from "@/src/shared/id";
 
@@ -110,6 +111,32 @@ export async function addSourceAction(projectId: string, _prev: ActionState, for
     const project = await projectDeps.projects.getById(id);
     revalidatePath(`/projects/${project?.slug}`, "layout");
     return { message: `Source adicionada: ${source.locator}` };
+  } catch (err) {
+    return failure(err);
+  }
+}
+
+/** Diff visual entre duas capturas do projeto (job `diff`). */
+export async function compareCapturesAction(_prev: JobActionState, form: FormData): Promise<JobActionState> {
+  try {
+    const { repos } = await getAtlasRuntime();
+    const job = await requestVisualDiff(repos, AssetIdSchema.parse(form.get("beforeAssetId")), AssetIdSchema.parse(form.get("afterAssetId")));
+    return { jobId: job.id };
+  } catch (err) {
+    if (err instanceof z.ZodError) return { error: "Escolha as duas capturas." };
+    return failure(err);
+  }
+}
+
+/** Remove a sessão autenticada de captura do projeto (as próximas capturas voltam a ser anônimas). */
+export async function removeSessionAction(projectId: string): Promise<ActionState> {
+  try {
+    const { sessions, projectDeps } = await getAtlasRuntime();
+    const id = ProjectIdSchema.parse(projectId);
+    await sessions.remove(id);
+    const project = await projectDeps.projects.getById(id);
+    revalidatePath(`/projects/${project?.slug}/capture`);
+    return { message: "Sessão removida." };
   } catch (err) {
     return failure(err);
   }

@@ -19,6 +19,8 @@ import { createUrlPolicy, resolveUrlPolicyMode, type UrlPolicy } from "./net/url
 import { SharpMediaProbe } from "./sharp/media-probe";
 import { thumbCacheKeys, ThumbnailService } from "./sharp/thumbnails";
 import { LocalAssetStorage } from "./storage/local-asset-storage";
+import { FileSessionStore } from "./playwright/file-session-store";
+import type { SessionStore } from "../modules/capture/session-store";
 import { GithubApiDestination, LocalFolderDestination, githubConfigFromEnv } from "./publish/destinations";
 import { buildZip } from "./zip/zip-builder";
 import path from "node:path";
@@ -39,6 +41,8 @@ export interface AtlasRuntime {
   storage: LocalAssetStorage;
   urlPolicy: UrlPolicy;
   thumbnails: ThumbnailService;
+  /** Sessões autenticadas de captura (<ATLAS_HOME>/auth), fora do AssetStorage. */
+  sessions: SessionStore;
   logger: Logger;
   /** Dependências prontas para os casos de uso (UI/API só chamam serviços). */
   projectDeps: ProjectServiceDeps;
@@ -84,6 +88,7 @@ async function createRuntime(): Promise<AtlasRuntime> {
   const probe = new SharpMediaProbe();
   const legacyStore = await GeneratedDirStore.open(legacyConfig.outputDir);
   const thumbnails = new ThumbnailService(storage);
+  const sessions = new FileSessionStore(path.join(home.root, "auth"));
 
   return {
     home,
@@ -92,8 +97,9 @@ async function createRuntime(): Promise<AtlasRuntime> {
     storage,
     urlPolicy,
     thumbnails,
+    sessions,
     logger,
-    projectDeps: { ...repos, storage, exports: repos.exports, assertUrlAllowed: urlPolicy.assertAllowed, derivedCacheKeys: thumbCacheKeys },
+    projectDeps: { ...repos, storage, exports: repos.exports, sessions, assertUrlAllowed: urlPolicy.assertAllowed, derivedCacheKeys: thumbCacheKeys },
     uploadDeps: { ...repos, storage, probe },
     legacyImportDeps: { ...repos, ledger: repos.legacyImports, store: legacyStore, storage, probe },
     compositionDeps: repos,

@@ -273,3 +273,12 @@ Accepted (2026-09-28).
 - The ROADMAP 3.0 criterion is met: the full loop works end-to-end, and the primary proof (Project URL → Generate Media Kit → Review → Render → Export) is covered by the e2e suite and by the owner's acceptance test.
 - Tagged `v3.0.0`. The continuous-execution authorization of ADR-028 ends here. New scope requires a new owner decision.
 - Known gaps, accepted: real OpenAI Responses calls and real GitHub delivery are implemented behind ports and tested with fakes, but have not been exercised against the live services. The v1 screens remain until an explicit retirement task.
+
+## ADR-043 — v1 retirement: port first, then remove (3.1)
+
+Accepted (2026-09-28).
+
+- Two capabilities existed only in v1: authenticated capture and visual diff. The owner chose to port them before removing v1, so retiring v1 loses nothing.
+- **Sessions are secrets, not assets**. They live in `<ATLAS_HOME>/auth/<projectId>.json` behind a `SessionStore` port, outside AssetStorage, never in SQLite, never exported, and are shown only as a summary (cookie count and domains). They are created by a manual headed login (`npm run atlas:login`), never by an automated flow. v1 sessions (`auth/<slug>.json`) are not copied automatically: the owner logs in again.
+- **A diff is a derived Asset** (role `diff`), with lineage to both captures and the changed percentage in its metadata. It runs as a `diff` job, never inside a request.
+- The v1 "recapture now and compare" button becomes two steps (capture, then compare the latest two captures). The capture is a real job with a plan and history, instead of an ad-hoc recapture.

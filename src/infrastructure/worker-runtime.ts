@@ -5,6 +5,8 @@ import { createCaptureJobHandler } from "../modules/capture/capture-job";
 import { createLegacyImportJobHandler } from "../modules/import/legacy/legacy-import-job";
 import { createRenderJobHandler } from "../modules/render/render-job";
 import { createExportJobHandler } from "../modules/publish/export-service";
+import { createVisualDiffJobHandler } from "../modules/capture/visual-diff";
+import { SharpPixelmatchDiffer } from "./sharp/visual-differ";
 import { JobWorker } from "../workers/job-worker";
 import { PlaywrightCaptureEngine } from "./playwright/playwright-capture-engine";
 import { PdfPptxExporter } from "./export/pdf-pptx-exporter";
@@ -53,12 +55,14 @@ export function createAtlasWorker(runtime: AtlasRuntime, options: { workerId?: s
         viewports: RUNTIME_SETTINGS.captureViewports,
         timeoutMs: RUNTIME_SETTINGS.captureJobTimeoutMs,
         assertUrlAllowed: urlPolicy.assertAllowed,
+        sessions: runtime.sessions,
       }),
       import: createLegacyImportJobHandler(runtime.legacyImportDeps),
       render: createRenderJobHandler({ ...repos, storage, renderer: new PlaywrightStaticRenderer(), motionRenderer: new ChromiumFfmpegMotionRenderer(), exporter: new PdfPptxExporter(), caseExporter: new ChromiumCaseExporter() }),
       plan: createPlanJobHandler(runtime.brainDeps),
       copy: createCaseCopyJobHandler({ ...runtime.brainDeps, documents: repos.documents }),
       export: createExportJobHandler(runtime.exportDeps),
+      diff: createVisualDiffJobHandler({ assets: repos.assets, jobs: repos.jobs, storage, differ: new SharpPixelmatchDiffer() }),
     },
   });
 }

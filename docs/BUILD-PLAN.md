@@ -341,3 +341,22 @@ Do not start 2.2 until 2.1 exit criteria in `ROADMAP.md` pass.
 - [x] Prova principal do ROADMAP: URL do projeto → Gerar Media Kit → Revisar → Renderizar → Exportar (`npm run e2e`, 24 passos).
 - [x] Teste de aceite do Matheus concluído.
 - Pendências conhecidas (fora do critério): chamada real à OpenAI e push real ao GitHub não exercitados nesta máquina; commits só locais (repositório remoto arquivado).
+
+## Atlas 3.1 — v1 retirement (em andamento, autorizada 2026-09-28)
+
+Decisão do Matheus: portar antes, remover depois (ADR-043).
+
+### 3.1.A Captura autenticada no 2.x (concluída 2026-09-28)
+
+- [x] `SessionStore` (porta) + `FileSessionStore` em `<ATLAS_HOME>/auth/<projectId>.json` (fora do AssetStorage, permissão 600, nunca exportada; resumo sem valores).
+- [x] `npm run atlas:login -- <slug> [url]`: navegador visível, login manual (MFA/social), Enter salva a sessão.
+- [x] Job de captura usa a sessão em todo contexto do navegador; resultado registra `authenticated`.
+- [x] Aba Captura: estado da sessão (ativa/anônima), comando para criar ou renovar, "Remover sessão". Excluir o projeto apaga a sessão.
+
+### 3.1.B Diff visual no 2.x (concluída 2026-09-28)
+
+- [x] Job `diff` entre duas capturas do mesmo projeto e device (viewport, página inteira, seção, página extra, estado): pixelmatch com os parâmetros do v1, redimensiona o "depois" se a altura mudou, teto de 24 MP.
+- [x] Resultado = Asset derivado (imagem de diferença, `changedPercent`, `comparedTo` = antes, `parentAssetId` = depois); o mesmo par reaproveita o resultado.
+- [x] Aba Captura: "Comparar capturas" (padrão: penúltima × última do mesmo grupo) e resultados antes/depois/diferença.
+
+Verificação 3.1.A+B: typecheck/lint OK; `npm test` 457 testes (34 arquivos; captura autenticada com Chromium real contra um site com cookie, diff real com Sharp/pixelmatch); build OK; `npm run e2e` 25/25 passos.
