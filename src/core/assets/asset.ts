@@ -15,6 +15,7 @@ export const AssetKindSchema = z.enum([
   "logo",
   "icon",
   "video",
+  "audio",
   "motion-clip",
   "font",
   "illustration",

@@ -67,7 +67,11 @@ export function AssetPicker({
                 data-asset={a.id}
                 className={`block w-full aspect-[16/10] border overflow-hidden ${a.id === value ? "border-accent" : "border-line hover:border-zinc-500"}`}
               >
-                <AssetThumb id={a.id} alt={a.label ?? a.kind} width={320} className="w-full h-full" />
+                {a.mimeType.startsWith("video/") ? (
+                  <span className="grid w-full h-full place-items-center bg-surface-2 text-[10px] font-mono uppercase tracking-wider text-accent">▶ vídeo</span>
+                ) : (
+                  <AssetThumb id={a.id} alt={a.label ?? a.kind} width={320} className="w-full h-full" />
+                )}
               </button>
             </li>
           ))}

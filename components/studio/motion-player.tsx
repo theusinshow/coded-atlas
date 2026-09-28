@@ -11,7 +11,23 @@ const clock = (ms: number) => `${Math.floor(ms / 60000)}:${String(Math.floor((ms
  * Preview interativo do vídeo no navegador (não é o render final — docs/MOTION-ENGINE.md
  * → Preview): o mesmo kernel quadro a quadro com requestAnimationFrame.
  */
-export function MotionPlayer({ content, tokens, startScene, onClose }: { content: MotionContent; tokens: StyleTokens; startScene: number; onClose: (sceneIndex: number) => void }) {
+export function MotionPlayer({
+  content,
+  tokens,
+  startScene,
+  onClose,
+  videos,
+  audioSrc,
+  audioVolume,
+}: {
+  content: MotionContent;
+  tokens: StyleTokens;
+  startScene: number;
+  onClose: (sceneIndex: number) => void;
+  videos?: ReadonlySet<string>;
+  audioSrc: string | null;
+  audioVolume: number;
+}) {
   const total = totalDurationMs(content);
   const startMs = content.scenes.slice(0, startScene).reduce((sum, s) => sum + s.durationMs, 0);
   const [time, setTime] = useState(startMs);
@@ -21,6 +37,27 @@ export function MotionPlayer({ content, tokens, startScene, onClose }: { content
   const ref = useRef<HTMLDivElement>(null);
   const timeRef = useRef(time);
   timeRef.current = time;
+  const frameRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  // Vídeos capturados seguem o tempo da cena (data-time); repetem se forem mais curtos.
+  useEffect(() => {
+    for (const video of frameRef.current?.querySelectorAll<HTMLVideoElement>("video[data-atlas-video]") ?? []) {
+      const wanted = Number(video.dataset.time ?? "0");
+      const target = video.duration && Number.isFinite(video.duration) ? wanted % video.duration : wanted;
+      if (Math.abs(video.currentTime - target) > 0.15) video.currentTime = target;
+    }
+  }, [time]);
+
+  // Trilha: toca junto, corrige deriva, pausa com o player.
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.volume = audioVolume;
+    if (Math.abs(audio.currentTime - time / 1000) > 0.25) audio.currentTime = time / 1000;
+    if (playing && audio.paused) void audio.play().catch(() => undefined);
+    if (!playing && !audio.paused) audio.pause();
+  }, [time, playing, audioVolume]);
 
   useEffect(() => {
     const el = ref.current;
@@ -71,13 +108,14 @@ export function MotionPlayer({ content, tokens, startScene, onClose }: { content
     <div className="absolute inset-0 z-10 flex flex-col bg-[#050507]" role="dialog" aria-label="Preview do vídeo" data-motion-player>
       <div ref={ref} className="flex-1 min-h-0 grid place-items-center overflow-hidden">
         {scale > 0 && (
-          <div style={{ width: width * scale, height: height * scale }} className="relative shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)]">
+          <div ref={frameRef} style={{ width: width * scale, height: height * scale }} className="relative shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)]">
             <div className="absolute left-0 top-0 origin-top-left" style={{ width, height, transform: `scale(${scale})` }}>
-              <MotionFrameView content={content} timeMs={time} tokens={tokens} resolveAsset={assetFileUrl} />
+              <MotionFrameView content={content} timeMs={time} tokens={tokens} resolveAsset={assetFileUrl} videos={videos} />
             </div>
           </div>
         )}
       </div>
+      {audioSrc && <audio ref={audioRef} src={audioSrc} preload="auto" />}
       <div className="shrink-0 flex items-center gap-3 border-t border-line px-3 py-2">
         <button type="button" onClick={() => setPlaying((p) => !p)} className="h-8 w-16 bg-accent text-zinc-950 text-[12px] font-medium" aria-label={playing ? "Pausar" : "Tocar"}>
           {playing ? "❚❚" : "▶"}

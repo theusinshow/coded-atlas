@@ -307,6 +307,26 @@ async function main(): Promise<void> {
       await page.locator('[data-save-state="saved"]').waitFor({ timeout: 15_000 });
     });
 
+    await step("vídeo: receita → render MP4 (preview) → Publicar", async () => {
+      await page.goto(`${BASE}/projects/e2e-${slug}/create`);
+      await page.getByLabel("Receita de vídeo").selectOption("quick-showcase");
+      await page.getByLabel("Formato do vídeo por receita").selectOption("post-1x1");
+      await page.getByRole("button", { name: "Montar vídeo" }).click();
+      await page.waitForURL(/\/studio\/[0-9A-Z]{26}$/);
+      const scenes = await page.locator("[data-page-thumb]").count();
+      assert(scenes >= 2, `receita com ${scenes} cena(s)`);
+      await page.getByRole("button", { name: "Renderizar", exact: true }).click();
+      await page.getByRole("radio", { name: "Preview rápido" }).click();
+      await page.getByRole("button", { name: "Renderizar agora" }).click();
+      await page.getByText("Concluído").waitFor({ timeout: 240_000 });
+      await page.goto(`${BASE}/projects/e2e-${slug}/publish`);
+      const card = page.locator("[data-output]", { has: page.locator("video") }).first();
+      await card.getByText(/MP4 · 540×540 · [\d.]+ s · preview/).waitFor();
+      const id = await card.getAttribute("data-output");
+      const res = await fetch(`${BASE}/api/atlas/outputs/${id}/file`);
+      assert(res.ok && res.headers.get("content-type") === "video/mp4", `mp4 HTTP ${res.status}`);
+    });
+
     await step("jobs e ajustes mostram o estado real", async () => {
       await page.goto(`${BASE}/jobs`);
       await page.getByText("Captura").first().waitFor();

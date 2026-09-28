@@ -77,7 +77,7 @@ function resizeBox(box: Gesture["box"], handle: Handle, dx: number, dy: number, 
   return { x: Math.round(x), y: Math.round(y), width: Math.round(width), height: Math.round(height) };
 }
 
-export function CanvasStage({ tokens, zoom, onFit }: { tokens: StyleTokens; zoom: Zoom; onFit: (scale: number) => void }) {
+export function CanvasStage({ tokens, zoom, onFit, videos }: { tokens: StyleTokens; zoom: Zoom; onFit: (scale: number) => void; videos?: ReadonlySet<string> }) {
   const api = useStudioApi();
   const artboard = useStudio((s) => s.content.artboard);
   const selectedId = useStudio((s) => s.selectedId);
@@ -179,7 +179,7 @@ export function CanvasStage({ tokens, zoom, onFit }: { tokens: StyleTokens; zoom
       <div className="grid place-items-center" style={{ minWidth: "100%", minHeight: "100%", width: artboard.width * scale + 96, height: artboard.height * scale + 96 }}>
         <div className="relative shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)]" style={{ width: artboard.width * scale, height: artboard.height * scale }} data-studio-artboard>
           <div className="absolute left-0 top-0 origin-top-left pointer-events-none" style={{ width: artboard.width, height: artboard.height, transform: `scale(${scale})` }}>
-            <ArtboardView artboard={artboard} tokens={tokens} mode="preview" resolveAsset={assetFileUrl} />
+            <ArtboardView artboard={artboard} tokens={tokens} mode="preview" resolveAsset={assetFileUrl} videos={videos} />
           </div>
 
           {/* Alvos de clique dos layers de topo (último = por cima). */}

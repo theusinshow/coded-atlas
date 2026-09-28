@@ -217,3 +217,13 @@ Accepted (2026-09-28).
 - **One frame function for preview and render**: `sceneFrame` (pure) plus `MotionSceneView`/`MotionFrameView` in the render kernel. The browser player and the 2.10 video renderer draw the same frames.
 - **Integrity over leniency**: tracks must reference existing layers (schema refine). The editor prunes tracks when a layer is deleted instead of saving invalid revisions.
 - **Website Scroll animates `focusY`** of a full-page capture inside a browser frame; its duration follows the page height.
+
+## ADR-037 — Video engine without Remotion (2.10)
+
+Accepted (2026-09-28).
+
+- **Adapter choice**: the first `MotionRenderer` is a Chromium frame renderer feeding FFmpeg, not Remotion. It reuses the exact kernel and bundle path already used for static renders and the browser preview (`MotionFrameView`), adds no webpack bundler or extra Chrome download, and keeps the domain vendor-neutral. MOTION-ENGINE allows Remotion as an *initial option*, and a Remotion adapter can still implement the same port later (its license is free for Coded by M's size, but that should be re-checked before adopting it).
+- **Determinism**: frames are drawn at computed timestamps (`frame / fps`), with `flushSync`, then videos are seeked (`seeked` event) and images decoded before each screenshot. No real-time clock is involved, so a render is reproducible.
+- **FFmpeg is infrastructure**: spawned with an argument list (no shell), resolved from `ATLAS_FFMPEG` or `PATH`, and its status is shown in Settings. JPEG frames are piped through stdin with backpressure. Output dimensions are forced even for yuv420p.
+- **Audio** is one project asset per video (volume and fade-out), padded or cut to the exact document duration.
+- **Captured motion** is any project video used inside a frame of a motion document. Static documents still accept only images (validation in the service).

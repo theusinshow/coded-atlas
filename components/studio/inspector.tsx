@@ -11,7 +11,7 @@ import { STYLE_MODES, type StudioAsset } from "@/components/create/types";
 import { lintArtboard } from "@/src/core/creative/guardrails";
 import { CreativeIssues } from "@/components/creative/creative-issues";
 import { ColorField, FIELD_LABEL, NumberField, RangeField, Section, Segmented, TextField, Toggle } from "./fields";
-import { LayerAnimationSection, SceneSection } from "./motion-inspector";
+import { LayerAnimationSection, SceneSection, SoundtrackSection } from "./motion-inspector";
 import { LAYER_TYPE_LABEL, newLayerId } from "./layer-factory";
 import { useStudio, useStudioApi } from "./store";
 
@@ -205,7 +205,7 @@ function LayerInspector({ layer, tokens, assets }: { layer: Layer; tokens: Style
   );
 }
 
-function DocumentInspector({ tokens, profiles, latestRevision }: { tokens: StyleTokens; profiles: Record<number, VisualProfile>; latestRevision: number | null }) {
+function DocumentInspector({ tokens, profiles, latestRevision, audioAssets }: { tokens: StyleTokens; profiles: Record<number, VisualProfile>; latestRevision: number | null; audioAssets: StudioAsset[] }) {
   const content = useStudio((s) => s.content);
   const apply = useStudio((s) => s.apply);
   const select = useStudio((s) => s.select);
@@ -215,6 +215,7 @@ function DocumentInspector({ tokens, profiles, latestRevision }: { tokens: Style
   return (
     <>
       <SceneSection />
+      <SoundtrackSection audioAssets={audioAssets} />
       <Section title="Documento">
         <p className="text-[12px] text-zinc-400 font-mono tabular-nums">
           {artboard.width}×{artboard.height}px · {artboard.layers.length} camada(s)
@@ -278,9 +279,21 @@ function DocumentInspector({ tokens, profiles, latestRevision }: { tokens: Style
   );
 }
 
-export function Inspector({ tokens, assets, profiles, latestRevision }: { tokens: StyleTokens; assets: StudioAsset[]; profiles: Record<number, VisualProfile>; latestRevision: number | null }) {
+export function Inspector({
+  tokens,
+  assets,
+  audioAssets,
+  profiles,
+  latestRevision,
+}: {
+  tokens: StyleTokens;
+  assets: StudioAsset[];
+  audioAssets: StudioAsset[];
+  profiles: Record<number, VisualProfile>;
+  latestRevision: number | null;
+}) {
   const selectedId = useStudio((s) => s.selectedId);
   const layers = useStudio((s) => s.content.artboard.layers);
   const found = selectedId ? findLayer(layers, selectedId) : null;
-  return found ? <LayerInspector key={found.layer.id} layer={found.layer} tokens={tokens} assets={assets} /> : <DocumentInspector tokens={tokens} profiles={profiles} latestRevision={latestRevision} />;
+  return found ? <LayerInspector key={found.layer.id} layer={found.layer} tokens={tokens} assets={assets} /> : <DocumentInspector tokens={tokens} profiles={profiles} latestRevision={latestRevision} audioAssets={audioAssets} />;
 }

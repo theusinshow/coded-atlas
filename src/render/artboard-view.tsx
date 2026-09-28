@@ -22,6 +22,10 @@ export interface ArtboardViewProps {
   mode?: "preview" | "render";
   /** Estilo extra por layer (ex.: animação no motion). */
   layerStyle?: (layer: Layer) => CSSProperties | undefined;
+  /** Assets que são VÍDEO (movimento capturado): viram <video> em vez de <img>. */
+  videos?: ReadonlySet<string>;
+  /** Tempo do vídeo em ms (motion); quem desenha sincroniza `currentTime` com `data-time`. */
+  mediaTimeMs?: number;
 }
 
 function shadowCss(shadow: Shadow, s: number): string | undefined {
@@ -52,9 +56,9 @@ function patternCss(pattern: Artboard["background"]["pattern"], line: string, s:
   return {};
 }
 
-export function ArtboardView({ artboard, tokens, resolveAsset, mode = "render", layerStyle }: ArtboardViewProps) {
+export function ArtboardView({ artboard, tokens, resolveAsset, mode = "render", layerStyle, videos, mediaTimeMs = 0 }: ArtboardViewProps) {
   const s = Math.min(artboard.width, artboard.height) / 1080;
-  const ctx: RenderContext = { tokens, resolveAsset, mode, s, layerStyle };
+  const ctx: RenderContext = { tokens, resolveAsset, mode, s, layerStyle, videos, mediaTimeMs };
   return (
     <div
       data-atlas-artboard=""
@@ -82,6 +86,8 @@ interface RenderContext {
   mode: "preview" | "render";
   s: number;
   layerStyle?: (layer: Layer) => CSSProperties | undefined;
+  videos?: ReadonlySet<string>;
+  mediaTimeMs: number;
 }
 
 function frameStyle(layer: Layer, ctx: RenderContext): CSSProperties {
@@ -147,6 +153,20 @@ function Picture({ assetId, fit, focusY, ctx, radius }: { assetId: string | null
       >
         sem imagem
       </div>
+    );
+  }
+  if (assetId && ctx.videos?.has(assetId)) {
+    // Movimento capturado: o desenhista (player/render) posiciona currentTime em data-time.
+    return (
+      <video
+        src={src}
+        muted
+        playsInline
+        preload="auto"
+        data-atlas-video=""
+        data-time={(ctx.mediaTimeMs / 1000).toFixed(3)}
+        style={{ width: "100%", height: "100%", display: "block", objectFit: fit, objectPosition: `50% ${Math.round(focusY * 100)}%`, borderRadius: radius }}
+      />
     );
   }
   return (

@@ -5,7 +5,7 @@
 export interface ProbedMedia {
   mimeType: string;
   extension: string;
-  kind: "image" | "video";
+  kind: "image" | "video" | "audio";
   width: number | null;
   height: number | null;
 }

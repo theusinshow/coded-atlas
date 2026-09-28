@@ -14,11 +14,13 @@ export function ArtboardPreview({
   tokens,
   className = "",
   mode = "preview",
+  videos,
 }: {
   artboard: Artboard;
   tokens: StyleTokens;
   className?: string;
   mode?: "preview" | "render";
+  videos?: ReadonlySet<string>;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
@@ -38,7 +40,7 @@ export function ArtboardPreview({
           className="absolute left-0 top-0 origin-top-left"
           style={{ width: artboard.width, height: artboard.height, transform: `scale(${width / artboard.width})` }}
         >
-          <ArtboardView artboard={artboard} tokens={tokens} mode={mode} resolveAsset={assetFileUrl} />
+          <ArtboardView artboard={artboard} tokens={tokens} mode={mode} resolveAsset={assetFileUrl} videos={videos} />
         </div>
       )}
     </div>

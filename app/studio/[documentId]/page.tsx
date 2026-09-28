@@ -7,7 +7,7 @@ import { RenderFonts } from "@/components/create/render-fonts";
 import { Studio } from "@/components/studio/studio";
 import { CreativeDocumentIdSchema } from "@/src/core/documents/creative-document";
 import { getAtlasRuntime } from "@/src/infrastructure/runtime";
-import { studioAssets } from "@/app/projects/[slug]/create/studio-data";
+import { studioMedia } from "@/app/projects/[slug]/create/studio-data";
 
 interface Props {
   params: Promise<{ documentId: string }>;
@@ -30,6 +30,7 @@ export default async function StudioPage({ params }: Props) {
   ]);
   if (!project || !head) notFound();
   const latest = profiles.reduce<number | null>((max, p) => (max === null || p.revision > max ? p.revision : max), null);
+  const media = studioMedia([...assets].sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
 
   return (
     <>
@@ -40,7 +41,8 @@ export default async function StudioPage({ params }: Props) {
         project={{ slug: project.slug, name: project.name }}
         initialContent={head.content}
         initialRevision={head.revision}
-        assets={studioAssets(assets).sort((a, b) => b.createdAt.localeCompare(a.createdAt))}
+        assets={media.visual}
+        audioAssets={media.audio}
         profiles={Object.fromEntries(profiles.map((p) => [p.revision, p]))}
         latestProfileRevision={latest}
       />

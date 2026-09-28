@@ -5,6 +5,7 @@ import { createLegacyImportJobHandler } from "../modules/import/legacy/legacy-im
 import { createRenderJobHandler } from "../modules/render/render-job";
 import { JobWorker } from "../workers/job-worker";
 import { PlaywrightCaptureEngine } from "./playwright/playwright-capture-engine";
+import { ChromiumFfmpegMotionRenderer } from "./render/chromium-ffmpeg-motion-renderer";
 import { PlaywrightStaticRenderer } from "./render/playwright-static-renderer";
 import { RUNTIME_SETTINGS, type AtlasRuntime } from "./runtime";
 import { SharpImageTransformer } from "./sharp/image-transformer";
@@ -50,7 +51,7 @@ export function createAtlasWorker(runtime: AtlasRuntime, options: { workerId?: s
         assertUrlAllowed: urlPolicy.assertAllowed,
       }),
       import: createLegacyImportJobHandler(runtime.legacyImportDeps),
-      render: createRenderJobHandler({ ...repos, storage, renderer: new PlaywrightStaticRenderer() }),
+      render: createRenderJobHandler({ ...repos, storage, renderer: new PlaywrightStaticRenderer(), motionRenderer: new ChromiumFfmpegMotionRenderer() }),
       plan: createPlanJobHandler(runtime.brainDeps),
     },
   });

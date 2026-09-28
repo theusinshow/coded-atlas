@@ -2,7 +2,8 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { createInstanceAction } from "@/app/actions/create";
-import { createBlankCanvasAction, createWebsiteScrollAction } from "@/app/actions/studio";
+import { createBlankCanvasAction, createVideoFromRecipeAction, createWebsiteScrollAction } from "@/app/actions/studio";
+import { VIDEO_RECIPES } from "@/src/core/motion/recipes";
 import { contentPages, isCarousel, type DocumentContent } from "@/src/core/documents/creative-document";
 import { resolveTokens } from "@/src/core/creative/tokens";
 import type { Binding, CompositionInstance } from "@/src/core/creative/composition";
@@ -94,6 +95,35 @@ export function CompositionGallery({ projectId, slug, assets, profile, profilesB
             })}
           </ul>
         )}
+      </section>
+
+      <section aria-labelledby="receitas" className="border border-line bg-surface/40 p-4 flex flex-wrap items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <h2 id="receitas" className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+            Vídeo por receita
+          </h2>
+          <p className="text-[12px] text-zinc-500 mt-1">Estruturas prontas (abertura, site, mobile, scroll, assinatura) montadas com o material do projeto e animadas por presets.</p>
+        </div>
+        <form action={createVideoFromRecipeAction} className="flex flex-wrap items-center gap-2">
+          <input type="hidden" name="projectId" value={projectId} />
+          <select name="recipeId" aria-label="Receita de vídeo" className="h-8 max-w-64 bg-surface border border-line text-[12px] text-zinc-300 px-2">
+            {VIDEO_RECIPES.map((r) => (
+              <option key={r.id} value={r.id} title={r.description}>
+                {r.name} · {r.durationRange[0]}–{r.durationRange[1]} s
+              </option>
+            ))}
+          </select>
+          <select name="formatId" aria-label="Formato do vídeo por receita" defaultValue="story-9x16" className="h-8 bg-surface border border-line text-[12px] text-zinc-300 px-2">
+            {FORMAT_IDS.map((id) => (
+              <option key={id} value={id}>
+                {FORMATS[id].label}
+              </option>
+            ))}
+          </select>
+          <button type="submit" className={buttonClass("secondary", "sm")}>
+            Montar vídeo
+          </button>
+        </form>
       </section>
 
       {tallPages.length > 0 && (

@@ -9,6 +9,7 @@ import { PageHeader, Panel, SectionTitle } from "@/components/ui/primitives";
 import { monthStart } from "@/src/core/brain/usage";
 import { getAtlasRuntime } from "@/src/infrastructure/runtime";
 import { brainStatus } from "@/src/modules/brain/plan-service";
+import { ffmpegPath, ffmpegVersion } from "@/src/infrastructure/ffmpeg/ffmpeg";
 
 export const metadata: Metadata = { title: "Ajustes — Coded Atlas" };
 
@@ -20,11 +21,12 @@ export default async function SettingsPage() {
     dismissed: ledger.filter((e) => e.status === "dismissed").length,
     failed: ledger.filter((e) => e.status === "failed"),
   };
-  const [brain, month, recentAi, workspaceMemory] = await Promise.all([
+  const [brain, month, recentAi, workspaceMemory, ffmpeg] = await Promise.all([
     brainStatus(runtime.brainDeps),
     runtime.repos.aiUsage.summarizeSince(monthStart()),
     runtime.repos.aiUsage.listRecent(8),
     runtime.repos.memory.listWorkspace(),
+    ffmpegVersion(),
   ]);
   const pricing = runtime.brainDeps.brain.pricing;
   const usd = (n: number) => `US$ ${n.toFixed(n < 1 ? 4 : 2)}`;
@@ -34,6 +36,7 @@ export default async function SettingsPage() {
     ["Arquivos", runtime.home.storageRoot],
     ["Política de URL", runtime.urlPolicy.mode === "local" ? "local — pode capturar localhost e rede interna" : "hosted-safe — bloqueia destinos internos"],
     ["Worker de jobs", process.env.ATLAS_WORKER === "off" ? "desligado neste processo (ATLAS_WORKER=off)" : "embutido no servidor"],
+    ["FFmpeg (vídeo)", ffmpeg ? `${ffmpeg} · ${ffmpegPath()}` : `não encontrado (${ffmpegPath()}) — instale o FFmpeg ou defina ATLAS_FFMPEG para renderizar vídeos`],
   ];
 
   return (

@@ -11,6 +11,7 @@ const KINDS = [
   { value: "background", label: "Fundo" },
   { value: "illustration", label: "Ilustração" },
   { value: "video", label: "Vídeo" },
+  { value: "audio", label: "Áudio (trilha)" },
 ];
 
 /** Upload manual: o formato é conferido pelos bytes no servidor; arquivos repetidos não duplicam. */
@@ -30,7 +31,7 @@ export function UploadForm({ projectId }: { projectId: string }) {
           name="files"
           multiple
           required
-          accept="image/png,image/jpeg,image/webp,image/avif,image/gif,image/svg+xml,video/mp4,video/webm"
+          accept="image/png,image/jpeg,image/webp,image/avif,image/gif,image/svg+xml,video/mp4,video/webm,audio/mpeg,audio/wav,audio/ogg,audio/mp4,.m4a"
           aria-label="Arquivos"
           className={`${INPUT_CLASS} file:mr-3 file:border-0 file:bg-surface-2 file:text-zinc-200 file:px-3 file:py-1`}
         />

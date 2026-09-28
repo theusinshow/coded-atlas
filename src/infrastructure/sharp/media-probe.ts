@@ -26,9 +26,23 @@ function sniffVideo(bytes: Uint8Array): ProbedMedia | null {
   return null;
 }
 
-/** MediaProbe sobre o Sharp (imagens) + assinaturas (vídeos). */
+/** Áudio (trilha de vídeos): MP3, WAV, OGG e M4A — só assinatura. */
+function sniffAudio(bytes: Uint8Array): ProbedMedia | null {
+  const audio = (mimeType: string, extension: string): ProbedMedia => ({ mimeType, extension, kind: "audio", width: null, height: null });
+  // MP3: tag ID3 ou quadro MPEG (0xFFE… sincronismo)
+  if (startsWith(bytes, [0x49, 0x44, 0x33]) || (bytes[0] === 0xff && ((bytes[1] ?? 0) & 0xe0) === 0xe0)) return audio("audio/mpeg", "mp3");
+  if (startsWith(bytes, [0x52, 0x49, 0x46, 0x46]) && startsWith(bytes, [0x57, 0x41, 0x56, 0x45], 8)) return audio("audio/wav", "wav");
+  if (startsWith(bytes, [0x4f, 0x67, 0x67, 0x53])) return audio("audio/ogg", "ogg");
+  // M4A: caixa ftyp com marca de áudio (M4A / M4B)
+  if (startsWith(bytes, [0x66, 0x74, 0x79, 0x70], 4) && (startsWith(bytes, [0x4d, 0x34, 0x41], 8) || startsWith(bytes, [0x4d, 0x34, 0x42], 8))) return audio("audio/mp4", "m4a");
+  return null;
+}
+
+/** MediaProbe sobre o Sharp (imagens) + assinaturas (vídeos e áudio). */
 export class SharpMediaProbe implements MediaProbe {
   async probe(bytes: Uint8Array): Promise<ProbedMedia | null> {
+    const audio = sniffAudio(bytes);
+    if (audio) return audio;
     const video = sniffVideo(bytes);
     if (video) return video;
     try {

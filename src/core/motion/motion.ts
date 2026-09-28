@@ -36,6 +36,14 @@ export const SceneTransitionSchema = z.strictObject({
 });
 export type SceneTransition = z.infer<typeof SceneTransitionSchema>;
 
+/** Trilha sonora básica: um áudio do projeto, volume e fade-out no fim. */
+export const AudioTrackSchema = z.strictObject({
+  assetId: z.string().min(1).max(40),
+  volume: z.number().min(0).max(1),
+  fadeOutMs: z.number().int().min(0).max(10_000),
+});
+export type AudioTrack = z.infer<typeof AudioTrackSchema>;
+
 export const SceneSchema = z.strictObject({
   id: z.string().min(1).max(64),
   title: z.string().trim().max(80).optional(),
@@ -52,6 +60,7 @@ export const MotionContentSchema = z
     scenes: z.array(SceneSchema).min(1).max(MAX_SCENES),
     style: DocumentStyleSchema,
     formatId: FormatIdSchema.nullable(),
+    audio: AudioTrackSchema.nullable().optional(),
   })
   .refine((c) => c.scenes.every((s) => s.artboard.width === c.scenes[0].artboard.width && s.artboard.height === c.scenes[0].artboard.height), {
     message: "Todas as cenas precisam ter o mesmo tamanho.",

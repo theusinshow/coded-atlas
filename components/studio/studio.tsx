@@ -24,7 +24,9 @@ interface StudioProps {
   project: { slug: string; name: string };
   initialContent: DocumentContent;
   initialRevision: number;
+  /** Imagens e vídeos do projeto (vídeos só entram em documentos de motion). */
   assets: StudioAsset[];
+  audioAssets: StudioAsset[];
   profiles: Record<number, VisualProfile>;
   latestProfileRevision: number | null;
 }
@@ -196,22 +198,42 @@ function RevisionsMenu({ documentId, onClose }: { documentId: string; onClose: (
   );
 }
 
-function RenderMenu({ documentId, onJob }: { documentId: string; onJob: (id: string) => void }) {
+type OutFormat = "png" | "jpg" | "webp" | "mp4" | "webm";
+
+function RenderMenu({ documentId, onJob, motion }: { documentId: string; onJob: (id: string) => void; motion: boolean }) {
   const api = useStudioApi();
-  const [formats, setFormats] = useState<("png" | "jpg" | "webp")[]>(["png"]);
+  const [formats, setFormats] = useState<OutFormat[]>(motion ? ["mp4"] : ["png"]);
+  const [quality, setQuality] = useState<"preview" | "final">("final");
+  const options: OutFormat[] = motion ? ["mp4", "webm", "png"] : ["png", "jpg", "webp"];
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   return (
     <div className="absolute right-0 top-full mt-1 w-64 border border-line bg-surface shadow-2xl z-20 p-3 space-y-3" role="dialog" aria-label="Renderizar">
-      <p className="text-[11px] text-zinc-400">Salva e renderiza exatamente esta revisão. A peça aparece em Publicar.</p>
+      <p className="text-[11px] text-zinc-400">
+        {motion ? "Salva e gera o vídeo desta revisão quadro a quadro (PNG = um pôster por cena)." : "Salva e renderiza exatamente esta revisão."} A peça aparece em Publicar.
+      </p>
       <div className="flex gap-3">
-        {(["png", "jpg", "webp"] as const).map((f) => (
+        {options.map((f) => (
           <label key={f} className="flex items-center gap-1.5 text-[12px] font-mono uppercase text-zinc-300">
             <input type="checkbox" checked={formats.includes(f)} onChange={(e) => setFormats((cur) => (e.target.checked ? [...cur, f] : cur.filter((x) => x !== f)))} />
             {f}
           </label>
         ))}
       </div>
+      {motion && (
+        <div role="radiogroup" aria-label="Qualidade do vídeo" className="flex border border-line">
+          {(
+            [
+              ["preview", "Preview rápido"],
+              ["final", "Final"],
+            ] as const
+          ).map(([id, label]) => (
+            <button key={id} type="button" role="radio" aria-checked={quality === id} onClick={() => setQuality(id)} className={`flex-1 h-7 text-[11px] ${quality === id ? "bg-surface-2 text-accent-bright" : "text-zinc-400"}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
       <button
         type="button"
         disabled={pending || formats.length === 0}
@@ -220,7 +242,7 @@ function RenderMenu({ documentId, onJob }: { documentId: string; onJob: (id: str
           start(async () => {
             setError(null);
             const { doc, revision, markSaved, markError } = api.getState();
-            const result = await renderCanvasAction(documentId, revision, doc, formats);
+            const result = await renderCanvasAction(documentId, revision, doc, formats, quality);
             if (!result.ok) {
               setError(result.error);
               if (result.conflict) markError(result.error, true);
@@ -238,7 +260,7 @@ function RenderMenu({ documentId, onJob }: { documentId: string; onJob: (id: str
   );
 }
 
-function StudioShell({ documentId, name: initialName, project, assets, profiles, latestProfileRevision }: StudioProps) {
+function StudioShell({ documentId, name: initialName, project, assets: allAssets, audioAssets, profiles, latestProfileRevision }: StudioProps) {
   const api = useStudioApi();
   const style = useStudio((s) => s.content.style);
   const saveState = useStudio((s) => s.saveState);
@@ -249,6 +271,9 @@ function StudioShell({ documentId, name: initialName, project, assets, profiles,
   const sequence = useStudio((s) => isSequence(s.doc));
   const doc = useStudio((s) => s.doc);
   const motion = isMotion(doc) ? doc : null;
+  // Vídeo (movimento capturado) só entra em documentos de motion.
+  const assets = useMemo(() => (motion ? allAssets : allAssets.filter((a) => a.mimeType.startsWith("image/"))), [allAssets, motion]);
+  const videos = useMemo(() => new Set(allAssets.filter((a) => a.mimeType.startsWith("video/")).map((a) => a.id as string)), [allAssets]);
   const activePage = useStudio((s) => s.activePage);
   const [playing, setPlaying] = useState(false);
   const [animating, startAnimate] = useTransition();
@@ -356,6 +381,7 @@ function StudioShell({ documentId, name: initialName, project, assets, profiles,
             </button>
             {menu === "render" && (
               <RenderMenu
+                motion={!!motion}
                 documentId={documentId}
                 onJob={(id) => {
                   setJobId(id);
@@ -393,12 +419,15 @@ function StudioShell({ documentId, name: initialName, project, assets, profiles,
 
         <main className="flex-1 min-w-0 relative flex flex-col">
           <div className="flex-1 min-h-0 relative">
-            <CanvasStage tokens={tokens} zoom={zoom} onFit={onFit} />
+            <CanvasStage tokens={tokens} zoom={zoom} onFit={onFit} videos={videos} />
           </div>
           {motion && playing && (
             <MotionPlayer
               content={motion}
               tokens={tokens}
+              videos={videos}
+              audioSrc={motion.audio ? `/api/atlas/assets/${motion.audio.assetId}/file` : null}
+              audioVolume={motion.audio?.volume ?? 1}
               startScene={activePage}
               onClose={(scene) => {
                 setPlaying(false);
@@ -424,7 +453,7 @@ function StudioShell({ documentId, name: initialName, project, assets, profiles,
         </main>
 
         <aside className="w-80 shrink-0 border-l border-line overflow-y-auto" aria-label="Inspetor">
-          <Inspector tokens={tokens} assets={assets} profiles={profiles} latestRevision={latestProfileRevision} />
+          <Inspector tokens={tokens} assets={assets} audioAssets={audioAssets} profiles={profiles} latestRevision={latestProfileRevision} />
         </aside>
       </div>
     </div>

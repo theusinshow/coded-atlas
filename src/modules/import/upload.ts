@@ -14,7 +14,7 @@ export const UPLOAD_LIMITS = {
   maxBytesPerFile: 50 * 1024 * 1024,
 } as const;
 
-export const UPLOADABLE_KINDS = ["screenshot", "image", "logo", "icon", "background", "illustration", "video"] as const satisfies readonly AssetKind[];
+export const UPLOADABLE_KINDS = ["screenshot", "image", "logo", "icon", "background", "illustration", "video", "audio"] as const satisfies readonly AssetKind[];
 export type UploadableKind = (typeof UPLOADABLE_KINDS)[number];
 
 export interface UploadDeps {
@@ -69,11 +69,12 @@ export async function importUploads(
     }
     const probed = await deps.probe.probe(file.bytes);
     if (!probed) {
-      result.rejected.push({ name: file.name, reason: "formato não reconhecido (aceitos: PNG, JPG, WebP, AVIF, GIF, SVG, MP4, WebM)" });
+      result.rejected.push({ name: file.name, reason: "formato não reconhecido (aceitos: PNG, JPG, WebP, AVIF, GIF, SVG, MP4, WebM, MP3, WAV, OGG, M4A)" });
       continue;
     }
-    if ((kind === "video") !== (probed.kind === "video")) {
-      result.rejected.push({ name: file.name, reason: kind === "video" ? "não é um vídeo" : "vídeo enviado como imagem" });
+    const expected = kind === "video" ? "video" : kind === "audio" ? "audio" : "image";
+    if (probed.kind !== expected) {
+      result.rejected.push({ name: file.name, reason: expected === "video" ? "não é um vídeo" : expected === "audio" ? "não é um áudio" : `${probed.kind === "video" ? "vídeo" : "áudio"} enviado como imagem` });
       continue;
     }
     const sha256 = createHash("sha256").update(file.bytes).digest("hex");

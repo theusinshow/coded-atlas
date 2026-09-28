@@ -17,12 +17,14 @@ export function MotionSceneView({
   tokens,
   resolveAsset,
   mode = "render",
+  videos,
 }: {
   scene: Scene;
   localMs: number;
   tokens: StyleTokens;
   resolveAsset: (assetId: string) => string | null;
   mode?: "preview" | "render";
+  videos?: ReadonlySet<string>;
 }) {
   const frame = sceneFrame(scene, localMs);
   const layerStyle = (layer: Layer): CSSProperties | undefined => {
@@ -34,7 +36,7 @@ export function MotionSceneView({
   return (
     <div style={{ position: "relative", width: scene.artboard.width, height: scene.artboard.height, overflow: "hidden" }}>
       <div style={{ opacity: enter.opacity, transform: enter.dx || enter.scale !== 1 ? `translateX(${enter.dx}px) scale(${enter.scale})` : undefined, transformOrigin: "50% 50%" }}>
-        <ArtboardView artboard={frame.artboard} tokens={tokens} resolveAsset={resolveAsset} mode={mode} layerStyle={layerStyle} />
+        <ArtboardView artboard={frame.artboard} tokens={tokens} resolveAsset={resolveAsset} mode={mode} layerStyle={layerStyle} videos={videos} mediaTimeMs={localMs} />
       </div>
     </div>
   );
@@ -50,12 +52,14 @@ export function MotionFrameView({
   tokens,
   resolveAsset,
   mode = "render",
+  videos,
 }: {
   content: MotionContent;
   timeMs: number;
   tokens: StyleTokens;
   resolveAsset: (assetId: string) => string | null;
   mode?: "preview" | "render";
+  videos?: ReadonlySet<string>;
 }) {
   const { index, localMs } = sceneAt(content, timeMs);
   const scene = content.scenes[index];
@@ -65,11 +69,11 @@ export function MotionFrameView({
     <div style={{ position: "relative", width: scene.artboard.width, height: scene.artboard.height, overflow: "hidden", background: "#000" }}>
       {inTransition && (
         <div style={{ position: "absolute", inset: 0 }}>
-          <MotionSceneView scene={previous} localMs={previous.durationMs} tokens={tokens} resolveAsset={resolveAsset} mode={mode} />
+          <MotionSceneView scene={previous} localMs={previous.durationMs} tokens={tokens} resolveAsset={resolveAsset} mode={mode} videos={videos} />
         </div>
       )}
       <div style={{ position: "absolute", inset: 0 }}>
-        <MotionSceneView scene={scene} localMs={localMs} tokens={tokens} resolveAsset={resolveAsset} mode={mode} />
+        <MotionSceneView scene={scene} localMs={localMs} tokens={tokens} resolveAsset={resolveAsset} mode={mode} videos={videos} />
       </div>
     </div>
   );

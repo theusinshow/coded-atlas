@@ -25,6 +25,8 @@ export const OutputMetadataSchema = z.strictObject({
   variant: z.string().max(40).optional(),
   styleMode: z.string().max(20).optional(),
   mediaKitId: z.string().max(40).optional(),
+  /** Vídeo: preview rápido ou final. */
+  quality: z.enum(["preview", "final"]).optional(),
 });
 export type OutputMetadata = z.infer<typeof OutputMetadataSchema>;
 

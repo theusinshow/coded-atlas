@@ -2,7 +2,8 @@
 import { isMotion } from "@/src/core/documents/creative-document";
 import type { Layer } from "@/src/core/documents/layer";
 import { updatePage } from "@/src/core/documents/pages";
-import { autoAnimate, type AnimationTrack, type Scene } from "@/src/core/motion/motion";
+import { autoAnimate, type AnimationTrack, type MotionContent, type Scene } from "@/src/core/motion/motion";
+import type { StudioAsset } from "@/components/create/types";
 import { MOTION_PRESET_IDS, MOTION_PRESETS, type Easing, type MotionPresetId } from "@/src/core/motion/presets";
 import { FIELD_LABEL, NumberField, RangeField, Section, Segmented } from "./fields";
 import { newLayerId } from "./layer-factory";
@@ -113,6 +114,49 @@ export function SceneSection() {
         Animar cena automaticamente
       </button>
       <p className="text-[11px] text-zinc-500">{scene.animations.length} animação(ões) nesta cena. Selecione uma camada para ajustar a dela.</p>
+    </Section>
+  );
+}
+
+/** Trilha sonora básica do vídeo: um áudio do projeto, volume e fade-out no fim. */
+export function SoundtrackSection({ audioAssets }: { audioAssets: StudioAsset[] }) {
+  const doc = useStudio((s) => s.doc);
+  const api = useStudioApi();
+  if (!isMotion(doc)) return null;
+  const audio = doc.audio ?? null;
+  const set = (next: MotionContent["audio"], key?: string) => api.getState().applyDoc((d) => (isMotion(d) ? { ...d, audio: next } : d), { key: key ? `audio:${key}` : undefined, keepSelection: true });
+  return (
+    <Section title="Trilha">
+      {audioAssets.length === 0 ? (
+        <p className="text-[11px] text-zinc-500">Envie um áudio (MP3, WAV, OGG, M4A) em Assets → tipo “Áudio (trilha)” para usar aqui.</p>
+      ) : (
+        <>
+          <div>
+            <label htmlFor="soundtrack" className={FIELD_LABEL}>
+              Áudio
+            </label>
+            <select
+              id="soundtrack"
+              value={audio?.assetId ?? ""}
+              onChange={(e) => set(e.target.value ? { assetId: e.target.value, volume: audio?.volume ?? 0.8, fadeOutMs: audio?.fadeOutMs ?? 1200 } : null)}
+              className="w-full h-8 bg-surface-2 border border-line text-zinc-100 text-[12px] px-2"
+            >
+              <option value="">Sem trilha (mudo)</option>
+              {audioAssets.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.label ?? a.metadata.originalName ?? a.id.slice(-8)}
+                </option>
+              ))}
+            </select>
+          </div>
+          {audio && (
+            <>
+              <RangeField label="Volume" value={audio.volume} min={0} max={1} step={0.05} format={(v) => `${Math.round(v * 100)}%`} onChange={(v) => set({ ...audio, volume: v }, "volume")} />
+              <NumberField label="Fade-out no fim (ms)" value={audio.fadeOutMs} min={0} max={10000} step={100} onChange={(v) => set({ ...audio, fadeOutMs: Math.round(v) }, "fade")} />
+            </>
+          )}
+        </>
+      )}
     </Section>
   );
 }

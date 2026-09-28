@@ -5,7 +5,7 @@ import { createOutput, type Output } from "../../core/assets/output";
 import type { AssetRepository, OutputRepository } from "../../core/assets/repositories";
 import { contentStorageKey } from "../../core/assets/storage-key";
 import type { Artboard } from "../../core/documents/artboard";
-import { CreativeDocumentIdSchema, contentPages, isSequence, type CreativeDocumentId, type CreativeDocumentRepository } from "../../core/documents/creative-document";
+import { CreativeDocumentIdSchema, contentAssetIds, contentPages, isMotion, isSequence, type CreativeDocumentId, type CreativeDocumentRepository } from "../../core/documents/creative-document";
 import { artboardAssetIds } from "../../core/documents/artboard";
 import { CompositionInstanceIdSchema, type CompositionInstanceRepository } from "../../core/creative/composition";
 import { getComposition } from "../../core/creative/compositions";
@@ -19,9 +19,15 @@ import { AssetIdSchema, JobIdSchema } from "../../shared/id";
 import { parseOrThrow } from "../../shared/validation";
 import type { JobContext, JobHandler } from "../../workers/job-worker";
 import type { OutputMetadata } from "../../core/assets/output";
+import type { MotionRenderer, VideoFormat, VideoQuality } from "./motion-renderer";
 import type { RasterFormat, StaticRenderer } from "./static-renderer";
 
 export const RasterFormatSchema = z.enum(["png", "jpg", "webp"]);
+export const VideoFormatSchema = z.enum(["mp4", "webm"]);
+/** Formatos pedidos a um render: imagens (qualquer documento) e vídeo (só motion). */
+export const RenderFormatSchema = z.union([RasterFormatSchema, VideoFormatSchema]);
+export type RenderFormat = z.infer<typeof RenderFormatSchema>;
+const isVideoFormat = (f: RenderFormat): f is VideoFormat => f === "mp4" || f === "webm";
 
 /** O que renderizar: uma composição (estado atual) ou uma revisão CONCRETA de um documento. */
 export const RenderTargetSchema = z.discriminatedUnion("kind", [
@@ -31,7 +37,9 @@ export const RenderTargetSchema = z.discriminatedUnion("kind", [
 
 export const RenderJobPayloadSchema = z.strictObject({
   target: RenderTargetSchema,
-  formats: z.array(RasterFormatSchema).min(1).max(3),
+  formats: z.array(RenderFormatSchema).min(1).max(5),
+  /** Vídeo: preview rápido ou final (padrão). */
+  quality: z.enum(["preview", "final"]).optional(),
 });
 export type RenderJobPayload = z.infer<typeof RenderJobPayloadSchema>;
 
@@ -43,6 +51,8 @@ export interface RenderDeps {
   visualProfiles: VisualProfileRepository;
   storage: AssetStorage;
   renderer: StaticRenderer;
+  /** Ausente = este processo não renderiza vídeo (ex.: testes só de imagem). */
+  motionRenderer?: MotionRenderer;
 }
 
 export interface RenderUnit {
@@ -175,15 +185,124 @@ export async function renderUnits(deps: RenderDeps, ctx: JobContext, units: Rend
   return outputs;
 }
 
+async function loadAssetBytes(deps: RenderDeps, cache: Map<string, { bytes: Uint8Array; mimeType: string } | null>, id: string) {
+  if (!cache.has(id)) {
+    const parsed = AssetIdSchema.safeParse(id);
+    const asset = parsed.success ? await deps.assets.getById(parsed.data) : null;
+    cache.set(id, asset ? { bytes: await deps.storage.get(asset.storageKey), mimeType: asset.mimeType } : null);
+  }
+  return cache.get(id) ?? null;
+}
+
+/**
+ * Vídeo de uma revisão concreta de um documento de motion: um Output por formato
+ * (MP4/WebM), com duração, dimensões e qualidade no metadata.
+ */
+async function renderVideos(deps: RenderDeps, ctx: JobContext, target: RenderJobPayload["target"], formats: VideoFormat[], quality: VideoQuality): Promise<Output[]> {
+  if (!deps.motionRenderer) throw new DomainError("VALIDATION", "Este processo não tem renderer de vídeo configurado.");
+  if (target.kind !== "document") throw new DomainError("VALIDATION", "Vídeo só sai de documentos de motion.");
+  const document = await deps.documents.getById(target.documentId);
+  if (!document) throw new DomainError("NOT_FOUND", "Documento não encontrado.");
+  const revision = await deps.documents.getRevision(document.id, target.revision);
+  if (!revision) throw new DomainError("NOT_FOUND", `Revisão ${target.revision} do documento não existe.`);
+  if (!isMotion(revision.content)) throw new DomainError("VALIDATION", "Este documento não é um vídeo — use Animar para criar um.");
+  const content = revision.content;
+  const profile = content.style.profileRevision ? await deps.visualProfiles.getRevision(document.projectId, content.style.profileRevision) : null;
+  const tokens = resolveTokens(profile, content.style.mode, content.style.primary ? { primary: content.style.primary } : {});
+
+  const assetIds = contentAssetIds(content);
+  const videoAssetIds: string[] = [];
+  for (const id of assetIds) {
+    const parsed = AssetIdSchema.safeParse(id);
+    const asset = parsed.success ? await deps.assets.getById(parsed.data) : null;
+    if (asset?.mimeType.startsWith("video/")) videoAssetIds.push(asset.id);
+  }
+  let audio: { bytes: Uint8Array; mimeType: string; volume: number; fadeOutMs: number } | null = null;
+  if (content.audio) {
+    const parsed = AssetIdSchema.safeParse(content.audio.assetId);
+    const asset = parsed.success ? await deps.assets.getById(parsed.data) : null;
+    if (!asset || asset.projectId !== document.projectId || !asset.mimeType.startsWith("audio/")) throw new DomainError("VALIDATION", "A trilha do vídeo não é um áudio deste projeto.");
+    audio = { bytes: await deps.storage.get(asset.storageKey), mimeType: asset.mimeType, volume: content.audio.volume, fadeOutMs: content.audio.fadeOutMs };
+  }
+
+  const cache = new Map<string, { bytes: Uint8Array; mimeType: string } | null>();
+  const rendered = [];
+  for (const [index, format] of formats.entries()) {
+    const base = 20 + (index * 75) / formats.length;
+    const span = 75 / formats.length;
+    rendered.push(
+      await deps.motionRenderer.render(
+        { content, tokens, format, quality, videoAssetIds, audio },
+        {
+          signal: ctx.signal,
+          loadAsset: (id) => loadAssetBytes(deps, cache, id),
+          onProgress: (ratio) => ctx.progress(Math.min(95, Math.round(base + ratio * span)), `Gerando ${format.toUpperCase()}… ${Math.round(ratio * 100)}%`),
+        }
+      )
+    );
+    ctx.throwIfAborted();
+  }
+
+  const staging = await deps.storage.beginStaging();
+  const staged = rendered.map((video) => {
+    const sha256 = createHash("sha256").update(video.bytes).digest("hex");
+    return { video, sha256, key: contentStorageKey("renders", sha256, video.extension) };
+  });
+  try {
+    for (const s of staged) await staging.put(s.key, s.video.bytes);
+    ctx.throwIfAborted();
+    await staging.commit();
+  } catch (err) {
+    await staging.discard();
+    throw err;
+  }
+  const outputs: Output[] = [];
+  for (const s of staged) {
+    outputs.push(
+      await deps.outputs.create(
+        createOutput({
+          projectId: document.projectId,
+          jobId: JobIdSchema.parse(ctx.job.id),
+          format: s.video.format,
+          mimeType: s.video.mimeType,
+          storageKey: s.key,
+          sha256: s.sha256,
+          byteSize: s.video.bytes.byteLength,
+          width: s.video.width,
+          height: s.video.height,
+          durationMs: s.video.durationMs,
+          label: `${document.name} · ${quality === "preview" ? "preview" : "vídeo"} · rev ${revision.revision}`.slice(0, 200),
+          sourceAssetIds: assetIds.map((id) => AssetIdSchema.parse(id)),
+          metadata: {
+            origin: "render",
+            documentId: document.id,
+            documentRevision: revision.revision,
+            ...(content.formatId ? { formatId: content.formatId } : {}),
+            styleMode: content.style.mode,
+            quality,
+          },
+        })
+      )
+    );
+  }
+  return outputs;
+}
+
 export function createRenderJobHandler(deps: RenderDeps): JobHandler {
   return {
-    timeoutMs: 10 * 60_000,
+    timeoutMs: 30 * 60_000,
     run: async (ctx) => {
       const payload = parseOrThrow(RenderJobPayloadSchema, ctx.job.payload, "Payload do render");
+      const raster = payload.formats.filter((f): f is RasterFormat => !isVideoFormat(f));
+      const video = payload.formats.filter(isVideoFormat);
       await ctx.progress(5, "Montando a peça…");
-      const units = await resolveTarget(deps, payload.target);
-      await ctx.progress(20, "Renderizando…");
-      const outputs = await renderUnits(deps, ctx, units, payload.formats);
+      const outputs: Output[] = [];
+      if (raster.length > 0) {
+        const units = await resolveTarget(deps, payload.target);
+        await ctx.progress(video.length ? 10 : 20, "Renderizando…");
+        outputs.push(...(await renderUnits(deps, ctx, units, raster)));
+      }
+      if (video.length > 0) outputs.push(...(await renderVideos(deps, ctx, payload.target, video, payload.quality ?? "final")));
       return { outputIds: outputs.map((o) => o.id), count: outputs.length };
     },
   };

@@ -2,8 +2,8 @@
 
 The complete roadmap lives in `ROADMAP.md`. The currently authorized scope lives in `CURRENT.md`.
 
-> **Status (2026-09-28):** fases **2.1 a 2.9 concluídas**. Execução contínua até o Atlas 3.0
-> autorizada pelo Matheus (ADR-028) — ele testa só no final. Próxima: **2.10 — Video Engine**.
+> **Status (2026-09-28):** fases **2.1 a 2.10 concluídas**. Execução contínua até o Atlas 3.0
+> autorizada pelo Matheus (ADR-028) — ele testa só no final. Próxima: **2.11 — Media Kits**.
 > O Atlas v1 (captura, vitrine, diff, case, ZIP) segue funcionando sem alteração de comportamento.
 
 ## Baseline (antes de qualquer mudança — 2026-09-27, commit `ac93441`)
@@ -278,6 +278,18 @@ Verificação 2.8: typecheck/lint OK; `npm test` 398 testes (25 arquivos; render
 - [x] Kernel: `MotionSceneView`/`MotionFrameView` em `src/render` (reuso no render de vídeo).
 
 Verificação 2.9: typecheck/lint OK; `npm test` 409 testes (26 arquivos); build OK; `npm run e2e` 19/19 passos (Website Scroll → preview → faixa de scroll; Animar documento → preset Float → autosave).
+
+## Atlas 2.10 — Video Engine (concluída 2026-09-28)
+
+- [x] Porta `MotionRenderer` (neutra) + adapter `ChromiumFfmpegMotionRenderer`: o Chromium roda o bundle de motion do kernel (o MESMO `MotionFrameView` do preview), cada quadro é posicionado no tempo exato e capturado em JPEG, o FFmpeg codifica pelo stdin (H.264/MP4 com faststart ou VP9/WebM). Sem relógio real, sem rede, abort mata FFmpeg e navegador, temporários sempre apagados.
+- [x] Qualidades: **preview** (metade da resolução, 15 fps, encoder rápido) e **final** (resolução/fps do documento).
+- [x] Render job aceita `mp4`/`webm` (só documentos de motion) além de PNG/JPG/WebP (pôsteres por cena); Outputs com duração, dimensões e qualidade.
+- [x] **Movimento capturado**: vídeos do projeto (ex.: scroll gravado na captura) dentro de molduras de motion — `<video>` com seek quadro a quadro (rotas com Range/206), repetição se mais curto; o player sincroniza também.
+- [x] **Trilha básica**: asset `audio` (MP3/WAV/OGG/M4A reconhecidos pelos bytes), volume e fade-out; `apad` + duração exata; o player toca junto.
+- [x] **VideoRecipe**: Website Reveal Reel, Vitrine rápida, Mobile first — passos sem material são pulados e informados.
+- [x] UI: menu de render com MP4/WebM + qualidade, trilha no inspetor, "Vídeo por receita" em Criar, vídeos tocáveis em Publicar, status do FFmpeg em Ajustes.
+
+Verificação 2.10: typecheck/lint OK; `npm test` 418 testes (28 arquivos; render real MP4 H.264+AAC 1,6 s com vídeo capturado no celular e WebM VP9 preview conferidos com ffprobe; quadro extraído conferido visualmente); build OK; `npm run e2e` 20/20 passos (receita → MP4 preview → Publicar).
 
 ## Phase completion rule
 

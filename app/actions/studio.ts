@@ -15,6 +15,7 @@ import {
   createBlankCanvas,
   createBlankCarousel,
   createBlankMotion,
+  createVideoFromRecipe,
   createWebsiteScroll,
   materializePlanAsCarousel,
   deleteDocument,
@@ -24,7 +25,7 @@ import {
   restoreRevision,
   saveCanvas,
 } from "@/src/modules/create/document-service";
-import { RasterFormatSchema } from "@/src/modules/render/render-job";
+import { RenderFormatSchema } from "@/src/modules/render/render-job";
 import { isDomainError } from "@/src/shared/errors";
 import { ProjectIdSchema } from "@/src/shared/id";
 import { PatchSchema, type InstancePatch } from "./schemas";
@@ -54,12 +55,12 @@ export async function saveCanvasAction(documentId: string, baseRevision: number,
 }
 
 /** Salva o estado atual e renderiza exatamente essa revisão (que fica fixada). */
-export async function renderCanvasAction(documentId: string, baseRevision: number, content: unknown, formats: string[]): Promise<StudioResult> {
+export async function renderCanvasAction(documentId: string, baseRevision: number, content: unknown, formats: string[], quality: "preview" | "final" = "final"): Promise<StudioResult> {
   try {
     const { documentDeps } = await getAtlasRuntime();
     const id = CreativeDocumentIdSchema.parse(documentId);
     const { revision } = await saveCanvas(documentDeps, id, RevisionSchema.parse(baseRevision), content);
-    const job = await enqueueDocumentRender(documentDeps, id, revision.revision, z.array(RasterFormatSchema).min(1).max(3).parse(formats));
+    const job = await enqueueDocumentRender(documentDeps, id, revision.revision, z.array(RenderFormatSchema).min(1).max(5).parse(formats), z.enum(["preview", "final"]).parse(quality));
     return { ok: true, revision: revision.revision, jobId: job.id };
   } catch (err) {
     return failure(err);
@@ -188,6 +189,17 @@ export async function createWebsiteScrollAction(form: FormData): Promise<void> {
   const assetId = form.get("assetId");
   const { document } = await createWebsiteScroll({ ...documentDeps, sources: repos.sources }, ProjectIdSchema.parse(form.get("projectId")), {
     assetId: typeof assetId === "string" ? assetId : "",
+    formatId: FormatIdSchema.parse(form.get("formatId")),
+  });
+  redirect(`/studio/${document.id}`);
+}
+
+/** Vídeo por receita (VideoRecipe) no formato escolhido. */
+export async function createVideoFromRecipeAction(form: FormData): Promise<void> {
+  const { documentDeps, repos } = await getAtlasRuntime();
+  const recipe = form.get("recipeId");
+  const { document } = await createVideoFromRecipe({ ...documentDeps, sources: repos.sources }, ProjectIdSchema.parse(form.get("projectId")), {
+    recipeId: typeof recipe === "string" ? recipe : "",
     formatId: FormatIdSchema.parse(form.get("formatId")),
   });
   redirect(`/studio/${document.id}`);

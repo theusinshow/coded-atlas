@@ -12,6 +12,7 @@ import {
   DocumentContentSchema,
   contentAssetIds,
   contentPages,
+  isMotion,
   CreativeDocumentSchema,
   type DocumentContent,
   type CommitResult,
@@ -22,12 +23,14 @@ import {
 import { createJob, type Job } from "../../core/jobs/job";
 import type { JobRepository } from "../../core/jobs/repository";
 import { MotionContentSchema, motionFromArtboards, websiteScrollScene } from "../../core/motion/motion";
+import { buildRecipe, getRecipe } from "../../core/motion/recipes";
 import type { ProjectRepository, SourceRepository } from "../../core/projects/repositories";
 import { DomainError } from "../../shared/errors";
 import { newId, type ProjectId } from "../../shared/id";
 import { nowIso, parseOrThrow } from "../../shared/validation";
 import type { RenderJobPayload } from "../render/render-job";
-import type { RasterFormat } from "../render/static-renderer";
+import type { RenderFormat } from "../render/render-job";
+import type { VideoQuality } from "../render/motion-renderer";
 
 export interface DocumentDeps {
   projects: ProjectRepository;
@@ -47,10 +50,18 @@ async function requireDocument(deps: DocumentDeps, id: CreativeDocumentId): Prom
 /** Todo asset usado no documento precisa existir e ser do mesmo projeto. */
 async function checkContent(deps: DocumentDeps, projectId: ProjectId, raw: unknown): Promise<DocumentContent> {
   const content = parseOrThrow(DocumentContentSchema, raw, "Conteúdo do documento");
+  const motion = isMotion(content);
   for (const id of contentAssetIds(content)) {
     const asset = await deps.assets.getById(id as Parameters<AssetRepository["getById"]>[0]);
     if (!asset || asset.projectId !== projectId) throw new DomainError("VALIDATION", "O documento usa uma imagem que não é deste projeto.");
-    if (!asset.mimeType.startsWith("image/")) throw new DomainError("VALIDATION", "Só imagens podem ser usadas no canvas.");
+    // Vídeo (movimento capturado) só dentro de documentos de motion.
+    if (!asset.mimeType.startsWith("image/") && !(motion && asset.mimeType.startsWith("video/"))) {
+      throw new DomainError("VALIDATION", motion ? "Molduras aceitam imagem ou vídeo do projeto." : "Só imagens podem ser usadas no canvas.");
+    }
+  }
+  if (motion && content.audio) {
+    const audio = await deps.assets.getById(content.audio.assetId as Parameters<AssetRepository["getById"]>[0]);
+    if (!audio || audio.projectId !== projectId || !audio.mimeType.startsWith("audio/")) throw new DomainError("VALIDATION", "A trilha precisa ser um áudio deste projeto.");
   }
   return content;
 }
@@ -180,11 +191,13 @@ export async function deleteDocument(deps: DocumentDeps, id: CreativeDocumentId)
 }
 
 /** Renderiza uma revisão concreta: ela é fixada para nunca mais ser reescrita pelo autosave. */
-export async function enqueueDocumentRender(deps: DocumentDeps, id: CreativeDocumentId, revision: number, formats: readonly RasterFormat[]): Promise<Job> {
+export async function enqueueDocumentRender(deps: DocumentDeps, id: CreativeDocumentId, revision: number, formats: readonly RenderFormat[], quality: VideoQuality = "final"): Promise<Job> {
   const document = await requireDocument(deps, id);
   if (!(await deps.documents.getRevision(document.id, revision))) throw new DomainError("NOT_FOUND", `Revisão ${revision} não existe.`);
   await deps.documents.pin(document.id, revision);
-  const payload: RenderJobPayload = { target: { kind: "document", documentId: document.id, revision }, formats: [...new Set(formats)] };
+  const wantsVideo = formats.some((f) => f === "mp4" || f === "webm");
+  if (wantsVideo && document.kind !== "motion") throw new DomainError("VALIDATION", "Vídeo só sai de documentos de motion — use Animar primeiro.");
+  const payload: RenderJobPayload = { target: { kind: "document", documentId: document.id, revision }, formats: [...new Set(formats)], ...(wantsVideo ? { quality } : {}) };
   return deps.jobs.create(createJob({ type: "render", projectId: document.projectId, payload }));
 }
 
@@ -255,4 +268,32 @@ export async function createWebsiteScroll(deps: DocumentDeps & { sources: Source
     formatId: input.formatId,
   });
   return deps.documents.create(newDocument(projectId, `Website Scroll · ${project.name}`.slice(0, 120), {}, "motion"), content, "create");
+}
+
+/** Vídeo por receita (VideoRecipe): cenas montadas com composições curadas + Website Scroll. */
+export async function createVideoFromRecipe(
+  deps: DocumentDeps & { sources: SourceRepository },
+  projectId: ProjectId,
+  input: { recipeId: string; formatId: FormatId }
+): Promise<CommitResult & { skipped: string[] }> {
+  const project = await deps.projects.getById(projectId);
+  if (!project) throw new DomainError("NOT_FOUND", "Projeto não encontrado.");
+  const recipe = getRecipe(input.recipeId);
+  if (!recipe) throw new DomainError("NOT_FOUND", "Receita de vídeo não existe.");
+  const [assets, profile, sources] = await Promise.all([deps.assets.listByProject(projectId), deps.visualProfiles.latest(projectId), deps.sources.listByProject(projectId)]);
+  let built: ReturnType<typeof buildRecipe>;
+  try {
+    built = buildRecipe(recipe, {
+      project,
+      assets,
+      url: sources.find((s) => s.type === "url")?.locator ?? null,
+      profile,
+      formatId: input.formatId,
+      style: { mode: (profile?.palette.length ?? 0) >= 2 ? "hybrid" : "atlas", profileRevision: profile?.revision ?? null },
+    });
+  } catch (err) {
+    throw new DomainError("VALIDATION", err instanceof Error ? err.message : "Sem material para esta receita.");
+  }
+  const result = await deps.documents.create(newDocument(projectId, `${recipe.name} · ${project.name}`.slice(0, 120), {}, "motion"), built.content, "create");
+  return { ...result, skipped: built.skipped };
 }
