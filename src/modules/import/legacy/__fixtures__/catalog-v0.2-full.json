@@ -1,0 +1,168 @@
+{
+  "version": "0.2.0",
+  "project": {
+    "url": "https://acme.example/",
+    "name": "Acme Studio",
+    "slug": "acme-studio",
+    "category": "Landing Page",
+    "client": "Acme",
+    "description": "Fixture v0.2 completa (derivada do formato real).",
+    "options": {
+      "video": true,
+      "sections": true,
+      "showcase": true
+    },
+    "pages": [
+      "/sobre"
+    ],
+    "states": [
+      {
+        "name": "Menu aberto",
+        "selector": ".menu-toggle"
+      }
+    ]
+  },
+  "captures": {
+    "desktop": {
+      "viewport": "1440x900",
+      "screenshot": "/generated/acme-studio/screenshots/desktop-1440x900.png",
+      "fullpage": "/generated/acme-studio/screenshots/desktop-fullpage.png"
+    },
+    "mobile": {
+      "viewport": "390x844",
+      "screenshot": "/generated/acme-studio/screenshots/mobile-390x844.png",
+      "fullpage": "/generated/acme-studio/screenshots/mobile-fullpage.png"
+    }
+  },
+  "thumbnails": {
+    "main": "/generated/acme-studio/thumbnails/thumb-main.webp",
+    "mobile": "/generated/acme-studio/thumbnails/thumb-mobile.webp"
+  },
+  "videos": {
+    "desktop": "/generated/acme-studio/videos/desktop-scroll.webm",
+    "mobile": "/generated/acme-studio/videos/mobile-scroll.webm"
+  },
+  "sections": [
+    {
+      "device": "desktop",
+      "name": "section-001",
+      "y": 0,
+      "height": 900,
+      "screenshot": "/generated/acme-studio/screenshots/sections-desktop/section-001.png",
+      "heading": "Seção 1",
+      "suggestedName": "Hero",
+      "semanticTag": "section"
+    },
+    {
+      "device": "desktop",
+      "name": "section-002",
+      "y": 1357,
+      "height": 900,
+      "screenshot": "/generated/acme-studio/screenshots/sections-desktop/section-002.png",
+      "heading": "Seção 2",
+      "semanticTag": "article"
+    },
+    {
+      "device": "desktop",
+      "name": "section-003",
+      "y": 2177,
+      "height": 900,
+      "screenshot": "/generated/acme-studio/screenshots/sections-desktop/section-003.png",
+      "heading": "Seção 3",
+      "semanticTag": "section",
+      "sectionId": "solucoes"
+    }
+  ],
+  "inspection": {
+    "colors": [
+      "#0b2a36",
+      "#fbfcfd"
+    ],
+    "fonts": [
+      "Inter"
+    ],
+    "techStack": [
+      "Next.js"
+    ],
+    "ogImage": "https://acme.example/og.png"
+  },
+  "cover": {
+    "image": "/generated/acme-studio/thumbnails/cover.webp",
+    "source": "smart-crop"
+  },
+  "compositions": [
+    {
+      "name": "social-1x1",
+      "label": "Quadrado (1:1)",
+      "width": 1080,
+      "height": 1080,
+      "image": "/generated/acme-studio/compositions/social-1x1.png"
+    },
+    {
+      "name": "social-9x16",
+      "label": "Story (9:16)",
+      "width": 1080,
+      "height": 1920,
+      "image": "/generated/acme-studio/compositions/social-9x16.png"
+    },
+    {
+      "name": "social-16x9",
+      "label": "Paisagem (16:9)",
+      "width": 1200,
+      "height": 675,
+      "image": "/generated/acme-studio/compositions/social-16x9.png"
+    }
+  ],
+  "mockups": [
+    {
+      "name": "browser",
+      "label": "Navegador",
+      "image": "/generated/acme-studio/mockups/browser.png"
+    },
+    {
+      "name": "phone",
+      "label": "Celular",
+      "image": "/generated/acme-studio/mockups/phone.png"
+    },
+    {
+      "name": "desktop-3d",
+      "label": "Desktop 3D",
+      "image": "/generated/acme-studio/mockups/desktop-3d.png"
+    },
+    {
+      "name": "mobile-3d",
+      "label": "Mobile 3D",
+      "image": "/generated/acme-studio/mockups/mobile-3d.png"
+    }
+  ],
+  "meta": {
+    "captureDelayMs": 3000,
+    "navTimeoutMs": 30000,
+    "durationMs": 85507,
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+  },
+  "createdAt": "2026-06-20T16:04:06.482Z",
+  "pages": [
+    {
+      "path": "/sobre",
+      "url": "https://acme.example/sobre",
+      "desktop": {
+        "viewport": "1440x900",
+        "screenshot": "/generated/acme-studio/screenshots/pages/sobre/desktop-1440x900.png",
+        "fullpage": "/generated/acme-studio/screenshots/pages/sobre/desktop-fullpage.png"
+      },
+      "mobile": {
+        "viewport": "390x844",
+        "screenshot": "/generated/acme-studio/screenshots/pages/sobre/mobile-390x844.png",
+        "fullpage": "/generated/acme-studio/screenshots/pages/sobre/mobile-fullpage.png"
+      }
+    }
+  ],
+  "states": [
+    {
+      "name": "Menu aberto",
+      "selector": ".menu-toggle",
+      "screenshot": "/generated/acme-studio/screenshots/states/state-001.png"
+    }
+  ]
+}

@@ -93,3 +93,7 @@ Accepted (2026-09-27). `openDatabase` applies pending Drizzle migrations and ref
 ## ADR-023 — 2.1.A delivered DB and storage together
 
 Accepted (2026-09-27). `CURRENT.md` 2.1.A completion criteria required repository round-trips and safe storage, which are 2.1.B/2.1.C items in `BUILD-PLAN.md`. `CURRENT.md` has precedence, so those were delivered in the same milestone; next milestone is 2.1.D.
+
+## ADR-024 — Legacy bridge is read-only, ID-less and type-locked to v1
+
+Accepted (2026-09-27). The adapter reads `public/generated` through a confined, read-only store and maps each `catalog.json` to a project draft + file descriptors. It mints no IDs (they would change on every scan) and writes nothing; persisting into SQLite happens per project in a later migration step, so rollback is deleting rows. The Zod `LegacyCatalogSchema` and `lib/types.ts` `Catalog` are kept identical by a compile-time equality assertion instead of rewriting v1 types. Compositions and mockups map to **Output** (rendered deliverables); screenshots, sections, videos, thumbnails and covers map to **Asset**. v1 data with no Foundation home (`description`, `inspection`, capture options) is carried in `unmapped`, never dropped.

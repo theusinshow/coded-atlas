@@ -2,9 +2,8 @@
 
 The complete roadmap lives in `ROADMAP.md`. The currently authorized scope lives in `CURRENT.md`.
 
-> **Status (2026-09-27):** 2.1.A concluído e verificado. O critério de saída de 2.1.A em
-> `CURRENT.md` exigia banco + repositórios + storage, então os itens de 2.1.B e 2.1.C foram
-> entregues junto. Próximo: **2.1.D — Legacy bridge** (aguardando teste do Matheus).
+> **Status (2026-09-27):** 2.1.A (com 2.1.B/C) e **2.1.D concluídos e verificados**.
+> Próximo: **2.1.E — Job foundation** (aguardando teste do Matheus).
 > O Atlas v1 (captura, vitrine, diff, case, ZIP) segue funcionando sem alteração de comportamento.
 
 ## Baseline (antes de qualquer mudança — 2026-09-27, commit `ac93441`)
@@ -70,11 +69,11 @@ Não executados no baseline (dependem de sites reais/rede e demoram): `test-phas
 
 ### 2.1.D Legacy bridge
 
-- [ ] Define legacy catalog schema.
-- [ ] Read existing catalog safely.
-- [ ] Map legacy project metadata.
-- [ ] Map legacy generated files to asset descriptors.
-- [ ] Preserve existing project views during migration.
+- [x] Define legacy catalog schema. (`src/modules/import/legacy/catalog-schema.ts`; asserção de compilação contra `lib/types.ts`)
+- [x] Read existing catalog safely. (`GeneratedDirStore`: confinado, somente leitura, limite de 5 MB, pastas `.` ignoradas)
+- [x] Map legacy project metadata. (→ `NewProjectInput` + source url; `description`/`inspection`/`options` preservados em `unmapped`)
+- [x] Map legacy generated files to asset descriptors. (Asset vs Output, storage key `legacy/<slug>/…`, linhagem de thumbnail/capa, presença no disco)
+- [x] Preserve existing project views during migration. (telas v1 intocadas; `npm run legacy:scan` para o relatório)
 
 ### 2.1.E Job foundation
 
@@ -103,7 +102,7 @@ Não executados no baseline (dependem de sites reais/rede e demoram): `test-phas
 - [ ] Central safe path validation. (parcial: nova fundação confinada; rotas legadas `case`, `export`, `zip`, `DELETE projects` agora validam slug — `lib/storage/paths.ts` ainda não passa por `resolveWithin`)
 - [ ] URL policy.
 - [ ] Structured warnings.
-- [ ] Runtime schema validation for persisted JSON. (feito para o SQLite novo; falta `catalog.json` legado → 2.1.D)
+- [ ] Runtime schema validation for persisted JSON. (feito para o SQLite novo e para a leitura do `catalog.json` pelo adapter; as telas v1 ainda fazem `JSON.parse(...) as Catalog`)
 - [ ] Infinite-scroll guard.
 - [ ] Explicit timeouts for long external processes.
 - [ ] Build/lint/type/tests clean.
@@ -121,6 +120,18 @@ Não executados no baseline (dependem de sites reais/rede e demoram): `test-phas
 | `next start` + `/api/projects`, `/projects`, `/projects/estudio-lentz` | 200, projetos legados listados |
 | `/api/case`, `/api/export`, `DELETE /api/projects` com `../` | 400 (antes: aceitavam) |
 | `/api/export/estudio-lentz`, `/api/zip/estudio-lentz` | 200 |
+
+## Verificação de 2.1.D (2026-09-27)
+
+| Comando | Resultado |
+|---|---|
+| `npm run typecheck` | OK (inclui a asserção schema ↔ `lib/types.ts`; mutação proposital quebra a compilação) |
+| `npm run lint` | OK, 0 warnings |
+| `npm test` | 8 arquivos, 188 testes OK (mutação removendo o realpath do store derruba 2 testes) |
+| `npm run build` | OK |
+| `npm run legacy:scan` na biblioteca real | 9 pastas, 9 projetos legíveis (v0.1.0 e v0.2.0), 0 arquivos ausentes, 0 ressalvas |
+| `next start`: `/projects`, `/projects/good-fella`, `/projects/example-com`, `/api/projects`, `/api/export/mj`, `/lab/coded-atlas` | 200; 9 projetos listados |
+| scripts legados offline | mesmos resultados do baseline |
 
 ## Phase completion rule
 

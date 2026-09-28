@@ -1,0 +1,35 @@
+{
+  "version": "0.1.0",
+  "project": {
+    "url": "https://example.com",
+    "name": "Example",
+    "slug": "example-com",
+    "category": "Site Institucional",
+    "client": "Example Inc.",
+    "description": "Página de teste para verificação do Fase 6."
+  },
+  "captures": {
+    "desktop": {
+      "viewport": "1440x900",
+      "screenshot": "/generated/example-com/screenshots/desktop-1440x900.png",
+      "fullpage": "/generated/example-com/screenshots/desktop-fullpage.png"
+    },
+    "mobile": {
+      "viewport": "390x844",
+      "screenshot": "/generated/example-com/screenshots/mobile-390x844.png",
+      "fullpage": "/generated/example-com/screenshots/mobile-fullpage.png"
+    }
+  },
+  "thumbnails": {
+    "main": "/generated/example-com/thumbnails/thumb-main.webp",
+    "mobile": "/generated/example-com/thumbnails/thumb-mobile.webp"
+  },
+  "sections": [],
+  "meta": {
+    "captureDelayMs": 3000,
+    "navTimeoutMs": 30000,
+    "durationMs": 9100,
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+  },
+  "createdAt": "2026-06-19T02:21:45.344Z"
+}

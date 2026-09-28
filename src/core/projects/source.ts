@@ -10,7 +10,7 @@ import { TimestampSchema, nowIso, parseOrThrow } from "../../shared/validation";
 export const SourceTypeSchema = z.enum(["url", "github", "local", "upload"]);
 export type SourceType = z.infer<typeof SourceTypeSchema>;
 
-function isHttpUrl(value: string): boolean {
+export function isHttpUrl(value: string): boolean {
   try {
     const url = new URL(value);
     return (url.protocol === "http:" || url.protocol === "https:") && url.hostname.length > 0;

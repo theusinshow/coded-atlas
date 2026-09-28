@@ -10,7 +10,7 @@ Introduce the new persistence/domain/job foundation while preserving useful beha
 
 ## Current milestone
 
-**2.1.D — Legacy bridge** (not started — waiting for the owner to test 2.1.A)
+**2.1.E — Job foundation** (not started — waiting for the owner to test 2.1.D)
 
 ## State of the code (2026-09-27)
 
@@ -21,15 +21,21 @@ Delivered in 2.1.A (which also covered 2.1.B and 2.1.C, because the 2.1.A comple
 - `src/infrastructure/db` — SQLite (`better-sqlite3`) + Drizzle, WAL, foreign keys, migration `0000_foundation` applied on open, `DB_SCHEMA_MISMATCH` on newer/edited migrations; repositories for all six entities with Zod validation on write and read.
 - `src/infrastructure/storage` — `LocalAssetStorage`: key validation, root confinement (incl. junction/symlink), SHA-256, no-overwrite atomic publish, dedupe, staging with all-or-nothing commit.
 - `ATLAS_HOME` (default `./.atlas`, git-ignored) holds `atlas.db` and `storage/`. `npm run db:migrate` initializes it.
-- Vitest: `npm test` (160 tests). `npm run typecheck`.
+- Vitest: `npm test` (188 tests after 2.1.D). `npm run typecheck`.
+
+Delivered in 2.1.D:
+
+- `src/modules/import/legacy` — `LegacyCatalogSchema` (Zod, kept identical to `lib/types.ts` `Catalog` by a compile-time assertion), pure `mapLegacyCatalog` (→ project draft, url source, file descriptors split into Asset/Output, lineage, `unmapped` data) and `scanLegacyLibrary` with structured issues (error = project skipped, warning = included).
+- `src/infrastructure/legacy/generated-dir-store.ts` — confined, read-only reader of `public/generated`.
+- `npm run legacy:scan` (`--json` for the full report). Real library: 9/9 projects readable, 0 issues.
+- No IDs are minted and nothing is written: importing into SQLite happens in the vertical slice / 2.3.
 
 Not wired yet: **nothing in the running app uses the new foundation.** The v1 pipeline (`app/`, `lib/`, `catalog.json`, `public/generated`) is unchanged, except that four legacy routes now validate slugs with the domain `SlugSchema`.
 
 ## Work allowed now
 
-- build the legacy read adapter (`catalog.json` → Zod legacy schema → Project/Source/Asset descriptors);
-- keep existing project views working during migration;
-- add tests around the adapter;
+- job foundation: persisted states used by a local worker, safe claim/lock, cancellation signal contract, persisted progress, one destructive job per project, stale-job recovery on startup;
+- tests with temporary SQLite databases for claiming, locking, cancellation and recovery;
 - document migration seams;
 - everything already allowed in 2.1 (Zod, SQLite/Drizzle, migrations, IDs, Foundation schemas, `AssetStorage`).
 
@@ -49,19 +55,20 @@ Current capture/social/mockup/diff functionality must remain operational unless 
 4. ~~create initial migrations;~~
 5. ~~implement repositories;~~
 6. ~~implement AssetStorage;~~
-7. create legacy adapter; ← next
-8. migrate one narrow capture flow end-to-end (2.1.E jobs + 2.1.F slice);
+7. ~~create legacy adapter;~~
+8. migrate one narrow capture flow end-to-end (2.1.E jobs ← next, then 2.1.F slice);
 9. verify;
 10. expand only after passing criteria.
 
-## Completion criteria for 2.1.D
+## Completion criteria for 2.1.E
 
-- Legacy `catalog.json` has a Zod schema covering every shape written by Atlas v0.1–v1.7 (optional fields included).
-- Every project in `public/generated/` either parses or is reported with a structured, non-fatal reason.
-- Adapter maps a legacy project to Project + Source + asset descriptors (storage keys relative, no absolute paths) **without writing or moving legacy files**.
-- Existing `/projects` and `/projects/[slug]` views keep working.
-- Tests cover valid, partial and corrupt legacy catalogs.
-- typecheck, lint, test and build clean.
+- A job can be queued, claimed by exactly one worker (atomic claim in SQLite), progress-updated and finished; state survives process restart.
+- Cancellation is a persisted request that the running work observes through an `AbortSignal`-style contract and that ends in `cancelled` with cleanup.
+- Two destructive jobs for the same project cannot run concurrently.
+- Jobs left `preparing`/`running` by a dead worker (stale heartbeat) are detected on startup and marked failed (or requeued per explicit policy).
+- No HTTP request is needed to keep a job alive (worker is independent of the UI request).
+- Tests cover claim races, lock, cancellation, stale recovery and invalid transitions.
+- typecheck, lint, test and build clean; v1 capture flow unchanged (switching the real capture to jobs is 2.1.F).
 
 ## Agent rule
 

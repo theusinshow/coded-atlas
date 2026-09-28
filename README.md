@@ -74,6 +74,7 @@ npm run lint
 npm test             # Vitest (nova fundação em src/)
 npm run build
 npm run db:migrate   # cria/atualiza .atlas/atlas.db (ou $ATLAS_HOME)
+npm run legacy:scan  # relatório (somente leitura) dos projetos v1 no modelo novo
 ```
 
 O uso do Atlas v1 (formulário, opções de captura, scripts por fase) está documentado em

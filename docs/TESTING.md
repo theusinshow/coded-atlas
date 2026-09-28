@@ -11,6 +11,7 @@ npm run typecheck   # tsc --noEmit
 npm run lint
 npm test            # Vitest: src/**/*.test.ts
 npm run build
+npm run legacy:scan         # read-only report of public/generated in the new model
 npx tsx scripts/test-*.ts   # legacy v1 scripts (some capture real sites)
 ```
 
