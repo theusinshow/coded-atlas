@@ -237,3 +237,12 @@ Accepted (2026-09-28).
 - **Kit generation is deterministic**: presets name curated compositions with alternatives; creative memory can veto one, and the alternative is recorded on the item. The Brain influences kits through saved directions (e.g. saved from a Brain plan) and memory, never by writing kit state directly.
 - **Batch orchestration is one render job** (`target.kind = "kit"`). Static pieces share one browser, videos follow, and outputs carry `mediaKitId` and `kitItemId`. A kit stuck in `rendering` is released when its last job is no longer active.
 - **Delivery**: the ZIP contains the latest kit render, with one numbered folder per item in preset order.
+
+## ADR-039 — Presentations and document export (2.12)
+
+Accepted (2026-09-28).
+
+- **Export assembles, it never redraws**: PDF and PPTX are built from page images rendered by the same static renderer (kernel) as PNG outputs, so every format matches the preview exactly.
+- **Libraries**: pdf-lib (PDF) and PptxGenJS (PPTX), both pure JavaScript and confined to `src/infrastructure/export` behind the `DocumentExporter` port.
+- **PPTX slides are images plus speaker notes**. Editable native text in PPTX would need a second layout engine and could drift from the kernel; notes carry the talk track.
+- **Presentations reuse the sequence model** (`slides` next to `pages` and `scenes`). The Statement composition fills the text-slide gap and is part of the curated catalog, so the guardrail sweep covers it.

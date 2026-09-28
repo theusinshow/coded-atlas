@@ -2,7 +2,7 @@
 
 ## Active phase
 
-**Atlas 2.12 — Presentation Studio** (in progress). 2.1–2.3 completed 2026-09-27; 2.4–2.11 completed 2026-09-28.
+**Atlas 2.13 — Case Builder** (in progress). 2.1–2.3 completed 2026-09-27; 2.4–2.12 completed 2026-09-28.
 
 **Owner authorization (2026-09-27):** execute the roadmap continuously from 2.2 through 2.14 (Atlas 3.0) without stopping between phases; the owner tests only at the end. Each phase still ends with typecheck/lint/test/build, `BUILD-PLAN.md` + this file updated and a commit.
 
@@ -12,7 +12,7 @@ Introduce the new persistence/domain/job foundation while preserving useful beha
 
 ## Current milestone
 
-**2.12 — Presentation Studio**: PresentationDocument (16:9 slides with speaker notes), slide presets/storyboard from project material, Statement text slides, Studio editing, export to PDF, PPTX (with notes) and images.
+**2.13 — Case Builder**: CaseDocument (editorial sections: text, framed image, gallery, Atlas piece, identity, facts), outline from project material (replacing the v1 case-draft.mdx), structured editor with live preview, optional Brain copywriting with guardrails, outputs as web page (ZIP), PDF and Behance-style 1400px modules.
 
 ## State of the code (2026-09-27)
 
@@ -103,6 +103,10 @@ Delivered in 2.10 (Video Engine):
 Delivered in 2.11 (Media Kits):
 
 - `MediaKit` with presets (launch/portfolio/social), one Creative Direction per kit, generation into editable drafts, batch render job (`kit` target) with kit-tagged Outputs, ZIP delivery per item; "Generate Media Kit" is the Overview primary CTA.
+
+Delivered in 2.12 (Presentation Studio):
+
+- `presentation` documents with speaker notes, curated storyboard, Statement composition, Studio slide editing, PDF/PPTX export through the `DocumentExporter` port (pdf-lib, PptxGenJS).
 
 ## Work allowed now
 

@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { createInstanceAction } from "@/app/actions/create";
-import { createBlankCanvasAction, createVideoFromRecipeAction, createWebsiteScrollAction } from "@/app/actions/studio";
+import { createBlankCanvasAction, createPresentationAction, createVideoFromRecipeAction, createWebsiteScrollAction } from "@/app/actions/studio";
 import { VIDEO_RECIPES } from "@/src/core/motion/recipes";
 import { contentPages, isCarousel, type DocumentContent } from "@/src/core/documents/creative-document";
 import { resolveTokens } from "@/src/core/creative/tokens";
@@ -95,6 +95,21 @@ export function CompositionGallery({ projectId, slug, assets, profile, profilesB
             })}
           </ul>
         )}
+      </section>
+
+      <section aria-labelledby="apresentacao" className="border border-line bg-surface/40 p-4 flex flex-wrap items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <h2 id="apresentacao" className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+            Apresentação do projeto
+          </h2>
+          <p className="text-[12px] text-zinc-500 mt-1">Slides 16:9 com capa, contexto, o site, responsivo, detalhes, identidade e encerramento — com notas do apresentador. Exporta PDF, PPTX e imagens.</p>
+        </div>
+        <form action={createPresentationAction}>
+          <input type="hidden" name="projectId" value={projectId} />
+          <button type="submit" className={buttonClass("secondary", "sm")}>
+            Montar apresentação
+          </button>
+        </form>
       </section>
 
       <section aria-labelledby="receitas" className="border border-line bg-surface/40 p-4 flex flex-wrap items-center gap-3">

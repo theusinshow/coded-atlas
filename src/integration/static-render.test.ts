@@ -30,9 +30,9 @@ async function fakeAsset(role: string, device: "desktop" | "mobile", width: numb
 }
 
 describe("composições curadas (build puro)", () => {
-  it("todas as 10 constroem Artboards válidos em todos os formatos, sem layers fora de um limite razoável", () => {
+  it("todas as composições curadas constroem Artboards válidos em todos os formatos, sem layers fora de um limite razoável", () => {
     const profile = createVisualProfile({ projectId, revision: 1, palette: ["#0b2a36", "#fbfcfd", "#e63946"], fonts: ["Montserrat"], techStack: [], source: "inspection" });
-    expect(COMPOSITIONS).toHaveLength(10);
+    expect(COMPOSITIONS).toHaveLength(11); // 10 iniciais + Statement (2.12)
     for (const def of COMPOSITIONS) {
       for (const formatId of FORMAT_IDS) {
         for (const variant of def.variants) {

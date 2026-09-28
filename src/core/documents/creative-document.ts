@@ -11,7 +11,7 @@ import { ArtboardSchema, artboardAssetIds, type Artboard } from "./artboard";
  * Família: canvas agora; carousel, motion, presentation e case nas fases seguintes
  * reutilizam a mesma tabela de revisões com outro `kind` e outro conteúdo.
  */
-export const DocumentKindSchema = z.enum(["canvas", "carousel", "motion"]);
+export const DocumentKindSchema = z.enum(["canvas", "carousel", "motion", "presentation"]);
 export type DocumentKind = z.infer<typeof DocumentKindSchema>;
 
 export const CreativeDocumentIdSchema = UlidSchema.brand<"CreativeDocumentId">();
@@ -54,16 +54,44 @@ export const CarouselContentSchema = z
   .refine((c) => new Set(c.pages.map((p) => p.id)).size === c.pages.length, { message: "IDs de página repetidos." });
 export type CarouselContent = z.infer<typeof CarouselContentSchema>;
 
+export const MAX_SLIDES = 40;
+
+export const SlideSchema = z.strictObject({
+  id: z.string().min(1).max(64),
+  title: z.string().trim().max(80).optional(),
+  /** Notas do apresentador (vão para o PPTX; não aparecem no slide). */
+  notes: z.string().max(2000),
+  artboard: ArtboardSchema,
+});
+export type Slide = z.infer<typeof SlideSchema>;
+
+/** Apresentação (docs/WORKFLOWS.md → F): slides do mesmo tamanho, um estilo, notas por slide. */
+export const PresentationContentSchema = z
+  .strictObject({
+    slides: z.array(SlideSchema).min(1).max(MAX_SLIDES),
+    style: DocumentStyleSchema,
+    formatId: FormatIdSchema.nullable(),
+  })
+  .refine((c) => c.slides.every((s) => s.artboard.width === c.slides[0].artboard.width && s.artboard.height === c.slides[0].artboard.height), {
+    message: "Todos os slides precisam ter o mesmo tamanho.",
+  })
+  .refine((c) => new Set(c.slides.map((s) => s.id)).size === c.slides.length, { message: "IDs de slide repetidos." });
+export type PresentationContent = z.infer<typeof PresentationContentSchema>;
+
 /**
  * Conteúdo de qualquer documento. A forma decide o tipo: `artboard` = canvas,
- * `pages` = carrossel, `scenes` = motion.
+ * `pages` = carrossel, `scenes` = motion, `slides` = apresentação.
  */
-export const DocumentContentSchema = z.union([CanvasContentSchema, CarouselContentSchema, MotionContentSchema]);
-export type DocumentContent = CanvasContent | CarouselContent | MotionContent;
-export type SequenceContent = CarouselContent | MotionContent;
+export const DocumentContentSchema = z.union([CanvasContentSchema, CarouselContentSchema, MotionContentSchema, PresentationContentSchema]);
+export type DocumentContent = CanvasContent | CarouselContent | MotionContent | PresentationContent;
+export type SequenceContent = CarouselContent | MotionContent | PresentationContent;
 
 export function isCarousel(content: DocumentContent): content is CarouselContent {
   return "pages" in content;
+}
+
+export function isPresentation(content: DocumentContent): content is PresentationContent {
+  return "slides" in content;
 }
 
 export function isMotion(content: DocumentContent): content is MotionContent {
@@ -71,11 +99,11 @@ export function isMotion(content: DocumentContent): content is MotionContent {
 }
 
 export function isSequence(content: DocumentContent): content is SequenceContent {
-  return isCarousel(content) || isMotion(content);
+  return isCarousel(content) || isMotion(content) || isPresentation(content);
 }
 
 export function kindOf(content: DocumentContent): DocumentKind {
-  return isCarousel(content) ? "carousel" : isMotion(content) ? "motion" : "canvas";
+  return isCarousel(content) ? "carousel" : isMotion(content) ? "motion" : isPresentation(content) ? "presentation" : "canvas";
 }
 
 /**
@@ -85,6 +113,7 @@ export function kindOf(content: DocumentContent): DocumentKind {
 export function contentPages(content: DocumentContent): { artboard: Artboard; title?: string }[] {
   if (isCarousel(content)) return content.pages;
   if (isMotion(content)) return content.scenes;
+  if (isPresentation(content)) return content.slides;
   return [{ artboard: content.artboard }];
 }
 

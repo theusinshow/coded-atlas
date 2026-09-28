@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useContext } from "react";
 import { createStore, useStore, type StoreApi } from "zustand";
-import { isCarousel, isMotion, type CanvasContent, type DocumentContent } from "@/src/core/documents/creative-document";
+import { isCarousel, isMotion, isPresentation, type CanvasContent, type DocumentContent } from "@/src/core/documents/creative-document";
 import { findLayer } from "@/src/core/documents/layer-tree";
 import type { Scene } from "@/src/core/motion/motion";
 
@@ -28,6 +28,10 @@ function viewOf(doc: DocumentContent, page: number): CanvasContent {
     const current = doc.scenes[Math.min(page, doc.scenes.length - 1)];
     return { artboard: current.artboard, style: doc.style, formatId: doc.formatId };
   }
+  if (isPresentation(doc)) {
+    const current = doc.slides[Math.min(page, doc.slides.length - 1)];
+    return { artboard: current.artboard, style: doc.style, formatId: doc.formatId };
+  }
   return doc;
 }
 
@@ -42,11 +46,14 @@ function writeBack(doc: DocumentContent, page: number, view: CanvasContent): Doc
       scenes: doc.scenes.map((s, i) => (i === page ? { ...s, artboard: view.artboard, animations: s.animations.filter((a) => findLayer(view.artboard.layers, a.layerId)) } : s)),
     };
   }
+  if (isPresentation(doc)) return { ...doc, style: view.style, formatId: view.formatId, slides: doc.slides.map((s, i) => (i === page ? { ...s, artboard: view.artboard } : s)) };
   return view;
 }
 
-const clampPage = (doc: DocumentContent, page: number) =>
-  isCarousel(doc) ? Math.min(Math.max(page, 0), doc.pages.length - 1) : isMotion(doc) ? Math.min(Math.max(page, 0), doc.scenes.length - 1) : 0;
+const clampPage = (doc: DocumentContent, page: number) => {
+  const count = isCarousel(doc) ? doc.pages.length : isMotion(doc) ? doc.scenes.length : isPresentation(doc) ? doc.slides.length : 1;
+  return Math.min(Math.max(page, 0), count - 1);
+};
 
 /** Cena ativa (só em documentos de motion). */
 export function activeScene(state: Pick<StudioState, "doc" | "activePage">): Scene | null {

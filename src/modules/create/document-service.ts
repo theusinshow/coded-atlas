@@ -25,6 +25,8 @@ import { createJob, type Job } from "../../core/jobs/job";
 import type { JobRepository } from "../../core/jobs/repository";
 import { MotionContentSchema, motionFromArtboards, websiteScrollScene } from "../../core/motion/motion";
 import { buildRecipe, getRecipe } from "../../core/motion/recipes";
+import { buildPresentation } from "../../core/presentation/storyboard";
+import { CreativeDirectionIdSchema, type CreativeDirectionRepository } from "../../core/creative/direction";
 import type { ProjectRepository, SourceRepository } from "../../core/projects/repositories";
 import { DomainError } from "../../shared/errors";
 import { newId, type ProjectId } from "../../shared/id";
@@ -313,5 +315,33 @@ export async function createVideoFromRecipe(
     throw new DomainError("VALIDATION", err instanceof Error ? err.message : "Sem material para esta receita.");
   }
   const result = await deps.documents.create(newDocument(projectId, (input.name ?? `${recipe.name} · ${project.name}`).slice(0, 120), {}, "motion"), built.content, "create");
+  return { ...result, skipped: built.skipped };
+}
+
+/**
+ * Apresentação do projeto (storyboard curado, 16:9): slides montados com o material
+ * real + notas do apresentador. A direção salva, se escolhida, define estilo e destaque.
+ */
+export async function createPresentation(
+  deps: DocumentDeps & { sources: SourceRepository; directions: CreativeDirectionRepository },
+  projectId: ProjectId,
+  input: { directionId?: string | null; formatId?: FormatId } = {}
+): Promise<CommitResult & { skipped: string[] }> {
+  const project = await deps.projects.getById(projectId);
+  if (!project) throw new DomainError("NOT_FOUND", "Projeto não encontrado.");
+  const [assets, profile, sources] = await Promise.all([deps.assets.listByProject(projectId), deps.visualProfiles.latest(projectId), deps.sources.listByProject(projectId)]);
+  let style: DocumentStyle = { mode: (profile?.palette.length ?? 0) >= 2 ? "hybrid" : "atlas", profileRevision: profile?.revision ?? null };
+  if (input.directionId) {
+    const direction = await deps.directions.getById(CreativeDirectionIdSchema.parse(input.directionId));
+    if (!direction || direction.projectId !== projectId) throw new DomainError("NOT_FOUND", "Direção criativa não encontrada.");
+    style = { mode: direction.styleMode, ...(direction.accent ? { primary: direction.accent } : {}), profileRevision: profile?.revision ?? null };
+  }
+  let built: ReturnType<typeof buildPresentation>;
+  try {
+    built = buildPresentation({ project, assets, url: sources.find((s) => s.type === "url")?.locator ?? null, profile, formatId: input.formatId ?? "landscape-16x9", style });
+  } catch (err) {
+    throw new DomainError("VALIDATION", err instanceof Error ? err.message : "Sem material para a apresentação.");
+  }
+  const result = await deps.documents.create(newDocument(projectId, `Apresentação · ${project.name}`.slice(0, 120), {}, "presentation"), built.content, "create");
   return { ...result, skipped: built.skipped };
 }

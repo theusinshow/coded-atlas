@@ -2,8 +2,8 @@
 
 The complete roadmap lives in `ROADMAP.md`. The currently authorized scope lives in `CURRENT.md`.
 
-> **Status (2026-09-28):** fases **2.1 a 2.11 concluídas**. Execução contínua até o Atlas 3.0
-> autorizada pelo Matheus (ADR-028) — ele testa só no final. Próxima: **2.12 — Presentation Studio**.
+> **Status (2026-09-28):** fases **2.1 a 2.12 concluídas**. Execução contínua até o Atlas 3.0
+> autorizada pelo Matheus (ADR-028) — ele testa só no final. Próxima: **2.13 — Case Builder**.
 > O Atlas v1 (captura, vitrine, diff, case, ZIP) segue funcionando sem alteração de comportamento.
 
 ## Baseline (antes de qualquer mudança — 2026-09-27, commit `ac93441`)
@@ -300,6 +300,16 @@ Verificação 2.10: typecheck/lint OK; `npm test` 418 testes (28 arquivos; rende
 - [x] Entrega: ZIP do último render do kit, uma pasta por item na ordem do preset.
 
 Verificação 2.11: typecheck/lint OK; `npm test` 424 testes (29 arquivos); build OK; `npm run e2e` 21/21 passos (Visão geral → Kit social → render em lote com MP4 preview → ZIP com pastas por item).
+
+## Atlas 2.12 — Presentation Studio (concluída 2026-09-28)
+
+- [x] `PresentationDocument` (kind `presentation`): slides 16:9 do mesmo tamanho, um estilo, **notas do apresentador** por slide; operações de sequência genéricas (páginas/cenas/slides).
+- [x] Storyboard curado a partir do material: Capa, Contexto, O site, Responsivo, Detalhes, Destaque, Identidade visual, Encerramento — slides sem material pulados e informados; notas escritas com os dados do projeto; direção salva opcional.
+- [x] Composição nova **Statement** (slide de texto: título + parágrafo, variantes lado a lado/empilhado) — passa na varredura de guardrails em todos os formatos/estilos.
+- [x] Studio: tira de slides, notas no inspetor, menu de render por tipo (apresentação: PDF/PPTX/PNG; carrossel e canvas também exportam PDF).
+- [x] Exportação: porta `DocumentExporter` + `PdfPptxExporter` (pdf-lib / PptxGenJS, JS puro) montando o arquivo a partir das páginas já renderizadas pelo kernel — PDF com metadados (autor Coded by M), PPTX com uma imagem por slide e as notas.
+
+Verificação 2.12: typecheck/lint OK; `npm test` 430 testes (30 arquivos; PDF real de 3 páginas conferido com pdf-lib e PPTX com slides + notas); build OK; `npm run e2e` 22/22 passos (Montar apresentação → notas → PDF + PPTX em Publicar).
 
 ## Phase completion rule
 

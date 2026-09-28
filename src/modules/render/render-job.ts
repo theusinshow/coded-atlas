@@ -5,7 +5,8 @@ import { createOutput, type Output } from "../../core/assets/output";
 import type { AssetRepository, OutputRepository } from "../../core/assets/repositories";
 import { contentStorageKey } from "../../core/assets/storage-key";
 import type { Artboard } from "../../core/documents/artboard";
-import { CreativeDocumentIdSchema, contentAssetIds, contentPages, isMotion, isSequence, type CreativeDocumentId, type CreativeDocumentRepository } from "../../core/documents/creative-document";
+import { CreativeDocumentIdSchema, contentAssetIds, contentPages, isMotion, isPresentation, isSequence, type CreativeDocumentId, type CreativeDocumentRepository } from "../../core/documents/creative-document";
+import { EXPORT_MIME, type DocumentExporter } from "./document-exporter";
 import { artboardAssetIds } from "../../core/documents/artboard";
 import { CompositionInstanceIdSchema, type CompositionInstanceRepository } from "../../core/creative/composition";
 import { getComposition } from "../../core/creative/compositions";
@@ -25,10 +26,13 @@ import type { RasterFormat, StaticRenderer } from "./static-renderer";
 
 export const RasterFormatSchema = z.enum(["png", "jpg", "webp"]);
 export const VideoFormatSchema = z.enum(["mp4", "webm"]);
-/** Formatos pedidos a um render: imagens (qualquer documento) e vídeo (só motion). */
-export const RenderFormatSchema = z.union([RasterFormatSchema, VideoFormatSchema]);
+export const ExportFormatSchema = z.enum(["pdf", "pptx"]);
+/** Formatos pedidos a um render: imagens, vídeo (só motion) e arquivos de documento (PDF/PPTX). */
+export const RenderFormatSchema = z.union([RasterFormatSchema, VideoFormatSchema, ExportFormatSchema]);
 export type RenderFormat = z.infer<typeof RenderFormatSchema>;
+type ExportFormat = z.infer<typeof ExportFormatSchema>;
 const isVideoFormat = (f: RenderFormat): f is VideoFormat => f === "mp4" || f === "webm";
+const isExportFormat = (f: RenderFormat): f is ExportFormat => f === "pdf" || f === "pptx";
 
 /** O que renderizar: uma composição (estado atual) ou uma revisão CONCRETA de um documento. */
 export const RenderTargetSchema = z.discriminatedUnion("kind", [
@@ -57,6 +61,8 @@ export interface RenderDeps {
   /** Ausente = este processo não renderiza vídeo (ex.: testes só de imagem). */
   motionRenderer?: MotionRenderer;
   kits?: MediaKitRepository;
+  /** PDF/PPTX a partir das páginas renderizadas. */
+  exporter?: DocumentExporter;
 }
 
 export interface RenderUnit {
@@ -329,13 +335,84 @@ async function renderKit(deps: RenderDeps, ctx: JobContext, kitId: MediaKitId, r
   }
 }
 
+/**
+ * PDF/PPTX de uma revisão concreta: as páginas saem do MESMO renderer estático
+ * (JPEG de alta qualidade) e o exportador monta o arquivo. Slides levam notas.
+ */
+async function renderExports(deps: RenderDeps, ctx: JobContext, target: RenderJobPayload["target"], formats: ExportFormat[]): Promise<Output[]> {
+  if (!deps.exporter) throw new DomainError("VALIDATION", "Este processo não tem exportador de PDF/PPTX configurado.");
+  if (target.kind !== "document") throw new DomainError("VALIDATION", "PDF e PPTX saem de documentos (canvas, carrossel, apresentação).");
+  const document = await deps.documents.getById(target.documentId);
+  if (!document) throw new DomainError("NOT_FOUND", "Documento não encontrado.");
+  const revision = await deps.documents.getRevision(document.id, target.revision);
+  if (!revision) throw new DomainError("NOT_FOUND", `Revisão ${target.revision} do documento não existe.`);
+  const units = await resolveDocument(deps, document.id, revision.revision);
+  const cache = new Map<string, { bytes: Uint8Array; mimeType: string } | null>();
+  await ctx.progress(30, `Renderizando ${units.length} página(s) para ${formats.map((f) => f.toUpperCase()).join(" e ")}…`);
+  const images = await deps.renderer.renderBatch(
+    units.map((u) => ({ artboard: u.artboard, tokens: u.tokens, formats: ["jpg"] as const })),
+    { signal: ctx.signal, loadAsset: (id) => loadAssetBytes(deps, cache, id) }
+  );
+  ctx.throwIfAborted();
+  const notes = isPresentation(revision.content) ? revision.content.slides.map((s) => s.notes) : [];
+  const titles = contentPages(revision.content).map((p) => p.title);
+  const pages = images.map(([image], i) => ({ bytes: image.bytes, mimeType: "image/jpeg" as const, width: image.width, height: image.height, title: titles[i], notes: notes[i] }));
+  const meta = { title: document.name, author: "Coded by M", subject: "Coded Atlas" };
+  await ctx.progress(80, "Montando o arquivo…");
+  const files: { format: ExportFormat; bytes: Uint8Array }[] = [];
+  for (const format of formats) files.push({ format, bytes: format === "pdf" ? await deps.exporter.toPdf(pages, meta) : await deps.exporter.toPptx(pages, meta) });
+
+  const staging = await deps.storage.beginStaging();
+  const staged = files.map((f) => {
+    const sha256 = createHash("sha256").update(f.bytes).digest("hex");
+    return { ...f, sha256, key: contentStorageKey("renders", sha256, f.format) };
+  });
+  try {
+    for (const s of staged) await staging.put(s.key, s.bytes);
+    ctx.throwIfAborted();
+    await staging.commit();
+  } catch (err) {
+    await staging.discard();
+    throw err;
+  }
+  const outputs: Output[] = [];
+  for (const s of staged) {
+    outputs.push(
+      await deps.outputs.create(
+        createOutput({
+          projectId: document.projectId,
+          jobId: JobIdSchema.parse(ctx.job.id),
+          format: s.format,
+          mimeType: EXPORT_MIME[s.format],
+          storageKey: s.key,
+          sha256: s.sha256,
+          byteSize: s.bytes.byteLength,
+          width: pages[0]?.width ?? null,
+          height: pages[0]?.height ?? null,
+          label: `${document.name} · ${pages.length} página(s) · rev ${revision.revision}`.slice(0, 200),
+          sourceAssetIds: contentAssetIds(revision.content).map((id) => AssetIdSchema.parse(id)),
+          metadata: {
+            origin: "render",
+            documentId: document.id,
+            documentRevision: revision.revision,
+            ...(revision.content.formatId ? { formatId: revision.content.formatId } : {}),
+            styleMode: revision.content.style.mode,
+          },
+        })
+      )
+    );
+  }
+  return outputs;
+}
+
 export function createRenderJobHandler(deps: RenderDeps): JobHandler {
   return {
     timeoutMs: 30 * 60_000,
     run: async (ctx) => {
       const payload = parseOrThrow(RenderJobPayloadSchema, ctx.job.payload, "Payload do render");
-      const raster = payload.formats.filter((f): f is RasterFormat => !isVideoFormat(f));
+      const raster = payload.formats.filter((f): f is RasterFormat => !isVideoFormat(f) && !isExportFormat(f));
       const video = payload.formats.filter(isVideoFormat);
+      const exports = payload.formats.filter(isExportFormat);
       if (payload.target.kind === "kit") {
         const outputs = await renderKit(deps, ctx, payload.target.kitId, raster, video, payload.quality ?? "final");
         return { outputIds: outputs.map((o) => o.id), count: outputs.length, kitId: payload.target.kitId };
@@ -348,6 +425,7 @@ export function createRenderJobHandler(deps: RenderDeps): JobHandler {
         outputs.push(...(await renderUnits(deps, ctx, units, raster)));
       }
       if (video.length > 0) outputs.push(...(await renderVideos(deps, ctx, payload.target, video, payload.quality ?? "final")));
+      if (exports.length > 0) outputs.push(...(await renderExports(deps, ctx, payload.target, exports)));
       return { outputIds: outputs.map((o) => o.id), count: outputs.length };
     },
   };

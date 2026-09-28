@@ -37,7 +37,10 @@ export function OutputCard({ output, compact = false }: { output: Output; compac
               style={output.width && output.height ? { aspectRatio: `${output.width} / ${output.height}` } : undefined}
             />
           ) : (
-            <div className="aspect-video grid place-items-center text-[11px] font-mono uppercase text-zinc-500">{output.format}</div>
+            <div className="aspect-video grid place-items-center text-center">
+              <span className="text-2xl font-mono text-accent">{output.format.toUpperCase()}</span>
+              <span className="text-[10px] font-mono text-zinc-500">{output.format === "pptx" ? "apresentação" : output.format === "pdf" ? "documento" : "arquivo"}</span>
+            </div>
           )}
         </a>
       )}

@@ -15,6 +15,7 @@ import {
   createBlankCanvas,
   createBlankCarousel,
   createBlankMotion,
+  createPresentation,
   createVideoFromRecipe,
   createWebsiteScroll,
   materializePlanAsCarousel,
@@ -201,6 +202,16 @@ export async function createVideoFromRecipeAction(form: FormData): Promise<void>
   const { document } = await createVideoFromRecipe({ ...documentDeps, sources: repos.sources }, ProjectIdSchema.parse(form.get("projectId")), {
     recipeId: typeof recipe === "string" ? recipe : "",
     formatId: FormatIdSchema.parse(form.get("formatId")),
+  });
+  redirect(`/studio/${document.id}`);
+}
+
+/** Apresentação do projeto (storyboard curado com notas) → Studio. */
+export async function createPresentationAction(form: FormData): Promise<void> {
+  const { documentDeps, repos } = await getAtlasRuntime();
+  const direction = form.get("directionId");
+  const { document } = await createPresentation({ ...documentDeps, sources: repos.sources, directions: repos.directions }, ProjectIdSchema.parse(form.get("projectId")), {
+    directionId: typeof direction === "string" && direction ? direction : null,
   });
   redirect(`/studio/${document.id}`);
 }

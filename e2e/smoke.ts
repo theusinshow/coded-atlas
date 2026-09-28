@@ -347,6 +347,29 @@ async function main(): Promise<void> {
       assert(zip.subarray(0, 2).toString() === "PK" && zip.includes(Buffer.from("01-post-1-1/")) && zip.includes(Buffer.from(".mp4")), "zip do kit sem pastas por item ou sem vídeo");
     });
 
+    await step("apresentação: storyboard → notas → PDF + PPTX em Publicar", async () => {
+      await page.goto(`${BASE}/projects/e2e-${slug}/create`);
+      await page.getByRole("button", { name: "Montar apresentação" }).click();
+      await page.waitForURL(/\/studio\/[0-9A-Z]{26}$/);
+      await page.getByRole("region", { name: "Slides da apresentação" }).waitFor();
+      await page.getByLabel("Notas do apresentador").fill("Abrir com o problema do cliente.");
+      await page.locator('[data-save-state="saved"]').waitFor({ timeout: 15_000 });
+      await page.getByRole("button", { name: "Renderizar", exact: true }).click();
+      await page.getByRole("checkbox", { name: "pptx" }).check();
+      await page.getByRole("button", { name: "Renderizar agora" }).click();
+      await page.getByText("Concluído").waitFor({ timeout: 180_000 });
+      await page.goto(`${BASE}/projects/e2e-${slug}/publish`);
+      for (const [format, mime] of [
+        ["pdf", "application/pdf"],
+        ["pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation"],
+      ] as const) {
+        const card = page.locator("[data-output]", { hasText: `${format.toUpperCase()} · 1920×1080` }).first();
+        await card.waitFor();
+        const res = await fetch(`${BASE}/api/atlas/outputs/${await card.getAttribute("data-output")}/file?download=1`);
+        assert(res.ok && res.headers.get("content-type") === mime, `${format} HTTP ${res.status}`);
+      }
+    });
+
     await step("jobs e ajustes mostram o estado real", async () => {
       await page.goto(`${BASE}/jobs`);
       await page.getByText("Captura").first().waitFor();

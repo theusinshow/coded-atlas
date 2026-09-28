@@ -1,5 +1,5 @@
 import type { Artboard } from "./artboard";
-import { MAX_PAGES, isCarousel, type CarouselContent, type DocumentPage, type SequenceContent } from "./creative-document";
+import { MAX_PAGES, MAX_SLIDES, isCarousel, isPresentation, type CarouselContent, type DocumentPage, type PresentationContent, type SequenceContent, type Slide } from "./creative-document";
 import type { Layer } from "./layer";
 import { MAX_SCENES, type Scene } from "../motion/motion";
 
@@ -7,17 +7,17 @@ import { MAX_SCENES, type Scene } from "../motion/motion";
  * Operações puras sobre sequências — páginas de carrossel e cenas de motion
  * (sempre devolvem conteúdo novo). Um item é { id, title?, artboard, … }.
  */
-type Item<C extends SequenceContent> = C extends CarouselContent ? DocumentPage : Scene;
+type Item<C extends SequenceContent> = C extends CarouselContent ? DocumentPage : C extends PresentationContent ? Slide : Scene;
 
 export function sequenceItems<C extends SequenceContent>(content: C): Item<C>[] {
-  return (isCarousel(content) ? content.pages : content.scenes) as Item<C>[];
+  return (isCarousel(content) ? content.pages : isPresentation(content) ? content.slides : content.scenes) as Item<C>[];
 }
 
 function withItems<C extends SequenceContent>(content: C, items: Item<C>[]): C {
-  return (isCarousel(content) ? { ...content, pages: items } : { ...content, scenes: items }) as C;
+  return (isCarousel(content) ? { ...content, pages: items } : isPresentation(content) ? { ...content, slides: items } : { ...content, scenes: items }) as C;
 }
 
-const limitOf = (content: SequenceContent) => (isCarousel(content) ? MAX_PAGES : MAX_SCENES);
+const limitOf = (content: SequenceContent) => (isCarousel(content) ? MAX_PAGES : isPresentation(content) ? MAX_SLIDES : MAX_SCENES);
 
 function reid(layers: readonly Layer[], makeId: () => string, map: Map<string, string>): Layer[] {
   return layers.map((l) => {

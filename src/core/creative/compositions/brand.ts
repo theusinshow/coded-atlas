@@ -154,3 +154,71 @@ export const projectClosing: CompositionDefinition = {
     };
   },
 };
+
+/** Tamanho de título que cabe em até `maxLines` linhas (desce em passos até o mínimo). */
+function fitTitle(value: string, width: number, start: number, min: number, maxLines: number): { size: number; lines: number } {
+  let size = start;
+  while (size > min && estimateLines(value, size, width, 99) > maxLines) size = Math.round(size * 0.9);
+  return { size, lines: Math.max(1, estimateLines(value, size, width, maxLines)) };
+}
+
+export const statement: CompositionDefinition = {
+  id: "statement",
+  version: 1,
+  name: "Statement",
+  family: "editorial",
+  description: "Slide de texto: título forte e um parágrafo. Contexto, desafio, solução — sem imagem.",
+  formats: FORMAT_IDS,
+  slots: [labelSlot(), titleSlot(true, 90), { id: "body", label: "Texto", type: "text", required: false, maxLength: 400, source: "project.description" }],
+  variants: [
+    { id: "split", label: "Título ao lado" },
+    { id: "stacked", label: "Empilhado" },
+  ],
+  capabilities: { motion: true, text: true, brandAdaptation: true, minAssets: 0, maxAssets: 0 },
+  build(ctx) {
+    const u = unit(ctx);
+    const m = margin(ctx);
+    const W = ctx.width;
+    const H = ctx.height;
+    const title = ctx.texts.title ?? "";
+    const body = ctx.texts.body ?? "";
+    const split = ctx.variant === "split" && isLandscape(ctx);
+    const titleW = split ? (W - 2 * m) * 0.46 : (W - 2 * m) * 0.9;
+    const bodyW = split ? (W - 2 * m) * 0.44 : (W - 2 * m) * 0.78;
+    const t = fitTitle(title, titleW, Math.round((isPortrait(ctx) ? 96 : 84) * u), Math.round(44 * u), 4);
+    const bodySize = Math.round(30 * u);
+    const bodyLines = estimateLines(body, bodySize, bodyW, 12);
+    const titleH = t.lines * t.size * 1.08;
+    const bodyH = bodyLines * bodySize * 1.5;
+    const eyebrowH = 44 * u;
+
+    if (split) {
+      const top = (H - Math.max(eyebrowH + titleH, bodyH)) / 2;
+      const bodyX = W - m - bodyW;
+      return {
+        width: W,
+        height: H,
+        background: { fill: "background", pattern: "grid" },
+        layers: compact([
+          eyebrow(ctx.texts.label ?? "", { x: m, y: top, width: titleW, height: 30 * u }, u),
+          text(title, { x: m, y: top + eyebrowH, width: titleW, height: titleH }, { id: "title", font: "display", size: t.size, weight: 700, lineHeight: 1.04, letterSpacing: -0.02, maxLines: 4 }),
+          shape({ x: bodyX - 40 * u, y: top + eyebrowH, width: 4 * u, height: Math.max(bodyH, titleH) }, { id: "rule", fill: "primary" }),
+          text(body, { x: bodyX, y: top + eyebrowH, width: bodyW, height: bodyH }, { id: "body", font: "body", size: bodySize, color: "textMuted", lineHeight: 1.5, maxLines: 12 }),
+        ]),
+      };
+    }
+    const blockH = eyebrowH + titleH + (body ? 48 * u + bodyH : 0);
+    const top = (H - blockH) / 2;
+    return {
+      width: W,
+      height: H,
+      background: { fill: "background", pattern: "grid" },
+      layers: compact([
+        eyebrow(ctx.texts.label ?? "", { x: m, y: top, width: titleW, height: 30 * u }, u),
+        text(title, { x: m, y: top + eyebrowH, width: titleW, height: titleH }, { id: "title", font: "display", size: t.size, weight: 700, lineHeight: 1.04, letterSpacing: -0.02, maxLines: 4 }),
+        !!body && shape({ x: m, y: top + eyebrowH + titleH + 20 * u, width: 96 * u, height: 6 * u }, { id: "rule", fill: "primary" }),
+        text(body, { x: m, y: top + eyebrowH + titleH + 48 * u, width: bodyW, height: bodyH }, { id: "body", font: "body", size: bodySize, color: "textMuted", lineHeight: 1.5, maxLines: 12 }),
+      ]),
+    };
+  },
+};

@@ -11,7 +11,7 @@ import { STYLE_MODES, type StudioAsset } from "@/components/create/types";
 import { lintArtboard } from "@/src/core/creative/guardrails";
 import { CreativeIssues } from "@/components/creative/creative-issues";
 import { ColorField, FIELD_LABEL, NumberField, RangeField, Section, Segmented, TextField, Toggle } from "./fields";
-import { LayerAnimationSection, SceneSection, SoundtrackSection } from "./motion-inspector";
+import { LayerAnimationSection, SceneSection, SlideNotesSection, SoundtrackSection } from "./motion-inspector";
 import { LAYER_TYPE_LABEL, newLayerId } from "./layer-factory";
 import { useStudio, useStudioApi } from "./store";
 
@@ -215,6 +215,7 @@ function DocumentInspector({ tokens, profiles, latestRevision, audioAssets }: { 
   return (
     <>
       <SceneSection />
+      <SlideNotesSection />
       <SoundtrackSection audioAssets={audioAssets} />
       <Section title="Documento">
         <p className="text-[12px] text-zinc-400 font-mono tabular-nums">

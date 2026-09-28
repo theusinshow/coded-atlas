@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from "react"
 import { animateDocumentAction, deleteDocumentAction, listRevisionsAction, renameDocumentAction, renderCanvasAction, restoreRevisionAction, saveCanvasAction } from "@/app/actions/studio";
 import { resolveTokens } from "@/src/core/creative/tokens";
 import type { VisualProfile } from "@/src/core/creative/visual-profile";
-import { isMotion, isSequence, type CanvasContent, type DocumentContent, type RevisionSummary } from "@/src/core/documents/creative-document";
+import { isMotion, isSequence, kindOf, type CanvasContent, type DocumentContent, type DocumentKind, type RevisionSummary } from "@/src/core/documents/creative-document";
 import { duplicateLayer, findLayer, removeLayer, reorderLayer, updateLayer } from "@/src/core/documents/layer-tree";
 import { JobFollower } from "@/components/atlas/job-follower";
 import type { StudioAsset } from "@/components/create/types";
@@ -198,20 +198,26 @@ function RevisionsMenu({ documentId, onClose }: { documentId: string; onClose: (
   );
 }
 
-type OutFormat = "png" | "jpg" | "webp" | "mp4" | "webm";
+type OutFormat = "png" | "jpg" | "webp" | "mp4" | "webm" | "pdf" | "pptx";
 
-function RenderMenu({ documentId, onJob, motion }: { documentId: string; onJob: (id: string) => void; motion: boolean }) {
+const RENDER_OPTIONS: Record<DocumentKind, { options: OutFormat[]; initial: OutFormat[]; hint: string }> = {
+  canvas: { options: ["png", "jpg", "webp", "pdf"], initial: ["png"], hint: "Salva e renderiza exatamente esta revisão." },
+  carousel: { options: ["png", "jpg", "webp", "pdf"], initial: ["png"], hint: "Uma imagem por página; PDF junta tudo (carrossel de LinkedIn)." },
+  motion: { options: ["mp4", "webm", "png"], initial: ["mp4"], hint: "Salva e gera o vídeo desta revisão quadro a quadro (PNG = um pôster por cena)." },
+  presentation: { options: ["pdf", "pptx", "png"], initial: ["pdf"], hint: "PDF e PPTX com um slide por página (PPTX leva as notas do apresentador)." },
+};
+
+function RenderMenu({ documentId, onJob, kind }: { documentId: string; onJob: (id: string) => void; kind: DocumentKind }) {
   const api = useStudioApi();
-  const [formats, setFormats] = useState<OutFormat[]>(motion ? ["mp4"] : ["png"]);
+  const motion = kind === "motion";
+  const [formats, setFormats] = useState<OutFormat[]>(RENDER_OPTIONS[kind].initial);
   const [quality, setQuality] = useState<"preview" | "final">("final");
-  const options: OutFormat[] = motion ? ["mp4", "webm", "png"] : ["png", "jpg", "webp"];
+  const options = RENDER_OPTIONS[kind].options;
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   return (
     <div className="absolute right-0 top-full mt-1 w-64 border border-line bg-surface shadow-2xl z-20 p-3 space-y-3" role="dialog" aria-label="Renderizar">
-      <p className="text-[11px] text-zinc-400">
-        {motion ? "Salva e gera o vídeo desta revisão quadro a quadro (PNG = um pôster por cena)." : "Salva e renderiza exatamente esta revisão."} A peça aparece em Publicar.
-      </p>
+      <p className="text-[11px] text-zinc-400">{RENDER_OPTIONS[kind].hint} A peça aparece em Publicar.</p>
       <div className="flex gap-3">
         {options.map((f) => (
           <label key={f} className="flex items-center gap-1.5 text-[12px] font-mono uppercase text-zinc-300">
@@ -381,7 +387,7 @@ function StudioShell({ documentId, name: initialName, project, assets: allAssets
             </button>
             {menu === "render" && (
               <RenderMenu
-                motion={!!motion}
+                kind={kindOf(doc)}
                 documentId={documentId}
                 onJob={(id) => {
                   setJobId(id);

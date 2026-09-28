@@ -1,5 +1,5 @@
 "use client";
-import { isMotion } from "@/src/core/documents/creative-document";
+import { isMotion, isPresentation } from "@/src/core/documents/creative-document";
 import type { Layer } from "@/src/core/documents/layer";
 import { updatePage } from "@/src/core/documents/pages";
 import { autoAnimate, type AnimationTrack, type MotionContent, type Scene } from "@/src/core/motion/motion";
@@ -157,6 +157,32 @@ export function SoundtrackSection({ audioAssets }: { audioAssets: StudioAsset[] 
           )}
         </>
       )}
+    </Section>
+  );
+}
+
+/** Notas do apresentador do slide ativo (vão para o PPTX). */
+export function SlideNotesSection() {
+  const doc = useStudio((s) => s.doc);
+  const index = useStudio((s) => s.activePage);
+  const api = useStudioApi();
+  if (!isPresentation(doc)) return null;
+  const slide = doc.slides[index];
+  if (!slide) return null;
+  return (
+    <Section title={`Slide ${index + 1} · notas`}>
+      <textarea
+        aria-label="Notas do apresentador"
+        rows={5}
+        maxLength={2000}
+        value={slide.notes}
+        placeholder="O que falar neste slide (não aparece na imagem)."
+        onChange={(e) => {
+          const notes = e.target.value;
+          api.getState().applyDoc((d) => (isPresentation(d) ? updatePage(d, index, (s) => ({ ...s, notes })) : d), { key: `notes:${index}`, keepSelection: true });
+        }}
+        className="w-full bg-surface-2 border border-line text-zinc-100 text-[12px] p-2 focus:outline-none focus:border-accent"
+      />
     </Section>
   );
 }
