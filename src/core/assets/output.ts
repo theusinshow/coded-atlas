@@ -7,7 +7,7 @@ import { StorageKeySchema } from "./storage-key";
  * Output: arquivo final entregável (imutável). Diferente do Asset, que é
  * matéria-prima reutilizável; o Output é o produto de um render/export.
  */
-export const OutputFormatSchema = z.enum(["png", "jpg", "webp", "mp4", "webm", "pdf", "pptx"]);
+export const OutputFormatSchema = z.enum(["png", "jpg", "webp", "mp4", "webm", "pdf", "pptx", "zip"]);
 export type OutputFormat = z.infer<typeof OutputFormatSchema>;
 
 const DimensionSchema = z.number().int().positive().max(100_000);
@@ -26,6 +26,8 @@ export const OutputMetadataSchema = z.strictObject({
   styleMode: z.string().max(20).optional(),
   mediaKitId: z.string().max(40).optional(),
   kitItemId: z.string().max(40).optional(),
+  /** Case: módulo (seção) exportado como imagem, ou "web" para o pacote da página. */
+  caseModule: z.string().max(64).optional(),
   /** Vídeo: preview rápido ou final. */
   quality: z.enum(["preview", "final"]).optional(),
 });

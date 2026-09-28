@@ -5,8 +5,10 @@ import { createOutput, type Output } from "../../core/assets/output";
 import type { AssetRepository, OutputRepository } from "../../core/assets/repositories";
 import { contentStorageKey } from "../../core/assets/storage-key";
 import type { Artboard } from "../../core/documents/artboard";
-import { CreativeDocumentIdSchema, contentAssetIds, contentPages, isMotion, isPresentation, isSequence, type CreativeDocumentId, type CreativeDocumentRepository } from "../../core/documents/creative-document";
+import { CreativeDocumentIdSchema, contentAssetIds, contentPages, isCase, isMotion, isPresentation, isSequence, type CreativeDocumentId, type CreativeDocumentRepository } from "../../core/documents/creative-document";
 import { EXPORT_MIME, type DocumentExporter } from "./document-exporter";
+import type { CaseExporter, CaseOutputKind } from "./case-exporter";
+import { caseAssetIds } from "../../core/case/case-document";
 import { artboardAssetIds } from "../../core/documents/artboard";
 import { CompositionInstanceIdSchema, type CompositionInstanceRepository } from "../../core/creative/composition";
 import { getComposition } from "../../core/creative/compositions";
@@ -16,7 +18,7 @@ import { resolveTokens, type StyleTokens } from "../../core/creative/tokens";
 import type { VisualProfileRepository } from "../../core/creative/visual-profile";
 import type { ProjectId } from "../../shared/id";
 import { DomainError } from "../../shared/errors";
-import { AssetIdSchema, JobIdSchema } from "../../shared/id";
+import { AssetIdSchema, JobIdSchema, OutputIdSchema } from "../../shared/id";
 import { parseOrThrow } from "../../shared/validation";
 import type { JobContext, JobHandler } from "../../workers/job-worker";
 import type { OutputMetadata } from "../../core/assets/output";
@@ -28,7 +30,8 @@ export const RasterFormatSchema = z.enum(["png", "jpg", "webp"]);
 export const VideoFormatSchema = z.enum(["mp4", "webm"]);
 export const ExportFormatSchema = z.enum(["pdf", "pptx"]);
 /** Formatos pedidos a um render: imagens, vídeo (só motion) e arquivos de documento (PDF/PPTX). */
-export const RenderFormatSchema = z.union([RasterFormatSchema, VideoFormatSchema, ExportFormatSchema]);
+/** `zip` = pacote web do case (index.html + assets). */
+export const RenderFormatSchema = z.union([RasterFormatSchema, VideoFormatSchema, ExportFormatSchema, z.literal("zip")]);
 export type RenderFormat = z.infer<typeof RenderFormatSchema>;
 type ExportFormat = z.infer<typeof ExportFormatSchema>;
 const isVideoFormat = (f: RenderFormat): f is VideoFormat => f === "mp4" || f === "webm";
@@ -63,6 +66,8 @@ export interface RenderDeps {
   kits?: MediaKitRepository;
   /** PDF/PPTX a partir das páginas renderizadas. */
   exporter?: DocumentExporter;
+  /** Web/PDF/módulos do Case Builder. */
+  caseExporter?: CaseExporter;
 }
 
 export interface RenderUnit {
@@ -405,14 +410,93 @@ async function renderExports(deps: RenderDeps, ctx: JobContext, target: RenderJo
   return outputs;
 }
 
+/**
+ * Saídas do case: página web (ZIP), PDF paginado e módulos PNG de 1400 px — todas
+ * do MESMO CaseView. Peças do Atlas dentro do case precisam ser do próprio projeto.
+ */
+async function renderCase(deps: RenderDeps, ctx: JobContext, documentId: CreativeDocumentId, revisionNumber: number, formats: RenderFormat[]): Promise<Output[]> {
+  if (!deps.caseExporter) throw new DomainError("VALIDATION", "Este processo não tem exportador de case configurado.");
+  const document = await deps.documents.getById(documentId);
+  if (!document) throw new DomainError("NOT_FOUND", "Documento não encontrado.");
+  const revision = await deps.documents.getRevision(document.id, revisionNumber);
+  if (!revision || !isCase(revision.content)) throw new DomainError("VALIDATION", "Este documento não é um case.");
+  const content = revision.content;
+  const kinds = [...new Set(formats.map((f) => (f === "zip" ? "web" : f === "pdf" ? "pdf" : f === "png" ? "modules" : null)).filter((k): k is CaseOutputKind => k !== null))];
+  if (kinds.length === 0) throw new DomainError("VALIDATION", "Case sai como página web (zip), PDF ou módulos PNG.");
+  const profile = content.style.profileRevision ? await deps.visualProfiles.getRevision(document.projectId, content.style.profileRevision) : null;
+  const tokens = resolveTokens(profile, content.style.mode, content.style.primary ? { primary: content.style.primary } : {});
+  const cache = new Map<string, { bytes: Uint8Array; mimeType: string } | null>();
+  await ctx.progress(20, "Montando o case…");
+  const result = await deps.caseExporter.export({ content, tokens, title: content.case.title }, kinds, {
+    signal: ctx.signal,
+    loadAsset: (id) => loadAssetBytes(deps, cache, id),
+    loadOutput: async (id) => {
+      const parsed = OutputIdSchema.safeParse(id);
+      const output = parsed.success ? await deps.outputs.getById(parsed.data) : null;
+      return output && output.projectId === document.projectId && output.mimeType.startsWith("image/") ? { bytes: await deps.storage.get(output.storageKey), mimeType: output.mimeType } : null;
+    },
+  });
+  ctx.throwIfAborted();
+  await ctx.progress(85, "Guardando os arquivos…");
+
+  const files: { format: "zip" | "pdf" | "png"; bytes: Uint8Array; mimeType: string; width: number | null; height: number | null; label: string; module: string; page?: number }[] = [];
+  const base = `Case · ${content.case.title} · rev ${revision.revision}`;
+  if (result.web) files.push({ format: "zip", bytes: result.web, mimeType: "application/zip", width: null, height: null, label: `${base} · página web`, module: "web" });
+  if (result.pdf) files.push({ format: "pdf", bytes: result.pdf, mimeType: "application/pdf", width: null, height: null, label: `${base} · PDF`, module: "pdf" });
+  result.modules?.forEach((m, i) => files.push({ format: "png", bytes: m.bytes, mimeType: "image/png", width: m.width, height: m.height, label: `${base} · módulo ${String(i + 1).padStart(2, "0")}`, module: m.id, page: i }));
+
+  const staging = await deps.storage.beginStaging();
+  const staged = files.map((f) => {
+    const sha256 = createHash("sha256").update(f.bytes).digest("hex");
+    return { ...f, sha256, key: contentStorageKey("renders", sha256, f.format) };
+  });
+  try {
+    for (const s of staged) await staging.put(s.key, s.bytes);
+    ctx.throwIfAborted();
+    await staging.commit();
+  } catch (err) {
+    await staging.discard();
+    throw err;
+  }
+  const outputs: Output[] = [];
+  for (const s of staged) {
+    outputs.push(
+      await deps.outputs.create(
+        createOutput({
+          projectId: document.projectId,
+          jobId: JobIdSchema.parse(ctx.job.id),
+          format: s.format,
+          mimeType: s.mimeType,
+          storageKey: s.key,
+          sha256: s.sha256,
+          byteSize: s.bytes.byteLength,
+          width: s.width,
+          height: s.height,
+          label: s.label.slice(0, 200),
+          sourceAssetIds: caseAssetIds(content).map((id) => AssetIdSchema.parse(id)),
+          metadata: { origin: "render", documentId: document.id, documentRevision: revision.revision, styleMode: content.style.mode, caseModule: s.module.slice(0, 64), ...(s.page !== undefined ? { page: s.page } : {}) },
+        })
+      )
+    );
+  }
+  return outputs;
+}
+
 export function createRenderJobHandler(deps: RenderDeps): JobHandler {
   return {
     timeoutMs: 30 * 60_000,
     run: async (ctx) => {
       const payload = parseOrThrow(RenderJobPayloadSchema, ctx.job.payload, "Payload do render");
-      const raster = payload.formats.filter((f): f is RasterFormat => !isVideoFormat(f) && !isExportFormat(f));
+      const raster = payload.formats.filter((f): f is RasterFormat => !isVideoFormat(f) && !isExportFormat(f) && f !== "zip");
       const video = payload.formats.filter(isVideoFormat);
       const exports = payload.formats.filter(isExportFormat);
+      if (payload.target.kind === "document") {
+        const document = await deps.documents.getById(payload.target.documentId);
+        if (document?.kind === "case") {
+          const outputs = await renderCase(deps, ctx, document.id, payload.target.revision, payload.formats);
+          return { outputIds: outputs.map((o) => o.id), count: outputs.length };
+        }
+      }
       if (payload.target.kind === "kit") {
         const outputs = await renderKit(deps, ctx, payload.target.kitId, raster, video, payload.quality ?? "final");
         return { outputIds: outputs.map((o) => o.id), count: outputs.length, kitId: payload.target.kitId };

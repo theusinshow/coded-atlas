@@ -370,6 +370,26 @@ async function main(): Promise<void> {
       }
     });
 
+    await step("case: montar → escrever trecho → exportar web (ZIP) + PDF", async () => {
+      await page.goto(`${BASE}/projects/e2e-${slug}/cases`);
+      await page.getByRole("button", { name: "Montar case" }).click();
+      await page.waitForURL(/\/cases\/[0-9A-Z]{26}$/);
+      await page.locator("[data-atlas-case]").waitFor();
+      await page.locator('[data-case-row="text"]', { hasText: "Desafio" }).click();
+      await page.getByLabel(/Texto \(linha em branco/).fill("Aprovar projetos de engenharia exigia muitas idas e vindas.");
+      await page.locator('[data-save-state="saved"]').waitFor({ timeout: 15_000 });
+      await page.getByRole("button", { name: "Exportar", exact: true }).click();
+      await page.getByRole("button", { name: "Exportar agora" }).click();
+      await page.getByText("Concluído").waitFor({ timeout: 120_000 });
+      await page.goto(`${BASE}/projects/e2e-${slug}/publish`);
+      const web = page.locator("[data-output]", { hasText: "página web" }).first();
+      await web.waitFor();
+      const res = await fetch(`${BASE}/api/atlas/outputs/${await web.getAttribute("data-output")}/file`);
+      const zip = Buffer.from(await res.arrayBuffer());
+      assert(res.ok && zip.includes(Buffer.from("index.html")), "pacote web sem index.html");
+      await page.locator("[data-output]", { hasText: /PDF/ }).first().waitFor();
+    });
+
     await step("jobs e ajustes mostram o estado real", async () => {
       await page.goto(`${BASE}/jobs`);
       await page.getByText("Captura").first().waitFor();

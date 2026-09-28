@@ -2,8 +2,8 @@
 
 The complete roadmap lives in `ROADMAP.md`. The currently authorized scope lives in `CURRENT.md`.
 
-> **Status (2026-09-28):** fases **2.1 a 2.12 concluídas**. Execução contínua até o Atlas 3.0
-> autorizada pelo Matheus (ADR-028) — ele testa só no final. Próxima: **2.13 — Case Builder**.
+> **Status (2026-09-28):** fases **2.1 a 2.13 concluídas**. Execução contínua até o Atlas 3.0
+> autorizada pelo Matheus (ADR-028) — ele testa só no final. Próxima: **2.14 — Publish & Portfolio** (última).
 > O Atlas v1 (captura, vitrine, diff, case, ZIP) segue funcionando sem alteração de comportamento.
 
 ## Baseline (antes de qualquer mudança — 2026-09-27, commit `ac93441`)
@@ -310,6 +310,16 @@ Verificação 2.11: typecheck/lint OK; `npm test` 424 testes (29 arquivos); buil
 - [x] Exportação: porta `DocumentExporter` + `PdfPptxExporter` (pdf-lib / PptxGenJS, JS puro) montando o arquivo a partir das páginas já renderizadas pelo kernel — PDF com metadados (autor Coded by M), PPTX com uma imagem por slide e as notas.
 
 Verificação 2.12: typecheck/lint OK; `npm test` 430 testes (30 arquivos; PDF real de 3 páginas conferido com pdf-lib e PPTX com slides + notas); build OK; `npm run e2e` 22/22 passos (Montar apresentação → notas → PDF + PPTX em Publicar).
+
+## Atlas 2.13 — Case Builder (concluída 2026-09-28)
+
+- [x] `CaseDocument` (kind `case`): capa e dados (título, subtítulo, categoria, ano, cliente, URL, imagem de capa) + seções editoriais — texto, imagem enquadrada (browser/celular/sem moldura), galeria, peça do Atlas (Output renderizado), identidade visual e ficha técnica.
+- [x] Esboço a partir do material do projeto (substitui o `case-draft.mdx` do v1): Contexto → primeira dobra desktop → Desafio → mobile → Solução → galeria de seções → identidade → ficha; seções sem material puladas.
+- [x] Editor estruturado em tela cheia (`/cases/[id]`): lista de seções (adicionar/reordenar/remover), inspetor por tipo, preview ao vivo com o mesmo `CaseView` do render, undo/redo, autosave com revisões; aba **Case** no projeto.
+- [x] Brain opcional (job `copy`): escreve só trechos de texto vazios, com o contexto do projeto; guardrail `inventedFigures` rejeita números que não estão no material; nada é publicado sozinho.
+- [x] Saídas (render job, revisão fixada): **página web** (ZIP com `index.html` + assets, DOM serializado do kernel, sem referências internas), **PDF** paginado 1400×1980 e **módulos PNG de 1400px** estilo Behance.
+
+Verificação 2.13: typecheck/lint OK; `npm test` 438 testes (ZIP web sem `atlas.render`, PDF com páginas conferidas, guardrail de números inventados); build OK; `npm run e2e` 23/23 passos (montar case → escrever trecho → exportar web ZIP + PDF).
 
 ## Phase completion rule
 

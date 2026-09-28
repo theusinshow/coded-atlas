@@ -2,7 +2,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { RenderFonts } from "@/components/create/render-fonts";
 import { Studio } from "@/components/studio/studio";
 import { CreativeDocumentIdSchema } from "@/src/core/documents/creative-document";
@@ -22,6 +22,8 @@ export default async function StudioPage({ params }: Props) {
   const { repos } = await getAtlasRuntime();
   const document = await repos.documents.getById(parsed.data);
   if (!document) notFound();
+  // Case tem editor próprio (seções editoriais, não artboards).
+  if (document.kind === "case") redirect(`/cases/${document.id}`);
   const [project, head, assets, profiles] = await Promise.all([
     repos.projects.getById(document.projectId),
     repos.documents.getRevision(document.id, document.headRevision),

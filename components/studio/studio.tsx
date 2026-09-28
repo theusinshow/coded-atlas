@@ -205,6 +205,7 @@ const RENDER_OPTIONS: Record<DocumentKind, { options: OutFormat[]; initial: OutF
   carousel: { options: ["png", "jpg", "webp", "pdf"], initial: ["png"], hint: "Uma imagem por página; PDF junta tudo (carrossel de LinkedIn)." },
   motion: { options: ["mp4", "webm", "png"], initial: ["mp4"], hint: "Salva e gera o vídeo desta revisão quadro a quadro (PNG = um pôster por cena)." },
   presentation: { options: ["pdf", "pptx", "png"], initial: ["pdf"], hint: "PDF e PPTX com um slide por página (PPTX leva as notas do apresentador)." },
+  case: { options: ["pdf", "png"], initial: ["pdf"], hint: "Case: página web, PDF e módulos." },
 };
 
 function RenderMenu({ documentId, onJob, kind }: { documentId: string; onJob: (id: string) => void; kind: DocumentKind }) {

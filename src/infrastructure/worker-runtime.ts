@@ -1,4 +1,5 @@
 import { config as legacyConfig } from "../../lib/config";
+import { createCaseCopyJobHandler } from "../modules/brain/case-copy";
 import { createPlanJobHandler } from "../modules/brain/plan-service";
 import { createCaptureJobHandler } from "../modules/capture/capture-job";
 import { createLegacyImportJobHandler } from "../modules/import/legacy/legacy-import-job";
@@ -6,6 +7,7 @@ import { createRenderJobHandler } from "../modules/render/render-job";
 import { JobWorker } from "../workers/job-worker";
 import { PlaywrightCaptureEngine } from "./playwright/playwright-capture-engine";
 import { PdfPptxExporter } from "./export/pdf-pptx-exporter";
+import { ChromiumCaseExporter } from "./render/chromium-case-exporter";
 import { ChromiumFfmpegMotionRenderer } from "./render/chromium-ffmpeg-motion-renderer";
 import { PlaywrightStaticRenderer } from "./render/playwright-static-renderer";
 import { RUNTIME_SETTINGS, type AtlasRuntime } from "./runtime";
@@ -52,8 +54,9 @@ export function createAtlasWorker(runtime: AtlasRuntime, options: { workerId?: s
         assertUrlAllowed: urlPolicy.assertAllowed,
       }),
       import: createLegacyImportJobHandler(runtime.legacyImportDeps),
-      render: createRenderJobHandler({ ...repos, storage, renderer: new PlaywrightStaticRenderer(), motionRenderer: new ChromiumFfmpegMotionRenderer(), exporter: new PdfPptxExporter() }),
+      render: createRenderJobHandler({ ...repos, storage, renderer: new PlaywrightStaticRenderer(), motionRenderer: new ChromiumFfmpegMotionRenderer(), exporter: new PdfPptxExporter(), caseExporter: new ChromiumCaseExporter() }),
       plan: createPlanJobHandler(runtime.brainDeps),
+      copy: createCaseCopyJobHandler({ ...runtime.brainDeps, documents: repos.documents }),
     },
   });
 }

@@ -246,3 +246,13 @@ Accepted (2026-09-28).
 - **Libraries**: pdf-lib (PDF) and PptxGenJS (PPTX), both pure JavaScript and confined to `src/infrastructure/export` behind the `DocumentExporter` port.
 - **PPTX slides are images plus speaker notes**. Editable native text in PPTX would need a second layout engine and could drift from the kernel; notes carry the talk track.
 - **Presentations reuse the sequence model** (`slides` next to `pages` and `scenes`). The Statement composition fills the text-slide gap and is part of the curated catalog, so the guardrail sweep covers it.
+
+## ADR-040 — Case Builder (2.13)
+
+Accepted (2026-09-28).
+
+- **A case is a CreativeDocument** (`kind = "case"`) with revisions, autosave and pinned render revisions like every other document. It is a structured editorial document (sections), not free-form MDX: each section type has a schema, and assets and outputs are referenced by id.
+- **One view, three outputs**: `CaseView` in the render kernel drives the live preview, the web page, the PDF and the 1400px modules. The web export serializes the DOM rendered in Chromium and rewrites internal URLs to files packaged next to `index.html`, so it needs no runtime.
+- **Behance-style modules** are 1400px-wide PNG slices of the same page, cut at section boundaries.
+- **Copywriting is optional and bounded**: the `copy` job only fills empty text sections, and the `inventedFigures` guardrail rejects numbers that are not in the project material. Text the owner wrote is never overwritten.
+- **v1 `case-draft.mdx` is not migrated automatically** (it is user-authored free text). It stays on disk, and the new outline is generated from project material.

@@ -1,4 +1,4 @@
-import type { AssetRepository } from "../../core/assets/repositories";
+import type { AssetRepository, OutputRepository } from "../../core/assets/repositories";
 import type { CreativeDirection, CreativePlanId, CreativePlanRepository, PlanItem } from "../../core/brain/plan";
 import type { DocumentStyle } from "../../core/documents/style";
 import type { CompositionInstanceId, CompositionInstanceRepository } from "../../core/creative/composition";
@@ -13,6 +13,7 @@ import {
   DocumentContentSchema,
   contentAssetIds,
   contentPages,
+  isCase,
   isMotion,
   CreativeDocumentSchema,
   type DocumentContent,
@@ -26,10 +27,11 @@ import type { JobRepository } from "../../core/jobs/repository";
 import { MotionContentSchema, motionFromArtboards, websiteScrollScene } from "../../core/motion/motion";
 import { buildRecipe, getRecipe } from "../../core/motion/recipes";
 import { buildPresentation } from "../../core/presentation/storyboard";
+import { buildCaseOutline, caseOutputIds } from "../../core/case/case-document";
 import { CreativeDirectionIdSchema, type CreativeDirectionRepository } from "../../core/creative/direction";
 import type { ProjectRepository, SourceRepository } from "../../core/projects/repositories";
 import { DomainError } from "../../shared/errors";
-import { newId, type ProjectId } from "../../shared/id";
+import { OutputIdSchema, newId, type ProjectId } from "../../shared/id";
 import { nowIso, parseOrThrow } from "../../shared/validation";
 import type { RenderJobPayload } from "../render/render-job";
 import type { RenderFormat } from "../render/render-job";
@@ -38,6 +40,7 @@ import type { VideoQuality } from "../render/motion-renderer";
 export interface DocumentDeps {
   projects: ProjectRepository;
   assets: AssetRepository;
+  outputs: OutputRepository;
   visualProfiles: VisualProfileRepository;
   compositionInstances: CompositionInstanceRepository;
   documents: CreativeDocumentRepository;
@@ -60,6 +63,13 @@ async function checkContent(deps: DocumentDeps, projectId: ProjectId, raw: unkno
     // Vídeo (movimento capturado) só dentro de documentos de motion.
     if (!asset.mimeType.startsWith("image/") && !(motion && asset.mimeType.startsWith("video/"))) {
       throw new DomainError("VALIDATION", motion ? "Molduras aceitam imagem ou vídeo do projeto." : "Só imagens podem ser usadas no canvas.");
+    }
+  }
+  if (isCase(content)) {
+    for (const id of caseOutputIds(content)) {
+      const parsed = OutputIdSchema.safeParse(id);
+      const output = parsed.success ? await deps.outputs.getById(parsed.data) : null;
+      if (!output || output.projectId !== projectId || !output.mimeType.startsWith("image/")) throw new DomainError("VALIDATION", "O case usa uma peça que não é uma imagem deste projeto.");
     }
   }
   if (motion && content.audio) {
@@ -344,4 +354,35 @@ export async function createPresentation(
   }
   const result = await deps.documents.create(newDocument(projectId, `Apresentação · ${project.name}`.slice(0, 120), {}, "presentation"), built.content, "create");
   return { ...result, skipped: built.skipped };
+}
+
+/**
+ * Case do projeto: esqueleto editorial a partir do material (substitui o
+ * case-draft.mdx do v1). Textos sem dados ficam vazios até alguém escrever.
+ */
+export async function createCase(
+  deps: DocumentDeps & { sources: SourceRepository; directions: CreativeDirectionRepository },
+  projectId: ProjectId,
+  input: { directionId?: string | null } = {}
+): Promise<CommitResult> {
+  const project = await deps.projects.getById(projectId);
+  if (!project) throw new DomainError("NOT_FOUND", "Projeto não encontrado.");
+  const [assets, profile, sources] = await Promise.all([deps.assets.listByProject(projectId), deps.visualProfiles.latest(projectId), deps.sources.listByProject(projectId)]);
+  if (!assets.some((a) => a.mimeType.startsWith("image/"))) throw new DomainError("VALIDATION", "Capture o site ou envie imagens antes de montar o case.");
+  let style: DocumentStyle = { mode: (profile?.palette.length ?? 0) >= 2 ? "hybrid" : "atlas", profileRevision: profile?.revision ?? null };
+  if (input.directionId) {
+    const direction = await deps.directions.getById(CreativeDirectionIdSchema.parse(input.directionId));
+    if (!direction || direction.projectId !== projectId) throw new DomainError("NOT_FOUND", "Direção criativa não encontrada.");
+    style = { mode: direction.styleMode, ...(direction.accent ? { primary: direction.accent } : {}), profileRevision: profile?.revision ?? null };
+  }
+  const content = buildCaseOutline({
+    project,
+    assets,
+    url: sources.find((s) => s.type === "url")?.locator ?? null,
+    profile,
+    coverAssetId: project.coverAssetId,
+    style,
+    year: String(new Date().getFullYear()),
+  });
+  return deps.documents.create(newDocument(projectId, `Case · ${project.name}`.slice(0, 120), {}, "case"), content, "create");
 }

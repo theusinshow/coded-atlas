@@ -3,6 +3,7 @@ import { ProjectIdSchema, UlidSchema, type ProjectId } from "../../shared/id";
 import { TimestampSchema } from "../../shared/validation";
 import { FormatIdSchema } from "../creative/formats";
 import { DocumentStyleSchema } from "./style";
+import { CaseContentSchema, caseAssetIds, type CaseContent } from "../case/case-document";
 import { MotionContentSchema, type MotionContent } from "../motion/motion";
 import { ArtboardSchema, artboardAssetIds, type Artboard } from "./artboard";
 
@@ -11,7 +12,7 @@ import { ArtboardSchema, artboardAssetIds, type Artboard } from "./artboard";
  * Família: canvas agora; carousel, motion, presentation e case nas fases seguintes
  * reutilizam a mesma tabela de revisões com outro `kind` e outro conteúdo.
  */
-export const DocumentKindSchema = z.enum(["canvas", "carousel", "motion", "presentation"]);
+export const DocumentKindSchema = z.enum(["canvas", "carousel", "motion", "presentation", "case"]);
 export type DocumentKind = z.infer<typeof DocumentKindSchema>;
 
 export const CreativeDocumentIdSchema = UlidSchema.brand<"CreativeDocumentId">();
@@ -82,8 +83,13 @@ export type PresentationContent = z.infer<typeof PresentationContentSchema>;
  * Conteúdo de qualquer documento. A forma decide o tipo: `artboard` = canvas,
  * `pages` = carrossel, `scenes` = motion, `slides` = apresentação.
  */
-export const DocumentContentSchema = z.union([CanvasContentSchema, CarouselContentSchema, MotionContentSchema, PresentationContentSchema]);
-export type DocumentContent = CanvasContent | CarouselContent | MotionContent | PresentationContent;
+export const DocumentContentSchema = z.union([CanvasContentSchema, CarouselContentSchema, MotionContentSchema, PresentationContentSchema, CaseContentSchema]);
+export type DocumentContent = CanvasContent | CarouselContent | MotionContent | PresentationContent | CaseContent;
+
+/** Case: seções editoriais (não artboards) — editor e saídas próprios. */
+export function isCase(content: DocumentContent): content is CaseContent {
+  return "sections" in content && "case" in content;
+}
 export type SequenceContent = CarouselContent | MotionContent | PresentationContent;
 
 export function isCarousel(content: DocumentContent): content is CarouselContent {
@@ -103,7 +109,7 @@ export function isSequence(content: DocumentContent): content is SequenceContent
 }
 
 export function kindOf(content: DocumentContent): DocumentKind {
-  return isCarousel(content) ? "carousel" : isMotion(content) ? "motion" : isPresentation(content) ? "presentation" : "canvas";
+  return isCarousel(content) ? "carousel" : isMotion(content) ? "motion" : isPresentation(content) ? "presentation" : isCase(content) ? "case" : "canvas";
 }
 
 /**
@@ -114,6 +120,7 @@ export function contentPages(content: DocumentContent): { artboard: Artboard; ti
   if (isCarousel(content)) return content.pages;
   if (isMotion(content)) return content.scenes;
   if (isPresentation(content)) return content.slides;
+  if (isCase(content)) return [];
   return [{ artboard: content.artboard }];
 }
 
@@ -166,6 +173,7 @@ export function shouldCoalesce(head: Pick<DocumentRevision, "origin" | "pinned" 
 }
 
 export function contentAssetIds(content: DocumentContent): string[] {
+  if (isCase(content)) return caseAssetIds(content);
   return [...new Set(contentPages(content).flatMap((p) => artboardAssetIds(p.artboard)))];
 }
 

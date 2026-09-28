@@ -8,6 +8,8 @@ export const RENDER_ENTRIES = {
   static: path.join("src", "render", "browser-entry.tsx"),
   /** Quadros de motion (vídeo). */
   motion: path.join("src", "render", "motion-entry.tsx"),
+  /** Página do case (web/PDF/módulos). */
+  case: path.join("src", "render", "case-entry.tsx"),
 } as const;
 
 /**

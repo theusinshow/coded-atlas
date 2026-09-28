@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useContext } from "react";
 import { createStore, useStore, type StoreApi } from "zustand";
-import { isCarousel, isMotion, isPresentation, type CanvasContent, type DocumentContent } from "@/src/core/documents/creative-document";
+import { isCarousel, isCase, isMotion, isPresentation, type CanvasContent, type DocumentContent } from "@/src/core/documents/creative-document";
 import { findLayer } from "@/src/core/documents/layer-tree";
 import type { Scene } from "@/src/core/motion/motion";
 
@@ -32,6 +32,8 @@ function viewOf(doc: DocumentContent, page: number): CanvasContent {
     const current = doc.slides[Math.min(page, doc.slides.length - 1)];
     return { artboard: current.artboard, style: doc.style, formatId: doc.formatId };
   }
+  // Case não é editado no Studio (tem editor próprio): vista vazia só para tipagem.
+  if (isCase(doc)) return { artboard: { width: 1400, height: 900, background: { fill: "background", pattern: "none" }, layers: [] }, style: doc.style, formatId: null };
   return doc;
 }
 
@@ -47,6 +49,7 @@ function writeBack(doc: DocumentContent, page: number, view: CanvasContent): Doc
     };
   }
   if (isPresentation(doc)) return { ...doc, style: view.style, formatId: view.formatId, slides: doc.slides.map((s, i) => (i === page ? { ...s, artboard: view.artboard } : s)) };
+  if (isCase(doc)) return doc;
   return view;
 }
 

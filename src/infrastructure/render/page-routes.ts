@@ -17,13 +17,15 @@ export function renderFontCss(): string {
  * sem rede) e bloqueia qualquer outra origem. Suporta Range (206) para que
  * <video> consiga posicionar `currentTime` quadro a quadro.
  */
-export async function installRenderRoutes(page: Page, options: { loadAsset: AssetLoader; nodeModules?: string }): Promise<void> {
+export async function installRenderRoutes(page: Page, options: { loadAsset: AssetLoader; loadOutput?: AssetLoader; nodeModules?: string }): Promise<void> {
   const nodeModules = options.nodeModules ?? path.join(process.cwd(), "node_modules");
   const allowedFonts = new Set(fontFiles().map((f) => f.file));
   await page.route(`${RENDER_ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
-    if (url.pathname.startsWith("/asset/")) {
-      const asset = await options.loadAsset(decodeURIComponent(url.pathname.slice("/asset/".length)));
+    if (url.pathname.startsWith("/asset/") || (url.pathname.startsWith("/output/") && options.loadOutput)) {
+      const isOutput = url.pathname.startsWith("/output/");
+      const id = decodeURIComponent(url.pathname.slice(isOutput ? "/output/".length : "/asset/".length));
+      const asset = isOutput ? await options.loadOutput!(id) : await options.loadAsset(id);
       if (!asset) return route.fulfill({ status: 404 });
       const total = asset.bytes.byteLength;
       const range = /^bytes=(\d*)-(\d*)$/.exec(route.request().headers()["range"] ?? "");

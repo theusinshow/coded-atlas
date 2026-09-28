@@ -2,7 +2,7 @@
 
 ## Active phase
 
-**Atlas 2.13 — Case Builder** (in progress). 2.1–2.3 completed 2026-09-27; 2.4–2.12 completed 2026-09-28.
+**Atlas 2.14 — Publish & Portfolio** (in progress, last phase of the 3.0 roadmap). 2.1–2.3 completed 2026-09-27; 2.4–2.13 completed 2026-09-28.
 
 **Owner authorization (2026-09-27):** execute the roadmap continuously from 2.2 through 2.14 (Atlas 3.0) without stopping between phases; the owner tests only at the end. Each phase still ends with typecheck/lint/test/build, `BUILD-PLAN.md` + this file updated and a commit.
 
@@ -12,7 +12,7 @@ Introduce the new persistence/domain/job foundation while preserving useful beha
 
 ## Current milestone
 
-**2.13 — Case Builder**: CaseDocument (editorial sections: text, framed image, gallery, Atlas piece, identity, facts), outline from project material (replacing the v1 case-draft.mdx), structured editor with live preview, optional Brain copywriting with guardrails, outputs as web page (ZIP), PDF and Behance-style 1400px modules.
+**2.14 — Publish & Portfolio**: Export records (package / portfolio), organized packages with a manifest, a v1-compatible portfolio entry, delivery to download / local folder / optional GitHub repository, all started by the owner.
 
 ## State of the code (2026-09-27)
 
@@ -107,6 +107,10 @@ Delivered in 2.11 (Media Kits):
 Delivered in 2.12 (Presentation Studio):
 
 - `presentation` documents with speaker notes, curated storyboard, Statement composition, Studio slide editing, PDF/PPTX export through the `DocumentExporter` port (pdf-lib, PptxGenJS).
+
+Delivered in 2.13 (Case Builder):
+
+- `case` documents with editorial sections, outline from project material, full-screen structured editor with live preview, optional Brain copywriting (`copy` job, invented-figures guardrail), web page ZIP / PDF / 1400px module outputs.
 
 ## Work allowed now
 
