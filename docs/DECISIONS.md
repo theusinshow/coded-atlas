@@ -265,3 +265,11 @@ Accepted (2026-09-28).
 - **Packages are not Outputs**. Outputs are render products; a package is a delivery of existing Outputs. The download ZIP is stored content-addressed under `exports/` and referenced by the Export record, and it is removed with the project.
 - **Portfolio compatibility**: `portfolio.json` keeps the v1 manifest fields the site already consumes and adds `pieces` and `case`. The case web page ships as its ZIP; the site decides how to host it.
 - **Destinations behind ports**: `FolderDestination` (confined to `ATLAS_EXPORT_DIR`, new timestamped folder per delivery, `wx` writes, never overwrites) and `GithubDestination` (one commit through the Git Data API on the configured branch and path, no force push). The GitHub token only comes from the environment and is never stored or shown.
+
+## ADR-042 — Atlas 3.0 declared
+
+Accepted (2026-09-28).
+
+- The ROADMAP 3.0 criterion is met: the full loop works end-to-end, and the primary proof (Project URL → Generate Media Kit → Review → Render → Export) is covered by the e2e suite and by the owner's acceptance test.
+- Tagged `v3.0.0`. The continuous-execution authorization of ADR-028 ends here. New scope requires a new owner decision.
+- Known gaps, accepted: real OpenAI Responses calls and real GitHub delivery are implemented behind ports and tested with fakes, but have not been exercised against the live services. The v1 screens remain until an explicit retirement task.

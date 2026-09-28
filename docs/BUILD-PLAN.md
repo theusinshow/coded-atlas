@@ -2,9 +2,8 @@
 
 The complete roadmap lives in `ROADMAP.md`. The currently authorized scope lives in `CURRENT.md`.
 
-> **Status (2026-09-28):** fases **2.1 a 2.14 concluídas** — roadmap do Atlas 3.0 implementado
-> (execução contínua autorizada pelo Matheus, ADR-028). Próximo passo: **teste do Matheus** no
-> software completo; o que ele encontrar vira correção antes de declarar o 3.0.
+> **Status (2026-09-28):** **Atlas 3.0 declarado** (tag `v3.0.0`, ADR-042) — fases 2.1 a 2.14
+> concluídas e aceitas pelo Matheus. Nenhuma fase pós-3.0 autorizada ainda (ver `CURRENT.md`).
 > O Atlas v1 (captura, vitrine, diff, case, ZIP) segue funcionando sem alteração de comportamento.
 
 ## Baseline (antes de qualquer mudança — 2026-09-27, commit `ac93441`)
@@ -335,3 +334,10 @@ Verificação 2.14: typecheck/lint OK; `npm test` 448 testes (32 arquivos; ZIP r
 ## Phase completion rule
 
 Do not start 2.2 until 2.1 exit criteria in `ROADMAP.md` pass.
+
+## Atlas 3.0 — declarado (2026-09-28)
+
+- [x] Loop completo Import → Capture → Understand → Create → Motion → Render → Publish.
+- [x] Prova principal do ROADMAP: URL do projeto → Gerar Media Kit → Revisar → Renderizar → Exportar (`npm run e2e`, 24 passos).
+- [x] Teste de aceite do Matheus concluído.
+- Pendências conhecidas (fora do critério): chamada real à OpenAI e push real ao GitHub não exercitados nesta máquina; commits só locais (repositório remoto arquivado).

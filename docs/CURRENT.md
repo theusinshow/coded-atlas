@@ -2,17 +2,17 @@
 
 ## Active phase
 
-**Owner acceptance test of Atlas 3.0.** All roadmap phases are implemented: 2.1–2.3 completed 2026-09-27; 2.4–2.14 completed 2026-09-28. Only fixes from the owner's test are in scope until 3.0 is declared.
+**Atlas 3.0 — declared 2026-09-28** (tag `v3.0.0`, ADR-042) after the owner's acceptance test. All roadmap phases are complete: 2.1–2.3 on 2026-09-27, 2.4–2.14 on 2026-09-28. No post-3.0 phase is authorized yet.
 
 **Owner authorization (2026-09-27):** execute the roadmap continuously from 2.2 through 2.14 (Atlas 3.0) without stopping between phases; the owner tests only at the end. Each phase still ends with typecheck/lint/test/build, `BUILD-PLAN.md` + this file updated and a commit.
 
 ## Objective
 
-Introduce the new persistence/domain/job foundation while preserving useful behavior of the current Atlas.
+Keep the 3.0 loop (Import → Capture → Understand → Create → Motion → Render → Publish) reliable. New scope needs an explicit owner decision recorded in `ROADMAP.md`/`DECISIONS.md`.
 
 ## Current milestone
 
-**Atlas 3.0 acceptance**: the owner runs the full loop (Import → Capture → Understand → Create → Motion → Render → Publish) on real projects. Not yet exercised on this machine: real OpenAI calls (no key) and real GitHub push (no token).
+**None active — Atlas 3.0 maintenance.** Candidates awaiting the owner's decision: retire the v1 screens/routes (all have 2.x equivalents), consume `portfolio.json` on the site, minor polish found in testing (local-time delivery folder names, piece names on compact Portfolio cards). Still unexercised on this machine: real OpenAI calls (no key) and a real GitHub push (no token).
 
 ## State of the code (2026-09-27)
 
@@ -118,34 +118,22 @@ Delivered in 2.14 (Publish & Portfolio):
 
 ## Work allowed now
 
-- nothing new until the owner authorizes 2.2 — only fixes to what 2.1 delivered;
-- when 2.2 is authorized (ROADMAP): Project Library, Overview, project lifecycle, Sources, search, archive, URL/manual import, GitHub/local source groundwork.
+- bug fixes and hardening of what 2.1–2.14 delivered;
+- documentation and test improvements;
+- small polish items the owner reports.
 
 ## Work NOT allowed now
 
-Do not implement Atlas Brain, OpenAI integration, Composition Engine, Canvas, Motion, Remotion, Media Kits, Presentation Studio, Case Builder rewrite, publishing integrations, cloud storage or desktop packaging.
+New phases or features beyond 3.0 (including v1 retirement, cloud storage, desktop packaging, multi-user or autonomous publishing) until the owner authorizes them.
 
 ## Preservation rule
 
-Current capture/social/mockup/diff functionality must remain operational unless a migration task explicitly replaces it.
-
-## Immediate sequence
-
-1. ~~establish baseline test/build state;~~
-2. ~~add new shared domain/Zod foundation;~~
-3. ~~configure SQLite/Drizzle;~~
-4. ~~create initial migrations;~~
-5. ~~implement repositories;~~
-6. ~~implement AssetStorage;~~
-7. ~~create legacy adapter;~~
-8. ~~migrate one narrow capture flow end-to-end (2.1.E jobs, 2.1.F slice);~~
-9. ~~verify + harden (2.1.G);~~
-10. expand only after passing criteria → phase 2.2, when authorized.
+The v1 screens and routes (`/legacy`, `/generate`, `/api/export`, `/api/zip`) stay operational until a retirement task explicitly removes them.
 
 ## Completion criteria
 
-Phase 2.1 exit criteria (ROADMAP: create project → register source → capture → persist metadata in SQLite → store bytes through AssetStorage → reload project) pass end-to-end, through the running server. Criteria for 2.2 will be written when the phase starts.
+Atlas 3.0 (ROADMAP): Project URL → Generate Media Kit → Review → Render → Export works end-to-end. Verified by `npm run e2e` (24 steps) and the owner's acceptance test on 2026-09-28.
 
 ## Agent rule
 
-When this milestone is complete, update this file to the next milestone and stop.
+Do not start new scope from this file alone: wait for the owner to authorize the next milestone, then update this file first.
