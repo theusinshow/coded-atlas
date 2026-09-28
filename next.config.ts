@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
   // que o build trace os arquivos certos.
   outputFileTracingRoot: path.resolve(process.cwd()),
 
+  // esbuild empacota o kernel de render em tempo de execução (binário nativo): fica fora do bundle.
+  serverExternalPackages: ["esbuild"],
+
   // Upload manual de assets passa por server action: o limite padrão (1 MB) não
   // cabe um screenshot em alta. O teto por arquivo é validado no serviço.
   experimental: {

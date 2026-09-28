@@ -47,18 +47,10 @@ describe("openDatabase", () => {
         .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
         .all() as { name: string }[]
     ).map((t) => t.name);
-    expect(tables).toEqual([
-      "__drizzle_migrations",
-      "asset_relations",
-      "assets",
-      "captures",
-      "jobs",
-      "legacy_imports",
-      "outputs",
-      "projects",
-      "sources",
-      "visual_profiles",
-    ]);
+    // Tabelas da fundação (fases seguintes acrescentam outras via migrations).
+    expect(tables).toEqual(
+      expect.arrayContaining(["__drizzle_migrations", "asset_relations", "assets", "captures", "jobs", "outputs", "projects", "sources"])
+    );
     expect(database.sqlite.pragma("journal_mode", { simple: true })).toBe("wal");
     expect(database.sqlite.pragma("foreign_keys", { simple: true })).toBe(1);
   });

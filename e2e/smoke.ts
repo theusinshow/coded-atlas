@@ -157,6 +157,31 @@ async function main(): Promise<void> {
       await page.getByRole("button", { name: "Arquivar" }).waitFor();
     });
 
+    await step("criar composição, ajustar e renderizar", async () => {
+      await page.goto(`${BASE}/projects/e2e-${slug}/create`);
+      const card = page.locator('[data-composition="desktop-hero"]');
+      await card.locator("[data-atlas-artboard]").waitFor();
+      await card.getByRole("button", { name: "Usar" }).click();
+      await page.waitForURL(/\/create\/[0-9A-Z]{26}$/);
+      await page.locator("#slot-title").fill("Peça do E2E");
+      await page.getByRole("radio", { name: "Sangrando" }).click();
+      await page.getByText("Alterações não salvas").waitFor();
+      await page.getByRole("button", { name: "Renderizar" }).click();
+      await page.getByText("Concluído").waitFor({ timeout: 120_000 });
+    });
+
+    await step("publicar: peça final com dimensão exata e download", async () => {
+      await page.goto(`${BASE}/projects/e2e-${slug}/publish`);
+      const card = page.locator("[data-output]").first();
+      await card.getByText("PNG · 1080×1350").waitFor();
+      const id = await card.getAttribute("data-output");
+      const res = await fetch(`${BASE}/api/atlas/outputs/${id}/file?download=1`);
+      assert(res.ok && res.headers.get("content-type") === "image/png", `download HTTP ${res.status}`);
+      assert(/attachment; filename=".+\.png"/.test(res.headers.get("content-disposition") ?? ""), "sem content-disposition");
+      const meta = await sharp(Buffer.from(await res.arrayBuffer())).metadata();
+      assert(meta.width === 1080 && meta.height === 1350, `dimensão ${meta.width}×${meta.height}`);
+    });
+
     await step("jobs e ajustes mostram o estado real", async () => {
       await page.goto(`${BASE}/jobs`);
       await page.getByText("Captura").first().waitFor();

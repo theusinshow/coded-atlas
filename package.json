@@ -18,9 +18,15 @@
     "e2e": "tsx e2e/smoke.ts"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "@fontsource/playfair-display": "^5.3.0",
+    "@fontsource/sora": "^5.3.0",
+    "@fontsource/space-grotesk": "^5.3.0",
     "archiver": "^8.0.0",
     "better-sqlite3": "^13.0.3",
     "drizzle-orm": "^0.45.3",
+    "esbuild": "^0.28.2",
     "next": "^15.3.3",
     "pixelmatch": "^5.3.0",
     "react": "^19.0.0",

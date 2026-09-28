@@ -168,6 +168,7 @@ export const outputs = sqliteTable(
     durationMs: integer("duration_ms"),
     sourceAssetIds: text("source_asset_ids", { mode: "json" }).$type<string[]>().notNull(),
     label: text("label"),
+    metadata: text("metadata", { mode: "json" }).$type<Record<string, unknown>>().notNull().default({}),
     createdAt: text("created_at").notNull(),
   },
   (t) => [index("outputs_project_idx").on(t.projectId)]
@@ -208,4 +209,27 @@ export const visualProfiles = sqliteTable(
     createdAt: text("created_at").notNull(),
   },
   (t) => [uniqueIndex("visual_profiles_project_revision").on(t.projectId, t.revision)]
+);
+
+/** CompositionInstance: receita curada ligada ao material de um projeto (2.4). */
+export const compositionInstances = sqliteTable(
+  "composition_instances",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    compositionId: text("composition_id").notNull(),
+    compositionVersion: integer("composition_version").notNull(),
+    variant: text("variant").notNull(),
+    formatId: text("format_id").notNull(),
+    styleMode: text("style_mode").notNull(),
+    bindings: text("bindings", { mode: "json" }).$type<Record<string, unknown>>().notNull(),
+    overrides: text("overrides", { mode: "json" }).$type<Record<string, unknown>>().notNull(),
+    visualProfileRevision: integer("visual_profile_revision"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => [index("composition_instances_project_idx").on(t.projectId)]
 );

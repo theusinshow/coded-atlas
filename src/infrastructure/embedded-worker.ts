@@ -1,5 +1,6 @@
 import { ensureLegacyImportQueued } from "../modules/import/legacy/legacy-import-job";
 import { getAtlasRuntime } from "./runtime";
+import { createAtlasWorker } from "./worker-runtime";
 
 const STARTED = Symbol.for("coded-atlas.embedded-worker");
 type GlobalWithFlag = typeof globalThis & { [STARTED]?: boolean };
@@ -15,7 +16,7 @@ export async function startEmbeddedWorker(options: { workerId?: string } = {}): 
   g[STARTED] = true;
 
   const runtime = await getAtlasRuntime();
-  const worker = runtime.createWorker({ workerId: options.workerId ?? `worker-${process.pid}` });
+  const worker = createAtlasWorker(runtime, { workerId: options.workerId ?? `worker-${process.pid}` });
   worker.start();
   runtime.logger.info("worker de jobs iniciado", { workerId: worker.workerId, home: runtime.home.root });
 

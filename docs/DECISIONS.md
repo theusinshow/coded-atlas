@@ -151,3 +151,14 @@ Accepted (2026-09-27).
 - **Partial failures are warnings, not errors**: an extra page or interaction state that fails is recorded in `job.result.warnings` and shown in the capture history; the capture still completes. Cancelation/timeout discards everything.
 - **VisualProfile lives in `core/creative`** and is append-only by revision. Font lists drop system/emoji/generic families; traits are deterministic from the palette (the first sampled color is the dominant background). The Brand Adapter (2.4) consumes it.
 - **Derived assets** (cover crop) are real Assets with `parentAssetId` and `metadata.origin = "derived"`; UI thumbnails stay a cache, not Assets.
+
+## ADR-031 — Composition engine and rendering (2.4)
+
+Accepted (2026-09-28).
+
+- **Compositions are code, not data**: each `CompositionDefinition` is a versioned TypeScript recipe with a pure `build(ctx) → Artboard`. Instances store the recipe version and the VisualProfile revision they were made with (snapshot rule); the editor offers to move to a newer identity revision explicitly.
+- **One visual implementation**: `src/render/artboard-view.tsx` (React, inline styles only, no Tailwind/Next) draws the preview in the browser and the final render. It will also back the Canvas (2.5) and motion (2.9).
+- **Static render = Chromium running a bundle of the kernel**, built at runtime with esbuild and memoized per process. Next forbids `react-dom/server` in the server/instrumentation graph, and running the same client bundle guarantees preview = output. The page has no network: assets and fonts are served by route interception; everything else is aborted.
+- **Fonts are a curated local set** (@fontsource, latin subset); project fonts that are not in the set fall back to a curated family (serif hint → Playfair Display, otherwise the Atlas default). The preview loads the same files through `/api/atlas/fonts/[file]` (closed list).
+- **Outputs are immutable and outlive their instance**: deleting a composition keeps its renders in Publicar. Output thumbnails use the whole image (`fit: "whole"`); asset grid thumbnails keep the top crop.
+- **Composition definitions never cross the server→client boundary** (they carry functions): client components resolve them by id from the same module.

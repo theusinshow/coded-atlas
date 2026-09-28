@@ -13,32 +13,38 @@ export function isThumbWidth(value: number): value is ThumbWidth {
 }
 
 /** Chave de cache da miniatura: derivada do hash do original (muda se os bytes mudarem). */
-export function thumbKey(sha256: string, width: ThumbWidth): StorageKey {
-  return parseStorageKey(`cache/thumbs/${sha256.slice(0, 2)}/${sha256}-w${width}.webp`);
+export function thumbKey(sha256: string, width: ThumbWidth, fit: ThumbFit = "grid"): StorageKey {
+  return parseStorageKey(`cache/thumbs/${sha256.slice(0, 2)}/${sha256}-w${width}${fit === "whole" ? "-whole" : ""}.webp`);
 }
 
 export function thumbCacheKeys(_key: StorageKey, sha256: string): StorageKey[] {
-  return THUMB_WIDTHS.map((w) => thumbKey(sha256, w));
+  return THUMB_WIDTHS.flatMap((w) => [thumbKey(sha256, w), thumbKey(sha256, w, "whole")]);
 }
+
+/** "grid": imagens altas cortadas no topo (grade de assets); "whole": a imagem inteira (peças finais). */
+export type ThumbFit = "grid" | "whole";
 
 /**
  * Miniaturas WebP sob demanda, cacheadas no AssetStorage (namespace `cache/`).
  * Imagens altas (full page) são cortadas no topo numa proporção 16:10 — é o que
  * uma grade de assets precisa mostrar. Vídeos não têm miniatura aqui.
  */
+/** Qualquer mídia no AssetStorage com hash e dimensões: Asset ou Output. */
+export type Thumbnailable = Pick<Asset, "mimeType" | "sha256" | "storageKey" | "width" | "height">;
+
 export class ThumbnailService {
   constructor(private readonly storage: AssetStorage) {}
 
-  async get(asset: Asset, width: ThumbWidth): Promise<Uint8Array | null> {
+  async get(asset: Thumbnailable, width: ThumbWidth, fit: ThumbFit = "grid"): Promise<Uint8Array | null> {
     if (!asset.mimeType.startsWith("image/")) return null;
-    const key = thumbKey(asset.sha256, width);
+    const key = thumbKey(asset.sha256, width, fit);
     try {
       return await this.storage.get(key);
     } catch (err) {
       if (!isDomainError(err, "NOT_FOUND")) throw err;
     }
     const original = await this.storage.get(asset.storageKey);
-    const tall = asset.width && asset.height && asset.height > asset.width * 1.6;
+    const tall = fit === "grid" && asset.width && asset.height && asset.height > asset.width * 1.6;
     const pipeline = sharp(original, { animated: false }).rotate();
     const resized = tall
       ? pipeline.resize({ width, height: Math.round(width * 0.625), fit: "cover", position: "top", withoutEnlargement: false })

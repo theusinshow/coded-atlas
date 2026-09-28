@@ -1,6 +1,7 @@
 import type { AtlasDb } from "../client";
 import { SqliteAssetRepository } from "./asset-repository";
 import { SqliteCaptureRepository } from "./capture-repository";
+import { SqliteCompositionInstanceRepository } from "./composition-instance-repository";
 import { SqliteJobRepository } from "./job-repository";
 import { SqliteLegacyImportLedger } from "./legacy-ledger-repository";
 import { SqliteOutputRepository } from "./output-repository";
@@ -18,6 +19,7 @@ export function createRepositories(db: AtlasDb) {
     outputs: new SqliteOutputRepository(db),
     legacyImports: new SqliteLegacyImportLedger(db),
     visualProfiles: new SqliteVisualProfileRepository(db),
+    compositionInstances: new SqliteCompositionInstanceRepository(db),
   };
 }
 

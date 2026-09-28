@@ -2,8 +2,8 @@
 
 The complete roadmap lives in `ROADMAP.md`. The currently authorized scope lives in `CURRENT.md`.
 
-> **Status (2026-09-27):** fases **2.1, 2.2 e 2.3 concluídas**. Execução contínua até o Atlas 3.0
-> autorizada pelo Matheus (ADR-028) — ele testa só no final. Próxima: **2.4 — Composition Engine**.
+> **Status (2026-09-28):** fases **2.1 a 2.4 concluídas**. Execução contínua até o Atlas 3.0
+> autorizada pelo Matheus (ADR-028) — ele testa só no final. Próxima: **2.5 — Studio Canvas**.
 > O Atlas v1 (captura, vitrine, diff, case, ZIP) segue funcionando sem alteração de comportamento.
 
 ## Baseline (antes de qualquer mudança — 2026-09-27, commit `ac93441`)
@@ -205,6 +205,19 @@ Verificação 2.2: typecheck/lint OK; `npm test` 319 testes (17 arquivos); build
 - [x] Migration `0003_understand`.
 
 Verificação 2.3: typecheck/lint OK; `npm test` 328 testes (18 arquivos; captura completa com Chromium real, cancelamento no meio sem sobras); build OK; `npm run e2e` 10/10 passos contra servidor com `ATLAS_HOME` temporário (captura completa pela UI com página extra + estado, detalhe/capa, identidade, biblioteca).
+
+## Atlas 2.4 — Composition Engine (concluída 2026-09-28)
+
+- [x] Documento visual: `Artboard` + layers (asset, text, shape, device/celular, browser, group) validados por Zod; molduras de navegador/celular com geometria compartilhada (`core/documents/devices.ts`).
+- [x] `CompositionDefinition` versionada (slots com intenção, variantes, formatos, capacidades, `build` pura) e as 10 composições curadas: Desktop Hero, Desktop + Mobile, Floating Devices, Editorial Split, Mobile Stack, UI Details Grid, Single Feature, Typography + Colors, Project Reveal, Project Closing.
+- [x] Formatos: Post 1:1, Post 4:5, Story 9:16, Paisagem 16:9, Capa 1.91:1.
+- [x] Style tokens + modos (Projeto / Coded by M / Híbrido) pelo Brand Adapter a partir do VisualProfile, com contraste garantido; fontes curadas locais (@fontsource).
+- [x] Auto-binding determinístico (captura mais recente, seções em ordem de página, textos do projeto) e `CompositionInstance` com snapshot da versão da receita e da revisão da identidade. Migration `0004_composition`.
+- [x] Kernel de render único (`src/render/artboard-view.tsx`): o mesmo componente desenha o preview ao vivo e o render final.
+- [x] Render estático em job (`render`): Chromium roda o bundle do kernel (esbuild) na dimensão exata, sem rede (assets/fontes por interceptação), Sharp gera PNG/JPG/WebP → Outputs imutáveis com metadados rastreáveis.
+- [x] UI: aba **Criar** (galeria já preenchida com o material do projeto, filtro por formato, peças salvas) e editor com inspetor rápido (formato, variante, estilo, cor de destaque, troca de imagem por slot, textos, salvar/renderizar/excluir, acompanhamento do job); aba **Publicar** (renders e peças do v1, miniatura inteira, download com nome legível).
+
+Verificação 2.4: typecheck/lint OK; `npm test` 350 testes (20 arquivos; render real com Chromium em PNG/JPG/WebP na dimensão exata); build OK; `npm run e2e` 12/12 passos (inclui criar composição → ajustar → renderizar → baixar em Publicar com 1080×1350 conferido); revisão visual das composições em 4:5, 9:16 e 16:9 com a biblioteca v1 real.
 
 ## Phase completion rule
 

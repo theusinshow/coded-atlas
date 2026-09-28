@@ -172,11 +172,15 @@ async function importOne(deps: LegacyImportDeps, ctx: JobContext, plan: Plan): P
   let desktopViewport: AssetId | null = null;
   // Originais antes dos derivados, para a linhagem (thumbnail/capa → screenshot) resolver.
   const ordered = [...prepared].sort((a, b) => Number(Boolean(a.file.derivedFrom)) - Number(Boolean(b.file.derivedFrom)));
+  const sectionCounter = new Map<string, number>(); // ordem das seções na página, por device
   for (const item of ordered) {
     const { file } = item;
+    const sectionIndex = file.role === "section" ? (sectionCounter.get(file.device ?? "") ?? 0) : undefined;
+    if (sectionIndex !== undefined) sectionCounter.set(file.device ?? "", sectionIndex + 1);
     if (file.target === "output") {
       await deps.outputs.create(
         createOutput({
+          metadata: { origin: "legacy" },
           projectId: project.id,
           format: file.format,
           mimeType: item.mimeType,
@@ -210,6 +214,7 @@ async function importOne(deps: LegacyImportDeps, ctx: JobContext, plan: Plan): P
           legacyPath: file.publicPath,
           ...(file.device ? { device: file.device } : {}),
           ...(file.role === "section" && file.label ? { sectionName: file.label } : {}),
+          ...(sectionIndex !== undefined ? { sectionIndex } : {}),
           ...(file.role.startsWith("page-") && file.label ? { pagePath: file.label } : {}),
           ...(file.role === "state" && file.label ? { stateName: file.label } : {}),
         },

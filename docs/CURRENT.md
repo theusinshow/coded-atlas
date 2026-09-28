@@ -2,7 +2,7 @@
 
 ## Active phase
 
-**Atlas 2.4 — Composition Engine** (in progress). 2.1 Foundation, 2.2 Project System and 2.3 Asset & Capture System completed 2026-09-27.
+**Atlas 2.5 — Studio Canvas** (in progress). 2.1 Foundation, 2.2 Project System and 2.3 Asset & Capture System completed 2026-09-27; 2.4 Composition Engine completed 2026-09-28.
 
 **Owner authorization (2026-09-27):** execute the roadmap continuously from 2.2 through 2.14 (Atlas 3.0) without stopping between phases; the owner tests only at the end. Each phase still ends with typecheck/lint/test/build, `BUILD-PLAN.md` + this file updated and a commit.
 
@@ -12,7 +12,7 @@ Introduce the new persistence/domain/job foundation while preserving useful beha
 
 ## Current milestone
 
-**2.4 — Composition Engine**: CompositionDefinition (slots, variants, constraints, capabilities, version), bindings, style tokens and style modes (project/atlas/hybrid), Brand Adapter from the VisualProfile, the 10 initial curated compositions, Quick Create UI and a static renderer (layers → HTML/CSS → Playwright → PNG/JPG/WebP) producing Outputs through render jobs.
+**2.5 — Studio Canvas**: editable CanvasDocument (created blank or from a CompositionInstance), layer editing (select, move, resize, text, order, visibility, lock), Zustand editor state, undo/redo, autosave with document revisions, rendering through the same kernel and render job.
 
 ## State of the code (2026-09-27)
 
@@ -67,6 +67,12 @@ Delivered in 2.3 (Asset & Capture System):
 - Full capture pipeline as jobs (`CapturePlan`, Quick/Complete profiles): devices, full page, named sections, extra pages, interaction states, scroll video, inspection; derived 1.91:1 cover with lineage; warnings in the job result.
 - `VisualProfile` (Understand) revisions from captures and from the v1 import; "Identidade visual" on the Overview.
 - Global `/library`, asset detail page (lineage, set cover, download, remove upload). v1 `/generate` is no longer part of the main flow (still at `/generate` under v1).
+
+Delivered in 2.4 (Composition Engine):
+
+- `Artboard`/layer document model, 10 curated versioned compositions, 5 formats, style modes through the Brand Adapter, deterministic auto-binding, `CompositionInstance` (migration `0004_composition`).
+- Single React render kernel used by the live preview and by the static renderer (Chromium runs an esbuild bundle of the kernel; no `react-dom/server` in the Next graph). Render jobs produce PNG/JPG/WebP Outputs.
+- Project tabs **Criar** (gallery + quick inspector) and **Publicar** (outputs, download).
 
 ## Work allowed now
 

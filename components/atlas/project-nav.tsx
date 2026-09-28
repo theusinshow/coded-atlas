@@ -7,6 +7,8 @@ export const PROJECT_TABS = [
   { segment: "", label: "Visão geral" },
   { segment: "capture", label: "Captura" },
   { segment: "assets", label: "Assets" },
+  { segment: "create", label: "Criar" },
+  { segment: "publish", label: "Publicar" },
 ] as const;
 
 export function ProjectNav({ slug }: { slug: string }) {

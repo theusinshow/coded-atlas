@@ -121,5 +121,7 @@ export interface VisualProfileRepository {
   /** Grava uma nova revisão (revisões nunca são editadas). */
   create(profile: VisualProfile): Promise<VisualProfile>;
   latest(projectId: z.infer<typeof ProjectIdSchema>): Promise<VisualProfile | null>;
+  /** Uma revisão específica (snapshot usado por uma decisão criativa). */
+  getRevision(projectId: z.infer<typeof ProjectIdSchema>, revision: number): Promise<VisualProfile | null>;
   listByProject(projectId: z.infer<typeof ProjectIdSchema>): Promise<VisualProfile[]>;
 }
