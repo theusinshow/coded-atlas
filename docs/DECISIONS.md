@@ -198,3 +198,12 @@ Accepted (2026-09-28).
 - **Avoided compositions are a validation rule** for model output (repairable error), not only a prompt hint.
 - **Guardrails warn, never block**: `lintArtboard` is deterministic and applies to AI, rule-based and manual work alike.
 - **Brand colors are adjusted for legibility** (mixed toward black/white only as much as needed for 4.5:1) in project/hybrid modes. A color the user picks explicitly (override) is kept, and the guardrail warns instead.
+
+## ADR-035 — Multi-page documents (2.8)
+
+Accepted (2026-09-28).
+
+- **Content shape decides the kind**: canvas content has `artboard`, carousel content has `pages`; both live in `document_revisions` under `DocumentContentSchema`. The repository rejects content that does not match the document kind, so existing canvas revisions need no migration.
+- **All pages of a carousel share size and style** (one Creative Direction per sequence). Per-page style would break the consistency rule of Media Kits.
+- **The Studio edits a view**: the store keeps the whole document and exposes the active page as canvas-shaped content. Every existing editor component keeps working unchanged, and undo entries record the document and the page that was active.
+- **Render = one Output per page**, in order, with `metadata.page` and `NN/total` labels. The ZIP route streams a render's Outputs in that order with sanitized names (never disk paths).

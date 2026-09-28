@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { applyPlanAction, discardPlanAction } from "@/app/actions/brain";
+import { planToCarouselAction } from "@/app/actions/studio";
 import { AssetThumb } from "@/components/atlas/asset-image";
 import { PlanItems } from "@/components/brain/plan-items";
 import { PlanReviseForm } from "@/components/brain/plan-request-form";
@@ -85,7 +86,15 @@ export default async function PlanPage({ params }: Props) {
               </Button>
             </form>
           )}
-          <p className="text-[11px] text-zinc-500">As peças viram rascunhos editáveis em Criar. Nada é renderizado ou publicado sozinho.</p>
+          {canApply && plan.items.length > 1 && (
+            <form action={planToCarouselAction}>
+              <input type="hidden" name="planId" value={plan.id} />
+              <Button variant={plan.request.goal === "carousel" ? "primary" : "secondary"} type="submit" className="w-full">
+                Montar como carrossel
+              </Button>
+            </form>
+          )}
+          <p className="text-[11px] text-zinc-500">As peças viram rascunhos editáveis (em Criar, ou páginas de um carrossel no Studio). Nada é renderizado ou publicado sozinho.</p>
           <div className="border-t border-line pt-3">
             <SaveDirectionForm planId={plan.id} />
           </div>

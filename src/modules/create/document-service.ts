@@ -1,4 +1,5 @@
 import type { AssetRepository } from "../../core/assets/repositories";
+import type { CreativePlanId, CreativePlanRepository } from "../../core/brain/plan";
 import type { CompositionInstanceId, CompositionInstanceRepository } from "../../core/creative/composition";
 import { getComposition } from "../../core/creative/compositions";
 import { FORMATS, formatSize, type FormatId } from "../../core/creative/formats";
@@ -7,9 +8,11 @@ import type { StyleMode } from "../../core/creative/tokens";
 import type { VisualProfileRepository } from "../../core/creative/visual-profile";
 import {
   CanvasContentSchema,
+  CarouselContentSchema,
+  DocumentContentSchema,
   contentAssetIds,
   CreativeDocumentSchema,
-  type CanvasContent,
+  type DocumentContent,
   type CommitResult,
   type CreativeDocument,
   type CreativeDocumentId,
@@ -40,8 +43,8 @@ async function requireDocument(deps: DocumentDeps, id: CreativeDocumentId): Prom
 }
 
 /** Todo asset usado no documento precisa existir e ser do mesmo projeto. */
-async function checkContent(deps: DocumentDeps, projectId: ProjectId, raw: unknown): Promise<CanvasContent> {
-  const content = parseOrThrow(CanvasContentSchema, raw, "Conteúdo do documento");
+async function checkContent(deps: DocumentDeps, projectId: ProjectId, raw: unknown): Promise<DocumentContent> {
+  const content = parseOrThrow(DocumentContentSchema, raw, "Conteúdo do documento");
   for (const id of contentAssetIds(content)) {
     const asset = await deps.assets.getById(id as Parameters<AssetRepository["getById"]>[0]);
     if (!asset || asset.projectId !== projectId) throw new DomainError("VALIDATION", "O documento usa uma imagem que não é deste projeto.");
@@ -50,9 +53,53 @@ async function checkContent(deps: DocumentDeps, projectId: ProjectId, raw: unkno
   return content;
 }
 
-function newDocument(projectId: ProjectId, name: string, source: CreativeDocument["source"]): CreativeDocument {
+function newDocument(projectId: ProjectId, name: string, source: CreativeDocument["source"], kind: CreativeDocument["kind"] = "canvas"): CreativeDocument {
   const now = nowIso();
-  return parseOrThrow(CreativeDocumentSchema, { id: newId(), projectId, kind: "canvas", name, source, headRevision: 1, createdAt: now, updatedAt: now }, "Documento");
+  return parseOrThrow(CreativeDocumentSchema, { id: newId(), projectId, kind, name, source, headRevision: 1, createdAt: now, updatedAt: now }, "Documento");
+}
+
+/** Carrossel em branco: N páginas vazias do formato, com a identidade atual. */
+export async function createBlankCarousel(deps: DocumentDeps, projectId: ProjectId, input: { formatId: FormatId; pages?: number; name?: string }): Promise<CommitResult> {
+  const project = await deps.projects.getById(projectId);
+  if (!project) throw new DomainError("NOT_FOUND", "Projeto não encontrado.");
+  const profile = await deps.visualProfiles.latest(projectId);
+  const { width, height } = formatSize(input.formatId);
+  const count = Math.min(Math.max(input.pages ?? 3, 1), 20);
+  const content = parseOrThrow(
+    CarouselContentSchema,
+    {
+      pages: Array.from({ length: count }, () => ({ id: newId(), artboard: { width, height, background: { fill: "background", pattern: "none" }, layers: [] } })),
+      style: { mode: "hybrid", profileRevision: profile?.revision ?? null },
+      formatId: input.formatId,
+    },
+    "Conteúdo do carrossel"
+  );
+  return deps.documents.create(newDocument(projectId, input.name?.trim() || `Carrossel ${FORMATS[input.formatId].label}`, {}, "carousel"), content, "create");
+}
+
+/**
+ * Plano → carrossel: cada peça do plano vira uma página, na ordem, todas no mesmo
+ * formato (o da primeira peça, ou o pedido) e com a direção do plano.
+ */
+export async function materializePlanAsCarousel(deps: DocumentDeps & { plans: CreativePlanRepository }, planId: CreativePlanId, formatId?: FormatId): Promise<CommitResult> {
+  const plan = await deps.plans.getById(planId);
+  if (!plan) throw new DomainError("NOT_FOUND", "Plano não encontrado.");
+  const format = formatId ?? plan.items[0].formatId;
+  const profile = (plan.visualProfileRevision ? await deps.visualProfiles.getRevision(plan.projectId, plan.visualProfileRevision) : null) ?? (await deps.visualProfiles.latest(plan.projectId));
+  const assets = new Map((await deps.assets.listByProject(plan.projectId)).map((a) => [a.id as string, a]));
+  const pages = plan.items.flatMap((item) => {
+    const definition = getComposition(item.compositionId);
+    if (!definition) return [];
+    return [{ id: newId(), title: definition.name.slice(0, 80), artboard: buildArtboard(definition, { formatId: format, variant: item.variant, bindings: item.bindings }, assets, profile) }];
+  });
+  if (pages.length === 0) throw new DomainError("VALIDATION", "Nenhuma peça do plano pôde virar página.");
+  const content = parseOrThrow(
+    CarouselContentSchema,
+    { pages, style: { mode: plan.direction.styleMode, ...(plan.direction.accent ? { primary: plan.direction.accent } : {}), profileRevision: profile?.revision ?? null }, formatId: format },
+    "Conteúdo do carrossel"
+  );
+  const project = await deps.projects.getById(plan.projectId);
+  return deps.documents.create(newDocument(plan.projectId, `Carrossel · ${project?.name ?? "projeto"}`.slice(0, 120), {}, "carousel"), content, "create");
 }
 
 /** Canvas em branco num formato, com a identidade mais recente do projeto. */

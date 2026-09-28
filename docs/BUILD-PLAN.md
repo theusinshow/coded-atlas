@@ -2,8 +2,8 @@
 
 The complete roadmap lives in `ROADMAP.md`. The currently authorized scope lives in `CURRENT.md`.
 
-> **Status (2026-09-28):** fases **2.1 a 2.7 concluídas**. Execução contínua até o Atlas 3.0
-> autorizada pelo Matheus (ADR-028) — ele testa só no final. Próxima: **2.8 — Carousel & Multi-page Documents**.
+> **Status (2026-09-28):** fases **2.1 a 2.8 concluídas**. Execução contínua até o Atlas 3.0
+> autorizada pelo Matheus (ADR-028) — ele testa só no final. Próxima: **2.9 — Motion Foundation**.
 > O Atlas v1 (captura, vitrine, diff, case, ZIP) segue funcionando sem alteração de comportamento.
 
 ## Baseline (antes de qualquer mudança — 2026-09-27, commit `ac93441`)
@@ -255,6 +255,17 @@ Verificação 2.6: typecheck/lint OK; `npm test` 379 testes (23 arquivos; gatewa
 - [x] Migration `0007_creative`.
 
 Verificação 2.7: typecheck/lint OK; `npm test` 390 testes (24 arquivos); build OK; `npm run e2e` 17/17 passos (corrigir identidade, memória do projeto, salvar e escolher direção).
+
+## Atlas 2.8 — Carousel & Multi-page Documents (concluída 2026-09-28)
+
+- [x] `CarouselDocument` (kind `carousel`) na mesma tabela de revisões: páginas ordenadas do mesmo tamanho com um estilo só; schema recusa tamanhos diferentes/ids repetidos; tipo do conteúdo casa com o tipo do documento.
+- [x] Operações puras de página (adicionar, duplicar com ids novos, mover, renomear, remover — nunca vazio).
+- [x] Studio multi-página: o store guarda o documento e edita a VISTA da página ativa (canvas, camadas e inspetor inalterados); storyboard com miniaturas, título da página, ←/→, duplicar, + página, remover — tudo com undo/autosave.
+- [x] Criação: carrossel em branco (N páginas), objetivo **Carrossel** no planejador (abre com Project Reveal, fecha com Project Closing) e "Montar como carrossel" em qualquer plano (uma página por peça, mesmo formato, direção do plano).
+- [x] Render multi-saída: uma peça por página, na ordem, `page` no metadata e rótulo `NN/total`; Publicar agrupa por render e baixa tudo em ZIP (`/api/atlas/jobs/[id]/outputs`, nomes seguros).
+- [x] `buildZip` e `safeFileName` reutilizáveis (Export da 2.14).
+
+Verificação 2.8: typecheck/lint OK; `npm test` 398 testes (25 arquivos; render de carrossel com Chromium real → 3 Outputs ordenados; store do Studio com vista da página); build OK; `npm run e2e` 18/18 passos (plano de carrossel → Studio → + página → render → ZIP).
 
 ## Phase completion rule
 

@@ -2,7 +2,7 @@
 
 ## Active phase
 
-**Atlas 2.8 — Carousel & Multi-page Documents** (in progress). 2.1–2.3 completed 2026-09-27; 2.4–2.7 completed 2026-09-28.
+**Atlas 2.9 — Motion Foundation** (in progress). 2.1–2.3 completed 2026-09-27; 2.4–2.8 completed 2026-09-28.
 
 **Owner authorization (2026-09-27):** execute the roadmap continuously from 2.2 through 2.14 (Atlas 3.0) without stopping between phases; the owner tests only at the end. Each phase still ends with typecheck/lint/test/build, `BUILD-PLAN.md` + this file updated and a commit.
 
@@ -12,7 +12,7 @@ Introduce the new persistence/domain/job foundation while preserving useful beha
 
 ## Current milestone
 
-**2.8 — Carousel & Multi-page Documents**: CreativeDocument abstraction for multiple pages, CarouselDocument (ordered slides sharing one direction/style), slide storyboard, per-slide editing in the Studio and multi-output static render (one Output per page, ZIP-ready ordering).
+**2.9 — Motion Foundation**: MotionDocument (scenes with duration, layers, animation tracks, transitions), MotionPreset library, scene strip, preset-driven motion from compositions/carousels, and "Website Scroll" from full-page captures; live preview in the browser with the same render kernel.
 
 ## State of the code (2026-09-27)
 
@@ -87,6 +87,10 @@ Delivered in 2.6 (Atlas Brain):
 Delivered in 2.7 (Creative System):
 
 - Workspace/project creative memory with learned signals and precedence, saved Creative Directions, manual VisualProfile revisions, deterministic creative guardrails (migration `0007_creative`). Brand Adapter now guarantees AA contrast for brand/muted text.
+
+Delivered in 2.8 (Carousel & Multi-page Documents):
+
+- `carousel` documents with ordered pages sharing one style, page operations, multi-page Studio (active page view + storyboard), carousel goal and plan → carousel, multi-output render with ZIP download per render.
 
 ## Work allowed now
 

@@ -18,6 +18,7 @@ import type { ShortlistItem } from "./context";
 export const CREATIVE_GOALS = {
   "launch-post": { label: "Post de lançamento", hint: "Anunciar o projeto no feed", defaultFormats: ["post-4x5"], items: 3 },
   "showcase-set": { label: "Conjunto vitrine", hint: "Peças em formatos variados para portfólio e redes", defaultFormats: ["landscape-16x9", "post-4x5", "story-9x16", "og-1.91x1"], items: 4 },
+  carousel: { label: "Carrossel", hint: "Sequência de páginas 4:5 que conta o projeto", defaultFormats: ["post-4x5"], items: 5 },
   story: { label: "Stories", hint: "Sequência vertical 9:16", defaultFormats: ["story-9x16"], items: 3 },
   cover: { label: "Capa / Open Graph", hint: "Imagem de compartilhamento 1.91:1", defaultFormats: ["og-1.91x1"], items: 2 },
   presentation: { label: "Slides de apresentação", hint: "Peças 16:9 para apresentar o projeto", defaultFormats: ["landscape-16x9"], items: 3 },
@@ -243,6 +244,7 @@ export function validatePlanOutput(raw: unknown, ctx: PlanValidationContext): Pl
 const GOAL_PICKS: Record<CreativeGoal, string[]> = {
   "launch-post": ["desktop-mobile", "desktop-hero", "ui-details-grid", "typography-colors", "editorial-split", "project-reveal"],
   "showcase-set": ["desktop-hero", "desktop-mobile", "mobile-stack", "floating-devices", "editorial-split", "ui-details-grid"],
+  carousel: ["project-reveal", "desktop-hero", "desktop-mobile", "ui-details-grid", "single-feature", "typography-colors", "project-closing"],
   story: ["mobile-stack", "project-reveal", "floating-devices", "single-feature", "project-closing"],
   cover: ["desktop-hero", "floating-devices", "editorial-split"],
   presentation: ["project-reveal", "desktop-hero", "editorial-split", "ui-details-grid", "typography-colors", "project-closing"],
@@ -282,6 +284,12 @@ export function deterministicPlan(input: {
     if (missingSlots(definition, bindings).length > 0) continue;
     if (id === "typography-colors" && !input.hasPalette) continue;
     items.push({ compositionId: id, formatId, variant: definition.variants[0].id, bindings, rationale: `${definition.name} em ${FORMATS[formatId].label}: ${definition.description}` });
+  }
+  // Carrossel conta uma história: termina sempre no fechamento (assinatura), se couber.
+  const closing = compositions.find((c) => c.id === "project-closing");
+  if (request.goal === "carousel" && closing && !preferences?.avoidCompositions.has(closing.id) && items.length > 1 && !items.some((i) => i.compositionId === closing.id)) {
+    const formatId = formats.find((f) => closing.formats.includes(f)) ?? closing.formats[0];
+    items[items.length - 1] = { compositionId: closing.id, formatId, variant: closing.variants[0].id, bindings: autoBind(closing, bindingContext), rationale: `${closing.name}: fecha o carrossel com nome, endereço e assinatura.` };
   }
   // Pouco material: completa com o que couber, em qualquer formato do pedido.
   if (items.length === 0) {

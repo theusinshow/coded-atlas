@@ -10,7 +10,7 @@ import { ArtboardSchema, artboardAssetIds, type Artboard } from "./artboard";
  * Família: canvas agora; carousel, motion, presentation e case nas fases seguintes
  * reutilizam a mesma tabela de revisões com outro `kind` e outro conteúdo.
  */
-export const DocumentKindSchema = z.enum(["canvas"]);
+export const DocumentKindSchema = z.enum(["canvas", "carousel"]);
 export type DocumentKind = z.infer<typeof DocumentKindSchema>;
 
 export const CreativeDocumentIdSchema = UlidSchema.brand<"CreativeDocumentId">();
@@ -33,6 +33,49 @@ export const CanvasContentSchema = z.strictObject({
 });
 export type CanvasContent = z.infer<typeof CanvasContentSchema>;
 export type CanvasContentInput = z.input<typeof CanvasContentSchema>;
+
+export const MAX_PAGES = 20;
+
+export const DocumentPageSchema = z.strictObject({
+  id: z.string().min(1).max(64),
+  /** Rótulo curto no storyboard ("Abertura", "Mobile"…). */
+  title: z.string().trim().max(80).optional(),
+  artboard: ArtboardSchema,
+});
+export type DocumentPage = z.infer<typeof DocumentPageSchema>;
+
+/**
+ * Carrossel: páginas ordenadas do MESMO tamanho, com um estilo só — uma peça
+ * sequencial coerente (docs/WORKFLOWS.md → carrossel). Cada página vira um Output.
+ */
+export const CarouselContentSchema = z
+  .strictObject({
+    pages: z.array(DocumentPageSchema).min(1).max(MAX_PAGES),
+    style: DocumentStyleSchema,
+    formatId: FormatIdSchema.nullable(),
+  })
+  .refine((c) => c.pages.every((p) => p.artboard.width === c.pages[0].artboard.width && p.artboard.height === c.pages[0].artboard.height), {
+    message: "Todas as páginas do carrossel precisam ter o mesmo tamanho.",
+  })
+  .refine((c) => new Set(c.pages.map((p) => p.id)).size === c.pages.length, { message: "IDs de página repetidos." });
+export type CarouselContent = z.infer<typeof CarouselContentSchema>;
+
+/** Conteúdo de qualquer documento (a forma decide o tipo: `artboard` = canvas, `pages` = carrossel). */
+export const DocumentContentSchema = z.union([CanvasContentSchema, CarouselContentSchema]);
+export type DocumentContent = CanvasContent | CarouselContent;
+
+export function isCarousel(content: DocumentContent): content is CarouselContent {
+  return "pages" in content;
+}
+
+export function kindOf(content: DocumentContent): DocumentKind {
+  return isCarousel(content) ? "carousel" : "canvas";
+}
+
+/** Artboards em ordem de saída (canvas = 1). */
+export function contentPages(content: DocumentContent): { artboard: Artboard; title?: string }[] {
+  return isCarousel(content) ? content.pages : [{ artboard: content.artboard }];
+}
 
 export const DocumentSourceSchema = z.strictObject({
   instanceId: z.string().max(40).optional(),
@@ -64,7 +107,7 @@ export type RevisionOrigin = z.infer<typeof RevisionOriginSchema>;
 export const DocumentRevisionSchema = z.strictObject({
   documentId: CreativeDocumentIdSchema,
   revision: z.number().int().positive(),
-  content: CanvasContentSchema,
+  content: DocumentContentSchema,
   origin: RevisionOriginSchema,
   /** Fixada quando um render a referencia: nunca mais é reescrita. */
   pinned: z.boolean(),
@@ -82,8 +125,8 @@ export function shouldCoalesce(head: Pick<DocumentRevision, "origin" | "pinned" 
   return origin === "edit" && head.origin === "edit" && !head.pinned && now.getTime() - Date.parse(head.createdAt) < COALESCE_WINDOW_MS;
 }
 
-export function contentAssetIds(content: { artboard: Artboard }): string[] {
-  return artboardAssetIds(content.artboard);
+export function contentAssetIds(content: DocumentContent): string[] {
+  return [...new Set(contentPages(content).flatMap((p) => artboardAssetIds(p.artboard)))];
 }
 
 export interface CommitResult {
@@ -93,7 +136,7 @@ export interface CommitResult {
 
 export interface CreativeDocumentRepository {
   /** Cria documento + revisão 1 numa transação. */
-  create(document: CreativeDocument, content: CanvasContent, origin: RevisionOrigin): Promise<CommitResult>;
+  create(document: CreativeDocument, content: DocumentContent, origin: RevisionOrigin): Promise<CommitResult>;
   getById(id: CreativeDocumentId): Promise<CreativeDocument | null>;
   listByProject(projectId: ProjectId): Promise<CreativeDocument[]>;
   rename(id: CreativeDocumentId, name: string): Promise<CreativeDocument>;
@@ -104,7 +147,7 @@ export interface CreativeDocumentRepository {
    * Grava um conteúdo novo sobre `baseRevision` (concorrência otimista: CONFLICT se
    * a cabeça mudou). Coalesce com a cabeça segundo `shouldCoalesce`.
    */
-  commit(id: CreativeDocumentId, baseRevision: number, content: CanvasContent, origin: RevisionOrigin): Promise<CommitResult>;
+  commit(id: CreativeDocumentId, baseRevision: number, content: DocumentContent, origin: RevisionOrigin): Promise<CommitResult>;
   /** Fixa uma revisão (referenciada por um render). */
   pin(id: CreativeDocumentId, revision: number): Promise<void>;
 }

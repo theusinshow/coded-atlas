@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from "react"
 import { deleteDocumentAction, listRevisionsAction, renameDocumentAction, renderCanvasAction, restoreRevisionAction, saveCanvasAction } from "@/app/actions/studio";
 import { resolveTokens } from "@/src/core/creative/tokens";
 import type { VisualProfile } from "@/src/core/creative/visual-profile";
-import type { CanvasContent, RevisionSummary } from "@/src/core/documents/creative-document";
+import { isCarousel, type CanvasContent, type DocumentContent, type RevisionSummary } from "@/src/core/documents/creative-document";
 import { duplicateLayer, findLayer, removeLayer, reorderLayer, updateLayer } from "@/src/core/documents/layer-tree";
 import { JobFollower } from "@/components/atlas/job-follower";
 import type { StudioAsset } from "@/components/create/types";
@@ -12,6 +12,7 @@ import { CanvasStage, type Zoom } from "./canvas-stage";
 import { Inspector } from "./inspector";
 import { newLayerId } from "./layer-factory";
 import { AddPanel, LayersPanel } from "./layers-panel";
+import { PageStrip } from "./page-strip";
 import { createStudioStore, StudioContext, useStudio, useStudioApi, type SaveState } from "./store";
 
 const AUTOSAVE_MS = 1200;
@@ -20,7 +21,7 @@ interface StudioProps {
   documentId: string;
   name: string;
   project: { slug: string; name: string };
-  initialContent: CanvasContent;
+  initialContent: DocumentContent;
   initialRevision: number;
   assets: StudioAsset[];
   profiles: Record<number, VisualProfile>;
@@ -28,7 +29,7 @@ interface StudioProps {
 }
 
 export function Studio(props: StudioProps) {
-  const [store] = useState(() => createStudioStore({ content: props.initialContent, revision: props.initialRevision }));
+  const [store] = useState(() => createStudioStore({ doc: props.initialContent, revision: props.initialRevision }));
   return (
     <StudioContext.Provider value={store}>
       <StudioShell {...props} />
@@ -51,13 +52,13 @@ function useAutosave(documentId: string) {
     let timer: ReturnType<typeof setTimeout> | null = null;
     let inFlight = false;
     const flush = async () => {
-      const { content, revision, saveState, markSaving, markSaved, markError } = api.getState();
+      const { doc, revision, saveState, markSaving, markSaved, markError } = api.getState();
       if (saveState !== "dirty" || inFlight) return;
       inFlight = true;
       markSaving();
-      const result = await saveCanvasAction(documentId, revision, content);
+      const result = await saveCanvasAction(documentId, revision, doc);
       inFlight = false;
-      if (result.ok) markSaved(result.revision, content);
+      if (result.ok) markSaved(result.revision, doc);
       else markError(result.error, result.conflict);
       if (api.getState().saveState === "dirty") schedule();
     };
@@ -66,7 +67,7 @@ function useAutosave(documentId: string) {
       timer = setTimeout(() => void flush(), AUTOSAVE_MS);
     };
     const unsubscribe = api.subscribe((state, prev) => {
-      if (state.content !== prev.content && state.saveState === "dirty") schedule();
+      if (state.doc !== prev.doc && state.saveState === "dirty") schedule();
     });
     // Sair com alterações pendentes: o navegador pergunta.
     const beforeUnload = (e: BeforeUnloadEvent) => {
@@ -217,14 +218,14 @@ function RenderMenu({ documentId, onJob }: { documentId: string; onJob: (id: str
         onClick={() =>
           start(async () => {
             setError(null);
-            const { content, revision, markSaved, markError } = api.getState();
-            const result = await renderCanvasAction(documentId, revision, content, formats);
+            const { doc, revision, markSaved, markError } = api.getState();
+            const result = await renderCanvasAction(documentId, revision, doc, formats);
             if (!result.ok) {
               setError(result.error);
               if (result.conflict) markError(result.error, true);
               return;
             }
-            markSaved(result.revision, content);
+            markSaved(result.revision, doc);
             if (result.jobId) onJob(result.jobId);
           })
         }
@@ -244,6 +245,7 @@ function StudioShell({ documentId, name: initialName, project, assets, profiles,
   const revision = useStudio((s) => s.revision);
   const canUndo = useStudio((s) => s.past.length > 0);
   const canRedo = useStudio((s) => s.future.length > 0);
+  const carousel = useStudio((s) => isCarousel(s.doc));
   const [tab, setTab] = useState<"layers" | "add">("layers");
   const [zoom, setZoom] = useState<Zoom>("fit");
   const [fitScale, setFitScale] = useState(0.3);
@@ -372,8 +374,11 @@ function StudioShell({ documentId, name: initialName, project, assets, profiles,
           <div className="flex-1 min-h-0 overflow-y-auto">{tab === "layers" ? <LayersPanel /> : <AddPanel assets={assets} />}</div>
         </aside>
 
-        <main className="flex-1 min-w-0 relative">
-          <CanvasStage tokens={tokens} zoom={zoom} onFit={onFit} />
+        <main className="flex-1 min-w-0 relative flex flex-col">
+          <div className="flex-1 min-h-0 relative">
+            <CanvasStage tokens={tokens} zoom={zoom} onFit={onFit} />
+          </div>
+          {carousel && <PageStrip tokens={tokens} />}
           {jobId && (
             <div className="absolute right-4 bottom-4 w-80 space-y-2">
               <JobFollower key={jobId} jobId={jobId} />

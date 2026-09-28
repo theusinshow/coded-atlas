@@ -1,10 +1,11 @@
 import { and, desc, eq } from "drizzle-orm";
 import {
-  CanvasContentSchema,
+  DocumentContentSchema,
   CreativeDocumentSchema,
+  kindOf,
   DocumentRevisionSchema,
   shouldCoalesce,
-  type CanvasContent,
+  type DocumentContent,
   type CommitResult,
   type CreativeDocument,
   type CreativeDocumentId,
@@ -39,9 +40,10 @@ export class SqliteCreativeDocumentRepository implements CreativeDocumentReposit
     return run("Documento", () => this.db.transaction(op, { behavior: "immediate" }));
   }
 
-  async create(document: CreativeDocument, content: CanvasContent, origin: RevisionOrigin): Promise<CommitResult> {
+  async create(document: CreativeDocument, content: DocumentContent, origin: RevisionOrigin): Promise<CommitResult> {
     const doc = parseOrThrow(CreativeDocumentSchema, { ...document, headRevision: 1 }, "Documento");
-    const body = parseOrThrow(CanvasContentSchema, content, "Conteúdo do documento");
+    const body = parseOrThrow(DocumentContentSchema, content, "Conteúdo do documento");
+    if (kindOf(body) !== doc.kind) throw new DomainError("VALIDATION", "O conteúdo não corresponde ao tipo do documento.");
     const revision: RevisionSummary = { documentId: doc.id, revision: 1, origin, pinned: false, createdAt: doc.createdAt, updatedAt: doc.createdAt };
     this.tx((tx) => {
       tx.insert(creativeDocuments).values(doc).run();
@@ -93,12 +95,13 @@ export class SqliteCreativeDocumentRepository implements CreativeDocumentReposit
     return rows.map((row) => toDomain(RevisionSummarySchema, row, "Revisão do documento"));
   }
 
-  async commit(id: CreativeDocumentId, baseRevision: number, content: CanvasContent, origin: RevisionOrigin): Promise<CommitResult> {
-    const body = parseOrThrow(CanvasContentSchema, content, "Conteúdo do documento");
+  async commit(id: CreativeDocumentId, baseRevision: number, content: DocumentContent, origin: RevisionOrigin): Promise<CommitResult> {
+    const body = parseOrThrow(DocumentContentSchema, content, "Conteúdo do documento");
     return this.tx((tx) => {
       const docRow = tx.select().from(creativeDocuments).where(eq(creativeDocuments.id, id)).get();
       if (!docRow) throw new DomainError("NOT_FOUND", "Documento não encontrado.", { id });
       const doc = toDomain(CreativeDocumentSchema, docRow, "Documento");
+      if (kindOf(body) !== doc.kind) throw new DomainError("VALIDATION", "O conteúdo não corresponde ao tipo do documento.");
       if (doc.headRevision !== baseRevision) {
         throw new DomainError("CONFLICT", "O documento foi alterado em outra aba. Recarregue para continuar.", { head: doc.headRevision, base: baseRevision });
       }

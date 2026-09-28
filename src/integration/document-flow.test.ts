@@ -87,7 +87,7 @@ describe("CanvasDocument: criar, editar, revisões, render", () => {
     const instance = await createInstance(repos, project.id, { compositionId: "desktop-hero", formatId: "post-4x5", overrides: { primary: "#ff5500" } });
     const { document } = await materializeInstance(repos, instance.id);
     expect(document.source).toEqual({ instanceId: instance.id, compositionId: "desktop-hero", compositionVersion: 1 });
-    const content = (await repos.documents.getRevision(document.id, 1))!.content;
+    const content = (await repos.documents.getRevision(document.id, 1))!.content as CanvasContent;
     expect(content.artboard).toMatchObject({ width: 1080, height: 1350 });
     expect(content.style).toEqual({ mode: "hybrid", primary: "#ff5500", profileRevision: 1 });
     expect(JSON.stringify(content.artboard)).toContain(upload.id);
@@ -96,7 +96,7 @@ describe("CanvasDocument: criar, editar, revisões, render", () => {
   it("autosave coalesce, conflito entre abas, fixação por render, restauração e render de revisão concreta", async () => {
     const { project, upload } = await setup();
     const { document } = await createBlankCanvas(repos, project.id, { formatId: "post-1x1" });
-    const base = (await repos.documents.getRevision(document.id, 1))!.content;
+    const base = (await repos.documents.getRevision(document.id, 1))!.content as CanvasContent;
 
     // 1ª edição abre a revisão 2; a seguinte (recente) reescreve a mesma.
     const a = await saveCanvas(repos, document.id, 1, withTitle(base, "Primeira"));

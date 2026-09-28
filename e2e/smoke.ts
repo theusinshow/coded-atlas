@@ -257,6 +257,33 @@ async function main(): Promise<void> {
       await page.getByLabel("Seguir uma direção salva").selectOption({ label: "Direção E2E" });
     });
 
+    await step("carrossel: plano → páginas no Studio → render com ZIP", async () => {
+      await page.goto(`${BASE}/projects/e2e-${slug}/plans`);
+      await page.getByText("Carrossel", { exact: true }).click();
+      await page.getByRole("button", { name: "Pedir plano" }).click();
+      await page.waitForURL(/\/plans\/[0-9A-Z]{26}$/, { timeout: 120_000 });
+      await page.getByRole("button", { name: "Montar como carrossel" }).click();
+      await page.waitForURL(/\/studio\/[0-9A-Z]{26}$/);
+      const thumbs = page.locator("[data-page-thumb]");
+      await thumbs.first().waitFor();
+      const count = await thumbs.count();
+      assert(count >= 2, `carrossel com ${count} página(s)`);
+      await thumbs.nth(1).click();
+      await page.getByText(`Página 2/${count}`).waitFor();
+      await page.getByRole("button", { name: "+ Página" }).click();
+      await page.getByText(`Página 3/${count + 1}`).waitFor();
+      await page.locator('[data-save-state="saved"]').waitFor({ timeout: 15_000 });
+      await page.getByRole("button", { name: "Renderizar", exact: true }).click();
+      await page.getByRole("button", { name: "Renderizar agora" }).click();
+      await page.getByText("Concluído").waitFor({ timeout: 180_000 });
+      await page.goto(`${BASE}/projects/e2e-${slug}/publish`);
+      await page.getByText(`Carrossel · ${count + 1} páginas`).waitFor();
+      const href = await page.getByRole("link", { name: "Baixar tudo (.zip)" }).first().getAttribute("href");
+      const res = await fetch(`${BASE}${href}`);
+      assert(res.ok && res.headers.get("content-type") === "application/zip", `zip HTTP ${res.status}`);
+      assert(Buffer.from(await res.arrayBuffer()).subarray(0, 2).toString() === "PK", "zip inválido");
+    });
+
     await step("jobs e ajustes mostram o estado real", async () => {
       await page.goto(`${BASE}/jobs`);
       await page.getByText("Captura").first().waitFor();

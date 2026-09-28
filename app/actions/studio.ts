@@ -5,11 +5,14 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { CompositionInstanceIdSchema } from "@/src/core/creative/composition";
 import { FormatIdSchema } from "@/src/core/creative/formats";
-import { CreativeDocumentIdSchema, type CanvasContent, type RevisionSummary } from "@/src/core/documents/creative-document";
+import { CreativePlanIdSchema } from "@/src/core/brain/plan";
+import { CreativeDocumentIdSchema, type DocumentContent, type RevisionSummary } from "@/src/core/documents/creative-document";
 import { getAtlasRuntime } from "@/src/infrastructure/runtime";
 import { updateInstance } from "@/src/modules/create/composition-service";
 import {
   createBlankCanvas,
+  createBlankCarousel,
+  materializePlanAsCarousel,
   deleteDocument,
   enqueueDocumentRender,
   materializeInstance,
@@ -23,7 +26,7 @@ import { ProjectIdSchema } from "@/src/shared/id";
 import { PatchSchema, type InstancePatch } from "./schemas";
 
 export type StudioResult =
-  | { ok: true; revision: number; jobId?: string; content?: CanvasContent }
+  | { ok: true; revision: number; jobId?: string; content?: DocumentContent }
   | { ok: false; error: string; conflict?: boolean };
 
 function failure(err: unknown): { ok: false; error: string; conflict?: boolean } {
@@ -99,10 +102,27 @@ export async function deleteDocumentAction(documentId: string): Promise<StudioRe
   redirect(slug ? `/projects/${slug}/create` : "/projects");
 }
 
-/** Galeria → canvas em branco no formato escolhido. */
+/** Galeria → canvas ou carrossel em branco no formato escolhido. */
 export async function createBlankCanvasAction(form: FormData): Promise<void> {
   const { documentDeps } = await getAtlasRuntime();
-  const { document } = await createBlankCanvas(documentDeps, ProjectIdSchema.parse(form.get("projectId")), { formatId: FormatIdSchema.parse(form.get("formatId")) });
+  const projectId = ProjectIdSchema.parse(form.get("projectId"));
+  const formatId = FormatIdSchema.parse(form.get("formatId"));
+  const { document } =
+    form.get("kind") === "carousel"
+      ? await createBlankCarousel(documentDeps, projectId, { formatId, pages: z.coerce.number().int().min(1).max(20).catch(3).parse(form.get("pages")) })
+      : await createBlankCanvas(documentDeps, projectId, { formatId });
+  redirect(`/studio/${document.id}`);
+}
+
+/** Plano → carrossel editável (uma página por peça, mesmo formato). */
+export async function planToCarouselAction(form: FormData): Promise<void> {
+  const { documentDeps, repos } = await getAtlasRuntime();
+  const formatRaw = form.get("formatId");
+  const { document } = await materializePlanAsCarousel(
+    { ...documentDeps, plans: repos.plans },
+    CreativePlanIdSchema.parse(form.get("planId")),
+    typeof formatRaw === "string" && formatRaw ? FormatIdSchema.parse(formatRaw) : undefined
+  );
   redirect(`/studio/${document.id}`);
 }
 

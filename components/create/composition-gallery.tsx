@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { createInstanceAction } from "@/app/actions/create";
 import { createBlankCanvasAction } from "@/app/actions/studio";
-import type { CanvasContent } from "@/src/core/documents/creative-document";
+import { contentPages, isCarousel, type DocumentContent } from "@/src/core/documents/creative-document";
 import { resolveTokens } from "@/src/core/creative/tokens";
 import type { Binding, CompositionInstance } from "@/src/core/creative/composition";
 import { COMPOSITIONS } from "@/src/core/creative/compositions";
@@ -21,7 +21,7 @@ interface Props {
   profilesByRevision: Record<number, VisualProfile>;
   suggestions: Record<string, Record<string, Binding>>;
   instances: CompositionInstance[];
-  documents: { id: string; name: string; headRevision: number; content: CanvasContent }[];
+  documents: { id: string; name: string; headRevision: number; content: DocumentContent }[];
 }
 
 const GRID: Record<FormatId, string> = {
@@ -47,9 +47,13 @@ export function CompositionGallery({ projectId, slug, assets, profile, profilesB
           </h2>
           <form action={createBlankCanvasAction} className="flex items-center gap-2">
             <input type="hidden" name="projectId" value={projectId} />
-            <label htmlFor="blank-format" className="text-[12px] text-zinc-500">
-              Canvas em branco
+            <label htmlFor="blank-kind" className="text-[12px] text-zinc-500">
+              Em branco
             </label>
+            <select id="blank-kind" name="kind" defaultValue="canvas" className="h-8 bg-surface border border-line text-[12px] text-zinc-300 px-2" aria-label="Tipo">
+              <option value="canvas">Canvas</option>
+              <option value="carousel">Carrossel (3 páginas)</option>
+            </select>
             <select id="blank-format" name="formatId" defaultValue={format} className="h-8 bg-surface border border-line text-[12px] text-zinc-300 px-2">
               {FORMAT_IDS.map((id) => (
                 <option key={id} value={id}>
@@ -72,7 +76,12 @@ export function CompositionGallery({ projectId, slug, assets, profile, profilesB
               return (
                 <li key={doc.id}>
                   <Link href={`/studio/${doc.id}`} className="group block space-y-2" data-document={doc.id}>
-                    <ArtboardPreview artboard={doc.content.artboard} tokens={tokens} className="border border-line group-hover:border-zinc-500 transition-colors" />
+                    <div className="relative">
+                      <ArtboardPreview artboard={contentPages(doc.content)[0].artboard} tokens={tokens} className="border border-line group-hover:border-zinc-500 transition-colors" />
+                      {isCarousel(doc.content) && (
+                        <span className="absolute right-1.5 top-1.5 bg-black/70 px-1.5 py-0.5 text-[10px] font-mono text-zinc-200">{doc.content.pages.length} pág.</span>
+                      )}
+                    </div>
                     <p className="text-[12px] text-zinc-200 truncate">
                       {doc.name} <span className="text-zinc-600 font-mono text-[10px]">rev {doc.headRevision}</span>
                     </p>

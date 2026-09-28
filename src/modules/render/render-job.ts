@@ -5,7 +5,7 @@ import { createOutput, type Output } from "../../core/assets/output";
 import type { AssetRepository, OutputRepository } from "../../core/assets/repositories";
 import { contentStorageKey } from "../../core/assets/storage-key";
 import type { Artboard } from "../../core/documents/artboard";
-import { CreativeDocumentIdSchema, type CreativeDocumentId, type CreativeDocumentRepository } from "../../core/documents/creative-document";
+import { CreativeDocumentIdSchema, contentPages, isCarousel, type CreativeDocumentId, type CreativeDocumentRepository } from "../../core/documents/creative-document";
 import { artboardAssetIds } from "../../core/documents/artboard";
 import { CompositionInstanceIdSchema, type CompositionInstanceRepository } from "../../core/creative/composition";
 import { getComposition } from "../../core/creative/compositions";
@@ -89,24 +89,27 @@ async function resolveDocument(deps: RenderDeps, documentId: CreativeDocumentId,
   if (!document) throw new DomainError("NOT_FOUND", "Documento não encontrado.");
   const revision = await deps.documents.getRevision(document.id, revisionNumber);
   if (!revision) throw new DomainError("NOT_FOUND", `Revisão ${revisionNumber} do documento não existe.`);
-  const { artboard, style, formatId } = revision.content;
+  const { style, formatId } = revision.content;
   const profile = style.profileRevision ? await deps.visualProfiles.getRevision(document.projectId, style.profileRevision) : null;
-  return [
-    {
-      projectId: document.projectId,
-      artboard,
-      tokens: resolveTokens(profile, style.mode, style.primary ? { primary: style.primary } : {}),
-      label: `${document.name} · rev ${revision.revision}`,
-      metadata: {
-        origin: "render",
-        documentId: document.id,
-        documentRevision: revision.revision,
-        ...(formatId ? { formatId } : {}),
-        styleMode: style.mode,
-        ...(document.source.compositionId ? { compositionId: document.source.compositionId } : {}),
-      },
+  const tokens = resolveTokens(profile, style.mode, style.primary ? { primary: style.primary } : {});
+  const pages = contentPages(revision.content);
+  const multi = isCarousel(revision.content);
+  // Carrossel: uma peça por página, na ordem (page = índice, rótulo com n/total).
+  return pages.map((page, index) => ({
+    projectId: document.projectId,
+    artboard: page.artboard,
+    tokens,
+    label: multi ? `${document.name} · ${String(index + 1).padStart(2, "0")}/${String(pages.length).padStart(2, "0")}${page.title ? ` ${page.title}` : ""} · rev ${revision.revision}` : `${document.name} · rev ${revision.revision}`,
+    metadata: {
+      origin: "render" as const,
+      documentId: document.id,
+      documentRevision: revision.revision,
+      ...(multi ? { page: index } : {}),
+      ...(formatId ? { formatId } : {}),
+      styleMode: style.mode,
+      ...(document.source.compositionId ? { compositionId: document.source.compositionId } : {}),
     },
-  ];
+  }));
 }
 
 /**
