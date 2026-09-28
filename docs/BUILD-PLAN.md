@@ -2,8 +2,8 @@
 
 The complete roadmap lives in `ROADMAP.md`. The currently authorized scope lives in `CURRENT.md`.
 
-> **Status (2026-09-28):** fases **2.1 a 2.10 concluídas**. Execução contínua até o Atlas 3.0
-> autorizada pelo Matheus (ADR-028) — ele testa só no final. Próxima: **2.11 — Media Kits**.
+> **Status (2026-09-28):** fases **2.1 a 2.11 concluídas**. Execução contínua até o Atlas 3.0
+> autorizada pelo Matheus (ADR-028) — ele testa só no final. Próxima: **2.12 — Presentation Studio**.
 > O Atlas v1 (captura, vitrine, diff, case, ZIP) segue funcionando sem alteração de comportamento.
 
 ## Baseline (antes de qualquer mudança — 2026-09-27, commit `ac93441`)
@@ -290,6 +290,16 @@ Verificação 2.9: typecheck/lint OK; `npm test` 409 testes (26 arquivos); build
 - [x] UI: menu de render com MP4/WebM + qualidade, trilha no inspetor, "Vídeo por receita" em Criar, vídeos tocáveis em Publicar, status do FFmpeg em Ajustes.
 
 Verificação 2.10: typecheck/lint OK; `npm test` 418 testes (28 arquivos; render real MP4 H.264+AAC 1,6 s com vídeo capturado no celular e WebM VP9 preview conferidos com ffprobe; quadro extraído conferido visualmente); build OK; `npm run e2e` 20/20 passos (receita → MP4 preview → Publicar).
+
+## Atlas 2.11 — Media Kits (concluída 2026-09-28)
+
+- [x] `MediaKit` (stateful): preset + snapshot da UMA direção criativa + itens que apontam para rascunhos reais (instância, carrossel, vídeo) + status do render. Migration `0008_media_kits`.
+- [x] Presets: **Kit de lançamento** (post, carrossel, story, capa OG, reel), **Kit de portfólio** (16:9 ×3, identidade, vídeo vitrine), **Kit social** (1:1, 4:5, 9:16, carrossel, reel mobile).
+- [x] "Gerar Media Kit" (CTA principal da Visão geral + aba **Kits**): direção salva ou automática (identidade + memória); memória veta composição preferida → alternativa anotada; itens sem material ficam anotados.
+- [x] Orquestração de render em lote: um job `render` com alvo `kit` — peças estáticas num navegador só, depois vídeos; documentos na revisão atual fixada; sem vídeo, itens de vídeo saem como pôsteres; Outputs marcados com `mediaKitId`/`kitItemId`; status do kit (renderizando/renderizado/falhou) e desbloqueio se o job morreu.
+- [x] Entrega: ZIP do último render do kit, uma pasta por item na ordem do preset.
+
+Verificação 2.11: typecheck/lint OK; `npm test` 424 testes (29 arquivos); build OK; `npm run e2e` 21/21 passos (Visão geral → Kit social → render em lote com MP4 preview → ZIP com pastas por item).
 
 ## Phase completion rule
 

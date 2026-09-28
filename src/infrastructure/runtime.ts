@@ -4,6 +4,7 @@ import type { BrainDeps } from "../modules/brain/plan-service";
 import type { CompositionDeps } from "../modules/create/composition-service";
 import type { DocumentDeps } from "../modules/create/document-service";
 import type { CreativeDeps } from "../modules/creative/creative-service";
+import type { KitDeps } from "../modules/kits/kit-service";
 import type { LegacyImportDeps } from "../modules/import/legacy/legacy-import-job";
 import type { UploadDeps } from "../modules/import/upload";
 import type { ProjectServiceDeps } from "../modules/projects/project-service";
@@ -43,6 +44,7 @@ export interface AtlasRuntime {
   documentDeps: DocumentDeps;
   brainDeps: BrainDeps;
   creativeDeps: CreativeDeps;
+  kitDeps: KitDeps;
 }
 
 export const RUNTIME_SETTINGS = {
@@ -93,5 +95,6 @@ async function createRuntime(): Promise<AtlasRuntime> {
     documentDeps: repos,
     brainDeps: { ...repos, brain: createBrainSettings({ repos, thumbnails }) },
     creativeDeps: repos,
+    kitDeps: { ...repos, composition: repos },
   };
 }

@@ -60,6 +60,16 @@ export default async function ProjectOverviewPage({ params }: Props) {
             <Stat label="Prontidão" value={`${o.readiness.score}%`} hint={o.readiness.missing.length ? `falta: ${o.readiness.missing.join(", ")}` : "material completo"} />
             <Stat label="Origens" value={o.sources.length} />
           </div>
+          {o.totalAssets > 0 && (
+            <div className="flex flex-wrap gap-2">
+              <Link href={`/projects/${o.project.slug}/kits`} className="inline-flex h-10 items-center bg-accent px-4 text-sm font-medium text-zinc-950 hover:bg-accent-bright">
+                Gerar Media Kit
+              </Link>
+              <Link href={`/projects/${o.project.slug}/create`} className="inline-flex h-10 items-center border border-line px-4 text-sm text-zinc-200 hover:border-zinc-500">
+                Criar
+              </Link>
+            </div>
+          )}
           {o.project.origin === "legacy" && (
             <p className="text-[12px] text-zinc-500">
               Importado da biblioteca v1 ·{" "}

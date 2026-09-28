@@ -9,6 +9,7 @@ export const PROJECT_TABS = [
   { segment: "assets", label: "Assets" },
   { segment: "plans", label: "Planos" },
   { segment: "create", label: "Criar" },
+  { segment: "kits", label: "Kits" },
   { segment: "publish", label: "Publicar" },
 ] as const;
 

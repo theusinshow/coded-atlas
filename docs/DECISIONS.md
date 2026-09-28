@@ -227,3 +227,13 @@ Accepted (2026-09-28).
 - **FFmpeg is infrastructure**: spawned with an argument list (no shell), resolved from `ATLAS_FFMPEG` or `PATH`, and its status is shown in Settings. JPEG frames are piped through stdin with backpressure. Output dimensions are forced even for yuv420p.
 - **Audio** is one project asset per video (volume and fade-out), padded or cut to the exact document duration.
 - **Captured motion** is any project video used inside a frame of a motion document. Static documents still accept only images (validation in the service).
+
+## ADR-038 — Media Kits (2.11)
+
+Accepted (2026-09-28).
+
+- **A kit references drafts; it does not copy them**. Items point to real CompositionInstances and documents, so the user edits items in the usual editors, and the kit render uses each item's current state, pinning document revisions for traceability.
+- **One Creative Direction per kit** (PRINCIPLES #5). The direction is snapshotted in the kit and applied to every item (style mode and accent), taken from a saved direction or derived from identity plus memory.
+- **Kit generation is deterministic**: presets name curated compositions with alternatives; creative memory can veto one, and the alternative is recorded on the item. The Brain influences kits through saved directions (e.g. saved from a Brain plan) and memory, never by writing kit state directly.
+- **Batch orchestration is one render job** (`target.kind = "kit"`). Static pieces share one browser, videos follow, and outputs carry `mediaKitId` and `kitItemId`. A kit stuck in `rendering` is released when its last job is no longer active.
+- **Delivery**: the ZIP contains the latest kit render, with one numbered folder per item in preset order.

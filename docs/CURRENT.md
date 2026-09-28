@@ -2,7 +2,7 @@
 
 ## Active phase
 
-**Atlas 2.11 — Media Kits** (in progress). 2.1–2.3 completed 2026-09-27; 2.4–2.10 completed 2026-09-28.
+**Atlas 2.12 — Presentation Studio** (in progress). 2.1–2.3 completed 2026-09-27; 2.4–2.11 completed 2026-09-28.
 
 **Owner authorization (2026-09-27):** execute the roadmap continuously from 2.2 through 2.14 (Atlas 3.0) without stopping between phases; the owner tests only at the end. Each phase still ends with typecheck/lint/test/build, `BUILD-PLAN.md` + this file updated and a commit.
 
@@ -12,7 +12,7 @@ Introduce the new persistence/domain/job foundation while preserving useful beha
 
 ## Current milestone
 
-**2.11 — Media Kits**: MediaKit (a named bundle of deliverables under one Creative Direction), presets (kit templates: Launch Kit, Portfolio Kit, Social Kit), "Generate Media Kit" as the Overview primary CTA, batch render orchestration (one job tracking many outputs) and kit delivery (ZIP).
+**2.12 — Presentation Studio**: PresentationDocument (16:9 slides with speaker notes), slide presets/storyboard from project material, Statement text slides, Studio editing, export to PDF, PPTX (with notes) and images.
 
 ## State of the code (2026-09-27)
 
@@ -99,6 +99,10 @@ Delivered in 2.9 (Motion Foundation):
 Delivered in 2.10 (Video Engine):
 
 - `MotionRenderer` port + Chromium/FFmpeg frame-accurate adapter (MP4/WebM, preview/final), video render jobs, captured motion in frames, basic soundtrack, VideoRecipes, FFmpeg status in Settings.
+
+Delivered in 2.11 (Media Kits):
+
+- `MediaKit` with presets (launch/portfolio/social), one Creative Direction per kit, generation into editable drafts, batch render job (`kit` target) with kit-tagged Outputs, ZIP delivery per item; "Generate Media Kit" is the Overview primary CTA.
 
 ## Work allowed now
 

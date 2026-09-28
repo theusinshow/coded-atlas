@@ -19,6 +19,7 @@ import { AssetIdSchema, JobIdSchema } from "../../shared/id";
 import { parseOrThrow } from "../../shared/validation";
 import type { JobContext, JobHandler } from "../../workers/job-worker";
 import type { OutputMetadata } from "../../core/assets/output";
+import { MediaKitIdSchema, type MediaKitId, type MediaKitRepository } from "../../core/kits/media-kit";
 import type { MotionRenderer, VideoFormat, VideoQuality } from "./motion-renderer";
 import type { RasterFormat, StaticRenderer } from "./static-renderer";
 
@@ -33,6 +34,8 @@ const isVideoFormat = (f: RenderFormat): f is VideoFormat => f === "mp4" || f ==
 export const RenderTargetSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("composition"), instanceId: CompositionInstanceIdSchema }),
   z.strictObject({ kind: z.literal("document"), documentId: CreativeDocumentIdSchema, revision: z.number().int().positive() }),
+  /** Media Kit inteiro: cada item na revisão atual (fixada), tudo marcado com o kit. */
+  z.strictObject({ kind: z.literal("kit"), kitId: MediaKitIdSchema }),
 ]);
 
 export const RenderJobPayloadSchema = z.strictObject({
@@ -53,6 +56,7 @@ export interface RenderDeps {
   renderer: StaticRenderer;
   /** Ausente = este processo não renderiza vídeo (ex.: testes só de imagem). */
   motionRenderer?: MotionRenderer;
+  kits?: MediaKitRepository;
 }
 
 export interface RenderUnit {
@@ -64,7 +68,7 @@ export interface RenderUnit {
 }
 
 /** Resolve um alvo de render em artboard + tokens + rótulo, a partir do estado persistido. */
-async function resolveTarget(deps: RenderDeps, target: RenderJobPayload["target"]): Promise<RenderUnit[]> {
+async function resolveTarget(deps: RenderDeps, target: Exclude<RenderJobPayload["target"], { kind: "kit" }>): Promise<RenderUnit[]> {
   if (target.kind === "document") return resolveDocument(deps, target.documentId, target.revision);
   const instance = await deps.compositionInstances.getById(target.instanceId);
   if (!instance) throw new DomainError("NOT_FOUND", "Composição não encontrada.");
@@ -198,7 +202,7 @@ async function loadAssetBytes(deps: RenderDeps, cache: Map<string, { bytes: Uint
  * Vídeo de uma revisão concreta de um documento de motion: um Output por formato
  * (MP4/WebM), com duração, dimensões e qualidade no metadata.
  */
-async function renderVideos(deps: RenderDeps, ctx: JobContext, target: RenderJobPayload["target"], formats: VideoFormat[], quality: VideoQuality): Promise<Output[]> {
+async function renderVideos(deps: RenderDeps, ctx: JobContext, target: RenderJobPayload["target"], formats: VideoFormat[], quality: VideoQuality, extra: Partial<OutputMetadata> = {}): Promise<Output[]> {
   if (!deps.motionRenderer) throw new DomainError("VALIDATION", "Este processo não tem renderer de vídeo configurado.");
   if (target.kind !== "document") throw new DomainError("VALIDATION", "Vídeo só sai de documentos de motion.");
   const document = await deps.documents.getById(target.documentId);
@@ -280,12 +284,49 @@ async function renderVideos(deps: RenderDeps, ctx: JobContext, target: RenderJob
             ...(content.formatId ? { formatId: content.formatId } : {}),
             styleMode: content.style.mode,
             quality,
+            ...extra,
           },
         })
       )
     );
   }
   return outputs;
+}
+
+/**
+ * Render em lote de um Media Kit: todas as peças estáticas num único navegador,
+ * depois os vídeos. Documentos rendem na revisão atual, que é fixada. Sem vídeo
+ * pedido, os itens de vídeo saem como pôsteres por cena.
+ */
+async function renderKit(deps: RenderDeps, ctx: JobContext, kitId: MediaKitId, raster: RasterFormat[], video: VideoFormat[], quality: VideoQuality): Promise<Output[]> {
+  if (!deps.kits) throw new DomainError("VALIDATION", "Este processo não conhece Media Kits.");
+  const kit = await deps.kits.getById(kitId);
+  if (!kit) throw new DomainError("NOT_FOUND", "Media Kit não encontrado.");
+  try {
+    const units: RenderUnit[] = [];
+    const videoTargets: { target: RenderJobPayload["target"]; item: string }[] = [];
+    for (const item of kit.items) {
+      const tag = (u: RenderUnit): RenderUnit => ({ ...u, metadata: { ...u.metadata, mediaKitId: kit.id, kitItemId: item.id } });
+      if (item.instanceId) {
+        units.push(...(await resolveTarget(deps, { kind: "composition", instanceId: CompositionInstanceIdSchema.parse(item.instanceId) })).map(tag));
+      } else if (item.documentId) {
+        const document = await deps.documents.getById(CreativeDocumentIdSchema.parse(item.documentId));
+        if (!document) continue; // item apagado pelo usuário depois de gerado
+        await deps.documents.pin(document.id, document.headRevision);
+        const target = { kind: "document" as const, documentId: document.id, revision: document.headRevision };
+        if (document.kind === "motion" && video.length > 0) videoTargets.push({ target, item: item.id });
+        else units.push(...(await resolveDocument(deps, document.id, document.headRevision)).map(tag));
+      }
+    }
+    await ctx.progress(10, `Renderizando ${units.length} peça(s)${videoTargets.length ? ` e ${videoTargets.length} vídeo(s)` : ""}…`);
+    const outputs = units.length > 0 && raster.length > 0 ? await renderUnits(deps, ctx, units, raster) : [];
+    for (const v of videoTargets) outputs.push(...(await renderVideos(deps, ctx, v.target, video, quality, { mediaKitId: kit.id, kitItemId: v.item })));
+    await deps.kits.update({ ...kit, status: "rendered", lastRenderJobId: ctx.job.id });
+    return outputs;
+  } catch (err) {
+    await deps.kits.update({ ...kit, status: "failed", lastRenderJobId: ctx.job.id }).catch(() => undefined);
+    throw err;
+  }
 }
 
 export function createRenderJobHandler(deps: RenderDeps): JobHandler {
@@ -295,6 +336,10 @@ export function createRenderJobHandler(deps: RenderDeps): JobHandler {
       const payload = parseOrThrow(RenderJobPayloadSchema, ctx.job.payload, "Payload do render");
       const raster = payload.formats.filter((f): f is RasterFormat => !isVideoFormat(f));
       const video = payload.formats.filter(isVideoFormat);
+      if (payload.target.kind === "kit") {
+        const outputs = await renderKit(deps, ctx, payload.target.kitId, raster, video, payload.quality ?? "final");
+        return { outputIds: outputs.map((o) => o.id), count: outputs.length, kitId: payload.target.kitId };
+      }
       await ctx.progress(5, "Montando a peça…");
       const outputs: Output[] = [];
       if (raster.length > 0) {

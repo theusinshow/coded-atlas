@@ -353,3 +353,25 @@ export const creativeDirections = sqliteTable(
   },
   (t) => [index("creative_directions_project_idx").on(t.projectId)]
 );
+
+/** Media Kits: entregáveis sob uma direção criativa (itens apontam para instâncias/documentos). */
+export const mediaKits = sqliteTable(
+  "media_kits",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    presetId: text("preset_id").notNull(),
+    direction: text("direction", { mode: "json" }).$type<Record<string, unknown>>().notNull(),
+    directionId: text("direction_id"),
+    items: text("items", { mode: "json" }).$type<unknown[]>().notNull(),
+    status: text("status").notNull(),
+    lastRenderJobId: text("last_render_job_id"),
+    visualProfileRevision: integer("visual_profile_revision"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => [index("media_kits_project_idx").on(t.projectId)]
+);

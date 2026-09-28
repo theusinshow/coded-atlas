@@ -7,6 +7,7 @@ import { SqliteCreativeDirectionRepository, SqliteCreativeMemoryRepository } fro
 import { SqliteCreativeDocumentRepository } from "./creative-document-repository";
 import { SqliteJobRepository } from "./job-repository";
 import { SqliteLegacyImportLedger } from "./legacy-ledger-repository";
+import { SqliteMediaKitRepository } from "./media-kit-repository";
 import { SqliteOutputRepository } from "./output-repository";
 import { SqliteProjectRepository } from "./project-repository";
 import { SqliteSourceRepository } from "./source-repository";
@@ -28,6 +29,7 @@ export function createRepositories(db: AtlasDb) {
     aiUsage: new SqliteAiUsageRepository(db),
     memory: new SqliteCreativeMemoryRepository(db),
     directions: new SqliteCreativeDirectionRepository(db),
+    kits: new SqliteMediaKitRepository(db),
   };
 }
 

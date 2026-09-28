@@ -1,5 +1,6 @@
 import type { AssetRepository } from "../../core/assets/repositories";
-import type { CreativePlanId, CreativePlanRepository } from "../../core/brain/plan";
+import type { CreativeDirection, CreativePlanId, CreativePlanRepository, PlanItem } from "../../core/brain/plan";
+import type { DocumentStyle } from "../../core/documents/style";
 import type { CompositionInstanceId, CompositionInstanceRepository } from "../../core/creative/composition";
 import { getComposition } from "../../core/creative/compositions";
 import { FORMATS, formatSize, type FormatId } from "../../core/creative/formats";
@@ -97,22 +98,39 @@ export async function createBlankCarousel(deps: DocumentDeps, projectId: Project
 export async function materializePlanAsCarousel(deps: DocumentDeps & { plans: CreativePlanRepository }, planId: CreativePlanId, formatId?: FormatId): Promise<CommitResult> {
   const plan = await deps.plans.getById(planId);
   if (!plan) throw new DomainError("NOT_FOUND", "Plano não encontrado.");
-  const format = formatId ?? plan.items[0].formatId;
-  const profile = (plan.visualProfileRevision ? await deps.visualProfiles.getRevision(plan.projectId, plan.visualProfileRevision) : null) ?? (await deps.visualProfiles.latest(plan.projectId));
-  const assets = new Map((await deps.assets.listByProject(plan.projectId)).map((a) => [a.id as string, a]));
-  const pages = plan.items.flatMap((item) => {
+  const project = await deps.projects.getById(plan.projectId);
+  return createCarouselFromItems(deps, plan.projectId, {
+    items: plan.items,
+    formatId: formatId ?? plan.items[0].formatId,
+    direction: plan.direction,
+    profileRevision: plan.visualProfileRevision,
+    name: `Carrossel · ${project?.name ?? "projeto"}`,
+  });
+}
+
+/**
+ * Carrossel a partir de itens de plano (composição + ligações): cada item vira uma
+ * página no MESMO formato, com a direção dada (estilo e destaque).
+ */
+export async function createCarouselFromItems(
+  deps: DocumentDeps,
+  projectId: ProjectId,
+  input: { items: readonly { compositionId: string; variant: string; bindings: PlanItem["bindings"] }[]; formatId: FormatId; direction: Pick<CreativeDirection, "styleMode" | "accent">; profileRevision: number | null; name: string }
+): Promise<CommitResult> {
+  const profile = (input.profileRevision ? await deps.visualProfiles.getRevision(projectId, input.profileRevision) : null) ?? (await deps.visualProfiles.latest(projectId));
+  const assets = new Map((await deps.assets.listByProject(projectId)).map((a) => [a.id as string, a]));
+  const pages = input.items.flatMap((item) => {
     const definition = getComposition(item.compositionId);
     if (!definition) return [];
-    return [{ id: newId(), title: definition.name.slice(0, 80), artboard: buildArtboard(definition, { formatId: format, variant: item.variant, bindings: item.bindings }, assets, profile) }];
+    return [{ id: newId(), title: definition.name.slice(0, 80), artboard: buildArtboard(definition, { formatId: input.formatId, variant: item.variant, bindings: item.bindings }, assets, profile) }];
   });
-  if (pages.length === 0) throw new DomainError("VALIDATION", "Nenhuma peça do plano pôde virar página.");
+  if (pages.length === 0) throw new DomainError("VALIDATION", "Nenhuma peça pôde virar página do carrossel.");
   const content = parseOrThrow(
     CarouselContentSchema,
-    { pages, style: { mode: plan.direction.styleMode, ...(plan.direction.accent ? { primary: plan.direction.accent } : {}), profileRevision: profile?.revision ?? null }, formatId: format },
+    { pages, style: { mode: input.direction.styleMode, ...(input.direction.accent ? { primary: input.direction.accent } : {}), profileRevision: profile?.revision ?? null }, formatId: input.formatId },
     "Conteúdo do carrossel"
   );
-  const project = await deps.projects.getById(plan.projectId);
-  return deps.documents.create(newDocument(plan.projectId, `Carrossel · ${project?.name ?? "projeto"}`.slice(0, 120), {}, "carousel"), content, "create");
+  return deps.documents.create(newDocument(projectId, input.name.slice(0, 120), {}, "carousel"), content, "create");
 }
 
 /** Canvas em branco num formato, com a identidade mais recente do projeto. */
@@ -274,7 +292,7 @@ export async function createWebsiteScroll(deps: DocumentDeps & { sources: Source
 export async function createVideoFromRecipe(
   deps: DocumentDeps & { sources: SourceRepository },
   projectId: ProjectId,
-  input: { recipeId: string; formatId: FormatId }
+  input: { recipeId: string; formatId: FormatId; style?: Omit<DocumentStyle, "profileRevision">; name?: string }
 ): Promise<CommitResult & { skipped: string[] }> {
   const project = await deps.projects.getById(projectId);
   if (!project) throw new DomainError("NOT_FOUND", "Projeto não encontrado.");
@@ -289,11 +307,11 @@ export async function createVideoFromRecipe(
       url: sources.find((s) => s.type === "url")?.locator ?? null,
       profile,
       formatId: input.formatId,
-      style: { mode: (profile?.palette.length ?? 0) >= 2 ? "hybrid" : "atlas", profileRevision: profile?.revision ?? null },
+      style: { ...(input.style ?? { mode: (profile?.palette.length ?? 0) >= 2 ? "hybrid" : "atlas" }), profileRevision: profile?.revision ?? null },
     });
   } catch (err) {
     throw new DomainError("VALIDATION", err instanceof Error ? err.message : "Sem material para esta receita.");
   }
-  const result = await deps.documents.create(newDocument(projectId, `${recipe.name} · ${project.name}`.slice(0, 120), {}, "motion"), built.content, "create");
+  const result = await deps.documents.create(newDocument(projectId, (input.name ?? `${recipe.name} · ${project.name}`).slice(0, 120), {}, "motion"), built.content, "create");
   return { ...result, skipped: built.skipped };
 }

@@ -327,6 +327,26 @@ async function main(): Promise<void> {
       assert(res.ok && res.headers.get("content-type") === "video/mp4", `mp4 HTTP ${res.status}`);
     });
 
+    await step("media kit: gerar pela visão geral → render em lote → ZIP por item", async () => {
+      await page.goto(`${BASE}/projects/e2e-${slug}`);
+      await page.getByRole("link", { name: "Gerar Media Kit" }).click();
+      await page.waitForURL(`**/projects/e2e-${slug}/kits`);
+      await page.getByText("Kit social", { exact: true }).click();
+      await page.getByRole("button", { name: "Gerar Media Kit" }).click();
+      await page.waitForURL(/\/kits\/[0-9A-Z]{26}$/, { timeout: 60_000 });
+      await page.locator("[data-kit-item] [data-atlas-artboard]").first().waitFor();
+      assert((await page.locator("[data-kit-item]").count()) === 5, "kit social deveria ter 5 itens");
+      await page.getByLabel("Qualidade").selectOption("preview");
+      await page.getByRole("button", { name: "Renderizar kit" }).click();
+      await page.getByText("Concluído").waitFor({ timeout: 300_000 });
+      const zipLink = page.getByRole("link", { name: /Baixar kit \(\.zip\)/ });
+      await zipLink.waitFor();
+      const res = await fetch(`${BASE}${await zipLink.getAttribute("href")}`);
+      assert(res.ok && res.headers.get("content-type") === "application/zip", `zip HTTP ${res.status}`);
+      const zip = Buffer.from(await res.arrayBuffer());
+      assert(zip.subarray(0, 2).toString() === "PK" && zip.includes(Buffer.from("01-post-1-1/")) && zip.includes(Buffer.from(".mp4")), "zip do kit sem pastas por item ou sem vídeo");
+    });
+
     await step("jobs e ajustes mostram o estado real", async () => {
       await page.goto(`${BASE}/jobs`);
       await page.getByText("Captura").first().waitFor();
