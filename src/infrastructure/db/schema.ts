@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { sqliteTable, text, integer, index, uniqueIndex, primaryKey, type AnySQLiteColumn } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, real, index, uniqueIndex, primaryKey, type AnySQLiteColumn } from "drizzle-orm/sqlite-core";
 import type { CaptureParams } from "../../core/assets/capture";
 import type { JobError } from "../../core/jobs/job";
 
@@ -266,4 +266,51 @@ export const documentRevisions = sqliteTable(
     updatedAt: text("updated_at").notNull(),
   },
   (t) => [primaryKey({ columns: [t.documentId, t.revision] })]
+);
+
+/** Planos criativos do Atlas Brain (imutáveis; revisar cria outro com parent_id). */
+export const creativePlans = sqliteTable(
+  "creative_plans",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    parentId: text("parent_id").references((): AnySQLiteColumn => creativePlans.id, { onDelete: "set null" }),
+    request: text("request", { mode: "json" }).$type<Record<string, unknown>>().notNull(),
+    summary: text("summary").notNull(),
+    direction: text("direction", { mode: "json" }).$type<Record<string, unknown>>().notNull(),
+    assetRanking: text("asset_ranking", { mode: "json" }).$type<unknown[]>().notNull(),
+    items: text("items", { mode: "json" }).$type<unknown[]>().notNull(),
+    source: text("source").notNull(),
+    model: text("model"),
+    warnings: text("warnings", { mode: "json" }).$type<string[]>().notNull(),
+    status: text("status").notNull(),
+    appliedInstanceIds: text("applied_instance_ids", { mode: "json" }).$type<string[]>().notNull(),
+    visualProfileRevision: integer("visual_profile_revision"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => [index("creative_plans_project_idx").on(t.projectId)]
+);
+
+/** Uma linha por chamada de IA: tokens, custo estimado (se configurado), latência e status. */
+export const aiUsage = sqliteTable(
+  "ai_usage",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id").references(() => projects.id, { onDelete: "set null" }),
+    task: text("task").notNull(),
+    provider: text("provider").notNull(),
+    model: text("model").notNull(),
+    effort: text("effort").notNull(),
+    inputTokens: integer("input_tokens").notNull(),
+    cachedTokens: integer("cached_tokens").notNull(),
+    outputTokens: integer("output_tokens").notNull(),
+    estimatedCostUsd: real("estimated_cost_usd"),
+    latencyMs: integer("latency_ms").notNull(),
+    status: text("status").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (t) => [index("ai_usage_created_idx").on(t.createdAt)]
 );

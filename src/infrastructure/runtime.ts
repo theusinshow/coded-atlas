@@ -1,11 +1,13 @@
 import { config as legacyConfig } from "../../lib/config";
 import type { ViewportSpec } from "../modules/capture/capture-engine";
+import type { BrainDeps } from "../modules/brain/plan-service";
 import type { CompositionDeps } from "../modules/create/composition-service";
 import type { DocumentDeps } from "../modules/create/document-service";
 import type { LegacyImportDeps } from "../modules/import/legacy/legacy-import-job";
 import type { UploadDeps } from "../modules/import/upload";
 import type { ProjectServiceDeps } from "../modules/projects/project-service";
 import { createLogger, type Logger } from "../shared/logger";
+import { createBrainSettings } from "./ai/brain-config";
 import { resolveAtlasHome, type AtlasHome } from "./atlas-home";
 import { openDatabase, type AtlasDatabase } from "./db/client";
 import { createRepositories, type Repositories } from "./db/repositories";
@@ -38,6 +40,7 @@ export interface AtlasRuntime {
   legacyImportDeps: LegacyImportDeps;
   compositionDeps: CompositionDeps;
   documentDeps: DocumentDeps;
+  brainDeps: BrainDeps;
 }
 
 export const RUNTIME_SETTINGS = {
@@ -71,6 +74,7 @@ async function createRuntime(): Promise<AtlasRuntime> {
   const urlPolicy = createUrlPolicy(resolveUrlPolicyMode());
   const probe = new SharpMediaProbe();
   const legacyStore = await GeneratedDirStore.open(legacyConfig.outputDir);
+  const thumbnails = new ThumbnailService(storage);
 
   return {
     home,
@@ -78,12 +82,13 @@ async function createRuntime(): Promise<AtlasRuntime> {
     repos,
     storage,
     urlPolicy,
-    thumbnails: new ThumbnailService(storage),
+    thumbnails,
     logger,
     projectDeps: { ...repos, storage, assertUrlAllowed: urlPolicy.assertAllowed, derivedCacheKeys: thumbCacheKeys },
     uploadDeps: { ...repos, storage, probe },
     legacyImportDeps: { ...repos, ledger: repos.legacyImports, store: legacyStore, storage, probe },
     compositionDeps: repos,
     documentDeps: repos,
+    brainDeps: { ...repos, brain: createBrainSettings({ repos, thumbnails }) },
   };
 }

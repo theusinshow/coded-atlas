@@ -220,6 +220,20 @@ async function main(): Promise<void> {
       await page.getByText(/Abrir no canvas \(rev \d+\)/).first().waitFor();
     });
 
+    await step("atlas brain: pedir plano, ver peças com preview e criar uma", async () => {
+      await page.goto(`${BASE}/projects/e2e-${slug}/plans`);
+      await page.getByText("Stories").click();
+      await page.getByRole("button", { name: "Pedir plano" }).click();
+      await page.waitForURL(/\/plans\/[0-9A-Z]{26}$/, { timeout: 120_000 });
+      await page.locator("[data-plan-item] [data-atlas-artboard]").first().waitFor();
+      const before = (await page.request.get(`${BASE}/projects/e2e-${slug}/create`)).ok();
+      assert(before, "Criar indisponível");
+      await page.locator("[data-plan-item='0']").getByRole("button", { name: "Criar esta" }).click();
+      await page.waitForURL(`**/projects/e2e-${slug}/create`);
+      await page.goto(`${BASE}/projects/e2e-${slug}/plans`);
+      await page.getByText("aplicado").first().waitFor();
+    });
+
     await step("jobs e ajustes mostram o estado real", async () => {
       await page.goto(`${BASE}/jobs`);
       await page.getByText("Captura").first().waitFor();

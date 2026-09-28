@@ -1,4 +1,5 @@
 import { config as legacyConfig } from "../../lib/config";
+import { createPlanJobHandler } from "../modules/brain/plan-service";
 import { createCaptureJobHandler } from "../modules/capture/capture-job";
 import { createLegacyImportJobHandler } from "../modules/import/legacy/legacy-import-job";
 import { createRenderJobHandler } from "../modules/render/render-job";
@@ -50,6 +51,7 @@ export function createAtlasWorker(runtime: AtlasRuntime, options: { workerId?: s
       }),
       import: createLegacyImportJobHandler(runtime.legacyImportDeps),
       render: createRenderJobHandler({ ...repos, storage, renderer: new PlaywrightStaticRenderer() }),
+      plan: createPlanJobHandler(runtime.brainDeps),
     },
   });
 }

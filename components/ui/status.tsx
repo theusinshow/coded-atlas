@@ -26,6 +26,7 @@ export const JOB_TYPE_LABEL: Record<string, string> = {
   capture: "Captura",
   import: "Importação v1",
   render: "Render",
+  plan: "Plano criativo",
   export: "Exportação",
 };
 

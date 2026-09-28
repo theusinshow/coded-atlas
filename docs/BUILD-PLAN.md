@@ -2,8 +2,8 @@
 
 The complete roadmap lives in `ROADMAP.md`. The currently authorized scope lives in `CURRENT.md`.
 
-> **Status (2026-09-28):** fases **2.1 a 2.5 concluídas**. Execução contínua até o Atlas 3.0
-> autorizada pelo Matheus (ADR-028) — ele testa só no final. Próxima: **2.6 — Atlas Brain**.
+> **Status (2026-09-28):** fases **2.1 a 2.6 concluídas**. Execução contínua até o Atlas 3.0
+> autorizada pelo Matheus (ADR-028) — ele testa só no final. Próxima: **2.7 — Creative System**.
 > O Atlas v1 (captura, vitrine, diff, case, ZIP) segue funcionando sem alteração de comportamento.
 
 ## Baseline (antes de qualquer mudança — 2026-09-27, commit `ac93441`)
@@ -231,6 +231,18 @@ Verificação 2.4: typecheck/lint OK; `npm test` 350 testes (20 arquivos; render
 - [x] Operações de árvore de layers puras em `core/documents/layer-tree.ts` (base para Motion).
 
 Verificação 2.5: typecheck/lint OK; `npm test` 362 testes (22 arquivos; revisões/coalescência/conflito/fixação/restauração e render de revisão com Chromium real); build OK; `npm run e2e` 14/14 passos (abrir composição no canvas, adicionar texto, autosave rev 2, arrastar e desfazer, renderizar e abrir em Publicar).
+
+## Atlas 2.6 — Atlas Brain (concluída 2026-09-28)
+
+- [x] `ModelGateway` (port no domínio) + `OpenAIResponsesGateway` (Responses API, Structured Outputs estrito, esforço por nível, imagens como miniaturas WebP 640px). A SDK só existe em `src/infrastructure/ai/openai/`.
+- [x] Context Builder determinístico: lista curta sem duplicatas (fica o registro de papel mais forte), sem imagens pequenas/derivadas, priorizada e com teto; catálogo de composições; packs de projeto e identidade.
+- [x] `CreativePlan` (objetivo, direção, ranking de assets com motivo, peças com composição/formato/variante/ligações/porquê), imutável, revisões via `parent_id`. Migration `0006_brain`.
+- [x] Cadeia de validação: schema → domínio (IDs só da lista curta, formato/variante suportados, limites de texto) → 1 reparo com os erros → aproveita itens válidos com aviso → fallback determinístico. Nada é corrigido em silêncio.
+- [x] Router de raciocínio (routine/creative/complex) e registro de uso em `ai_usage` (tokens, cache, custo só com preço configurado, latência, status); orçamento mensal warn/block.
+- [x] Job `plan` (não bloqueia a UI). Aba **Planos**: pedir plano (objetivo, formatos, observações, quantidade), ver peças com preview real, material mais forte, avisos, revisar com feedback, aplicar tudo ou uma peça (vira rascunho em Criar), descartar. Ajustes mostram status, consumo do mês e últimas chamadas.
+- [x] Sem `OPENAI_API_KEY` tudo funciona com as regras do Atlas (badge "IA desligada").
+
+Verificação 2.6: typecheck/lint OK; `npm test` 379 testes (23 arquivos; gateway falso para sucesso/reparo/fallback/orçamento/revisão/aplicar; adapter OpenAI contra fetch simulado verificando request e parsing); build OK; `npm run e2e` 15/15 passos (plano sem IA → preview → criar peça). **Chamada real à OpenAI não verificada** (sem chave nesta máquina).
 
 ## Phase completion rule
 

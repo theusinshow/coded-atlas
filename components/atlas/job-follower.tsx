@@ -9,6 +9,7 @@ interface JobView {
   progress: number;
   message: string | null;
   error: { code: string; message: string } | null;
+  result: Record<string, unknown> | null;
 }
 
 const TERMINAL = new Set<JobStatusValue>(["completed", "failed", "cancelled"]);
@@ -17,7 +18,7 @@ const TERMINAL = new Set<JobStatusValue>(["completed", "failed", "cancelled"]);
  * Acompanha um job pelo SSE (estado lido do SQLite). Fechar a página não afeta o
  * job — só o botão Cancelar interrompe. Ao terminar, atualiza a tela do servidor.
  */
-export function JobFollower({ jobId, onDone }: { jobId: string; onDone?: (status: JobStatusValue) => void }) {
+export function JobFollower({ jobId, onDone }: { jobId: string; onDone?: (status: JobStatusValue, result: Record<string, unknown> | null) => void }) {
   const router = useRouter();
   const [job, setJob] = useState<JobView | null>(null);
   const done = useRef(onDone);
@@ -31,7 +32,7 @@ export function JobFollower({ jobId, onDone }: { jobId: string; onDone?: (status
       if (TERMINAL.has(next.status)) {
         es.close();
         router.refresh();
-        done.current?.(next.status);
+        done.current?.(next.status, next.result ?? null);
       }
     };
     es.onerror = () => es.close();

@@ -174,3 +174,16 @@ Accepted (2026-09-28).
 - **Zustand holds only the session** (content being edited, selection, undo stack). Undo coalesces changes with the same gesture key within 800 ms, so a drag or a typed word is one step.
 - **The Studio runs full-screen at `/studio/[id]`**, outside the project layout, because it needs the whole viewport.
 - **The canvas is constrained on purpose**: curated shadows, token colors first, local fonts. It is not a general-purpose design tool (PRINCIPLES → Taste over randomness).
+
+## ADR-033 — Atlas Brain (2.6)
+
+Accepted (2026-09-28).
+
+- **AI is optional and off by default**: the OpenAI adapter is built only when `OPENAI_API_KEY` is set (and `ATLAS_AI` is not `off`). Every Brain feature has a deterministic fallback; plans show which one produced them.
+- **Default model id `gpt-6-luna`** follows the docs ("GPT-6 Luna"). It is an assumption about the API identifier, overridable with `ATLAS_AI_MODEL`. No real call was made during development.
+- **Structured Outputs with a strict JSON Schema generated from Zod**; keywords that providers may reject (`maxLength`, `minItems`…) are stripped from the schema sent, and Zod still enforces them on the way back.
+- **The model chooses, never invents**: asset ids must come from the deterministic shortlist, compositions/formats/variants from the catalog; text over the slot limit is an error. Only slots the model omitted are filled by `autoBind`, and that is recorded as a note on the plan.
+- **One repair, then fallback**: the validation errors are sent back once. If the repair still fails, valid items are kept with the rejected ones listed as warnings; if none is valid, the deterministic plan is used.
+- **Plans are immutable** (revision = new plan with `parent_id`) and are applied only by an explicit user action, which creates CompositionInstance drafts. Nothing is rendered or published by the Brain.
+- **Costs are never guessed**: prices come from env; without them usage records tokens and `estimated_cost_usd = null`. Budget `block` mode switches to the deterministic planner when the month limit is reached.
+- **Reasoning router**: plan goals map to `creative`, while showcase sets, free requests and revisions map to `complex`. The adapter maps levels to effort (low/medium/high) in one place.

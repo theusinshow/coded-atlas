@@ -71,7 +71,18 @@ export default async function ProjectOverviewPage({ params }: Props) {
       </section>
 
       <section aria-labelledby="recomendacoes">
-        <SectionTitle id="recomendacoes">O que fazer agora</SectionTitle>
+        <SectionTitle
+          id="recomendacoes"
+          aside={
+            o.totalAssets > 0 ? (
+              <Link href={`/projects/${o.project.slug}/plans`} className="text-[12px] text-accent hover:text-accent-bright">
+                Pedir um plano criativo ao Atlas →
+              </Link>
+            ) : undefined
+          }
+        >
+          O que fazer agora
+        </SectionTitle>
         <ul className="space-y-2">
           {o.recommendations.map((r) => (
             <li key={r} className="flex gap-3 text-sm text-zinc-300">
