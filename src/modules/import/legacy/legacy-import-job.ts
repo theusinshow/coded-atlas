@@ -6,6 +6,7 @@ import { createCapture } from "../../../core/assets/capture";
 import { createOutput } from "../../../core/assets/output";
 import type { AssetRepository, CaptureRepository, OutputRepository } from "../../../core/assets/repositories";
 import { contentStorageKey } from "../../../core/assets/storage-key";
+import { createVisualProfile, type VisualProfileRepository } from "../../../core/creative/visual-profile";
 import { createJob, type Job } from "../../../core/jobs/job";
 import type { JobRepository } from "../../../core/jobs/repository";
 import { createProject, type Project } from "../../../core/projects/project";
@@ -35,6 +36,7 @@ export interface LegacyImportDeps {
   assets: AssetRepository;
   outputs: OutputRepository;
   jobs: JobRepository;
+  visualProfiles: VisualProfileRepository;
   storage: AssetStorage;
   probe: MediaProbe;
 }
@@ -216,6 +218,24 @@ async function importOne(deps: LegacyImportDeps, ctx: JobContext, plan: Plan): P
     idByPath.set(file.publicPath, asset.id);
     if (file.role === "cover") cover = asset.id;
     if (file.role === "viewport" && file.device === "desktop") desktopViewport = asset.id;
+  }
+
+  // Paleta/fontes/tecnologias que o v1 já tinha inspecionado viram um VisualProfile.
+  const inspection = snapshot.unmapped.inspection;
+  if (inspection && (inspection.colors.length || inspection.fonts.length || inspection.techStack.length)) {
+    const previous = await deps.visualProfiles.latest(project.id);
+    await deps.visualProfiles.create(
+      createVisualProfile({
+        projectId: project.id,
+        revision: (previous?.revision ?? 0) + 1,
+        palette: inspection.colors,
+        fonts: inspection.fonts,
+        techStack: inspection.techStack,
+        ogImageUrl: inspection.ogImage ?? null,
+        source: "legacy",
+        captureId: capture.id,
+      })
+    );
   }
 
   const coverAssetId = cover ?? desktopViewport;

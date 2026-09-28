@@ -12,15 +12,20 @@ import {
   changeProjectStatus,
   createNewProject,
   deleteProjectPermanently,
+  deleteUploadedAsset,
   enqueueCapture,
   removeSource,
+  setProjectCover,
   updateProjectDetails,
 } from "@/src/modules/projects/project-service";
+import { CAPTURE_PROFILES, CapturePlanSchema } from "@/src/core/assets/capture-plan";
 import { isDomainError } from "@/src/shared/errors";
-import { JobIdSchema, ProjectIdSchema, SourceIdSchema } from "@/src/shared/id";
+import { AssetIdSchema, JobIdSchema, ProjectIdSchema, SourceIdSchema } from "@/src/shared/id";
 
 /** Estado devolvido às telas por `useActionState`. */
 export type ActionState = { error?: string; message?: string } | null;
+/** Ações que enfileiram um job devolvem o ID para a tela acompanhar. */
+export type JobActionState = { error?: string; message?: string; jobId?: string } | null;
 
 function failure(err: unknown): { error: string } {
   if (isDomainError(err)) return { error: err.message };
@@ -123,7 +128,7 @@ export async function removeSourceAction(projectId: string, sourceId: string): P
   }
 }
 
-export async function captureSourceAction(projectId: string, sourceId: string): Promise<ActionState & { jobId?: string }> {
+export async function captureSourceAction(projectId: string, sourceId: string): Promise<JobActionState> {
   try {
     const { projectDeps } = await getAtlasRuntime();
     const id = ProjectIdSchema.parse(projectId);
@@ -135,6 +140,71 @@ export async function captureSourceAction(projectId: string, sourceId: string): 
   } catch (err) {
     return failure(err);
   }
+}
+
+/**
+ * Captura com plano montado no formulário (perfil + ajustes finos).
+ * Páginas: uma por linha. Estados: "Nome | seletor CSS" por linha.
+ */
+export async function captureWithPlanAction(projectId: string, _prev: JobActionState, form: FormData): Promise<JobActionState> {
+  try {
+    const { projectDeps } = await getAtlasRuntime();
+    const id = ProjectIdSchema.parse(projectId);
+    const profile = text(form, "profile") === "complete" ? CAPTURE_PROFILES.complete : CAPTURE_PROFILES.quick;
+    const devices = (["desktop", "mobile"] as const).filter((d) => form.get(`device-${d}`) === "on");
+    const lines = (name: string) =>
+      (text(form, name) ?? "")
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter(Boolean);
+    const states = lines("states").map((line) => {
+      const [name, ...rest] = line.split("|");
+      return { name: name.trim(), selector: rest.join("|").trim() };
+    });
+    const plan = CapturePlanSchema.parse({
+      ...profile,
+      devices: devices.length ? devices : profile.devices,
+      fullPage: form.get("fullPage") === "on",
+      sections: form.get("sections") === "on",
+      video: form.get("video") === "on",
+      pages: lines("pages"),
+      states,
+    });
+    const job = await enqueueCapture(projectDeps, id, SourceIdSchema.parse(text(form, "sourceId")), plan);
+    const project = await projectDeps.projects.getById(id);
+    revalidatePath(`/projects/${project?.slug}`, "layout");
+    revalidatePath("/jobs");
+    return { message: "Captura enfileirada.", jobId: job.id };
+  } catch (err) {
+    if (err instanceof z.ZodError) return { error: "Plano inválido: confira devices, páginas (máx. 10) e estados no formato Nome | seletor." };
+    return failure(err);
+  }
+}
+
+export async function setCoverAction(projectId: string, assetId: string): Promise<ActionState> {
+  try {
+    const { projectDeps } = await getAtlasRuntime();
+    const project = await setProjectCover(projectDeps, ProjectIdSchema.parse(projectId), AssetIdSchema.parse(assetId));
+    revalidatePath(`/projects/${project.slug}`, "layout");
+    revalidatePath("/projects");
+    return { message: "Capa atualizada." };
+  } catch (err) {
+    return failure(err);
+  }
+}
+
+export async function deleteAssetAction(projectId: string, assetId: string): Promise<ActionState> {
+  let slug: string | undefined;
+  try {
+    const { projectDeps } = await getAtlasRuntime();
+    const id = ProjectIdSchema.parse(projectId);
+    slug = (await projectDeps.projects.getById(id))?.slug;
+    await deleteUploadedAsset(projectDeps, id, AssetIdSchema.parse(assetId));
+  } catch (err) {
+    return failure(err);
+  }
+  revalidatePath(`/projects/${slug}`, "layout");
+  redirect(`/projects/${slug}/assets`);
 }
 
 export async function uploadAssetsAction(projectId: string, _prev: ActionState, form: FormData): Promise<ActionState> {

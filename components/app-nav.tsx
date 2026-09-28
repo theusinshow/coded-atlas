@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 /** Navegação global (docs/UX-ARCHITECTURE.md): só destinos que existem de fato. */
 const LINKS = [
   { href: "/projects", label: "Projetos", match: (p: string) => p === "/" || p.startsWith("/projects") },
+  { href: "/library", label: "Biblioteca", match: (p: string) => p.startsWith("/library") },
   { href: "/jobs", label: "Jobs", match: (p: string) => p.startsWith("/jobs") },
   { href: "/settings", label: "Ajustes", match: (p: string) => p.startsWith("/settings") },
 ];

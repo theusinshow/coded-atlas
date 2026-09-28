@@ -2,8 +2,8 @@
 
 The complete roadmap lives in `ROADMAP.md`. The currently authorized scope lives in `CURRENT.md`.
 
-> **Status (2026-09-27):** fases **2.1 e 2.2 concluídas**. Execução contínua até o Atlas 3.0
-> autorizada pelo Matheus (ADR-028) — ele testa só no final. Próxima: **2.3 — Asset & Capture System**.
+> **Status (2026-09-27):** fases **2.1, 2.2 e 2.3 concluídas**. Execução contínua até o Atlas 3.0
+> autorizada pelo Matheus (ADR-028) — ele testa só no final. Próxima: **2.4 — Composition Engine**.
 > O Atlas v1 (captura, vitrine, diff, case, ZIP) segue funcionando sem alteração de comportamento.
 
 ## Baseline (antes de qualquer mudança — 2026-09-27, commit `ac93441`)
@@ -193,6 +193,18 @@ projetos originais.
 - [x] Migration `0002_project_system`.
 
 Verificação 2.2: typecheck/lint OK; `npm test` 319 testes (17 arquivos); build OK; servidor com `ATLAS_HOME` vazio importou a biblioteca v1 real em ~3 s (9 projetos, 214 arquivos, 0 faltando, capas definidas); todas as rotas 200 e 404 para projeto inexistente; `npm run e2e` (Chromium na UI real: criar projeto com captura imediata, upload, editar, arquivar/restaurar, excluir) — 7/7 passos.
+
+## Atlas 2.3 — Asset & Capture System (concluída 2026-09-27)
+
+- [x] Captura completa como job (`CapturePlan`, perfis Rápido/Completo + ajustes): desktop/mobile, página inteira (com teto), seções nomeadas pelo DOM (fallback por rolagem), páginas extras, estados de interação, vídeo de scroll, inspeção. Engine reaproveita as rotinas do v1 sem caminhos de disco; abort fecha o Chromium; vídeo temporário sempre apagado.
+- [x] Transacional: todos os bytes na staging → commit → registros; falhas parciais (página 404, seletor inexistente, `javascript:`) viram avisos no resultado do job, visíveis no histórico.
+- [x] Understand: `VisualProfile` revisionado (paleta normalizada, fontes da marca sem genéricas/emoji, tecnologias, traços dark/light/colorful/monochrome/high-contrast); criado pela captura e pela importação v1. Painel "Identidade visual" na visão geral.
+- [x] Capa derivada 1.91:1 (recorte inteligente) com linhagem para o screenshot de origem; "Usar como capa" em qualquer imagem.
+- [x] Biblioteca global `/library` (texto, tipo, device, projeto, paginação) e detalhe do asset (metadados, origem, linhagem, baixar original, remover upload).
+- [x] Dedupe por conteúdo (chaves `captures/`, `videos/`, `uploads/`, `assets/`, `outputs/`).
+- [x] Migration `0003_understand`.
+
+Verificação 2.3: typecheck/lint OK; `npm test` 328 testes (18 arquivos; captura completa com Chromium real, cancelamento no meio sem sobras); build OK; `npm run e2e` 10/10 passos contra servidor com `ATLAS_HOME` temporário (captura completa pela UI com página extra + estado, detalhe/capa, identidade, biblioteca).
 
 ## Phase completion rule
 

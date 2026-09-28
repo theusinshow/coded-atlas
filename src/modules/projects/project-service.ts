@@ -1,6 +1,8 @@
 import type { AssetStorage } from "../../core/assets/asset-storage";
 import type { AssetRepository, OutputRepository } from "../../core/assets/repositories";
 import type { StorageKey } from "../../core/assets/storage-key";
+import { CAPTURE_PROFILES, CapturePlanSchema, type CapturePlan } from "../../core/assets/capture-plan";
+import { parseOrThrow } from "../../shared/validation";
 import { ACTIVE_JOB_STATUSES, createJob, type Job, type JobStatus } from "../../core/jobs/job";
 import type { JobRepository } from "../../core/jobs/repository";
 import {
@@ -14,7 +16,7 @@ import {
 import type { ProjectRepository, SourceRepository } from "../../core/projects/repositories";
 import { createSource, type Source, type SourceType } from "../../core/projects/source";
 import { DomainError } from "../../shared/errors";
-import type { ProjectId, SourceId } from "../../shared/id";
+import type { AssetId, ProjectId, SourceId } from "../../shared/id";
 import type { CaptureJobPayload } from "../capture/capture-job";
 import type { LegacyImportLedger } from "../import/legacy/legacy-ledger";
 
@@ -94,14 +96,47 @@ export async function createNewProject(
   return { project, source, job };
 }
 
-export async function enqueueCapture(deps: Pick<ProjectServiceDeps, "jobs" | "sources">, projectId: ProjectId, sourceId: SourceId): Promise<Job> {
+/** Enfileira uma captura. Sem plano explícito usa o perfil "rápido" (matéria-prima completa sem vídeo). */
+export async function enqueueCapture(
+  deps: Pick<ProjectServiceDeps, "jobs" | "sources">,
+  projectId: ProjectId,
+  sourceId: SourceId,
+  plan: CapturePlan = CAPTURE_PROFILES.quick
+): Promise<Job> {
   const source = await deps.sources.getById(sourceId);
   if (!source || source.projectId !== projectId) throw new DomainError("NOT_FOUND", "Source não encontrada neste projeto.");
   if (source.type !== "url" && source.type !== "local") {
     throw new DomainError("VALIDATION", "Só sources de URL (ou dev local) podem ser capturadas.");
   }
-  const payload: CaptureJobPayload = { sourceId };
+  const payload: CaptureJobPayload = { sourceId, plan: parseOrThrow(CapturePlanSchema, plan, "Plano de captura") };
   return deps.jobs.create(createJob({ type: "capture", projectId, payload }));
+}
+
+/** Define a capa do projeto (asset de imagem do próprio projeto). */
+export async function setProjectCover(deps: Pick<ProjectServiceDeps, "projects" | "assets">, projectId: ProjectId, assetId: AssetId): Promise<Project> {
+  const project = await requireProject(deps.projects, projectId);
+  const asset = await deps.assets.getById(assetId);
+  if (!asset || asset.projectId !== projectId) throw new DomainError("NOT_FOUND", "Asset não encontrado neste projeto.");
+  if (!asset.mimeType.startsWith("image/")) throw new DomainError("VALIDATION", "A capa precisa ser uma imagem.");
+  return deps.projects.update({ ...project, coverAssetId: asset.id });
+}
+
+/**
+ * Remove um asset ENVIADO manualmente (capturas são histórico e ficam). Apaga os
+ * bytes se nenhum outro registro os usar. Se era a capa, o projeto fica sem capa.
+ */
+export async function deleteUploadedAsset(deps: ProjectServiceDeps, projectId: ProjectId, assetId: AssetId): Promise<void> {
+  const project = await requireProject(deps.projects, projectId);
+  const asset = await deps.assets.getById(assetId);
+  if (!asset || asset.projectId !== projectId) throw new DomainError("NOT_FOUND", "Asset não encontrado neste projeto.");
+  if (asset.metadata.origin !== "upload") throw new DomainError("VALIDATION", "Só arquivos enviados manualmente podem ser removidos.");
+  await deps.assets.delete(asset.id);
+  if (project.coverAssetId === asset.id) await deps.projects.update({ ...project, coverAssetId: null });
+  const stillUsed = (await deps.assets.countByStorageKey(asset.storageKey)) + (await deps.outputs.countByStorageKey(asset.storageKey));
+  if (stillUsed === 0) {
+    await deps.storage.delete(asset.storageKey);
+    for (const derived of deps.derivedCacheKeys?.(asset.storageKey, asset.sha256) ?? []) await deps.storage.delete(derived);
+  }
 }
 
 export async function updateProjectDetails(deps: Pick<ProjectServiceDeps, "projects">, projectId: ProjectId, patch: ProjectPatch): Promise<Project> {

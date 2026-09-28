@@ -1,6 +1,6 @@
-import { and, asc, count, eq, inArray, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, or, sql, type SQL } from "drizzle-orm";
 import { AssetRelationSchema, AssetSchema, type Asset, type AssetKind, type AssetRelation } from "../../../core/assets/asset";
-import type { AssetFilter, AssetRepository } from "../../../core/assets/repositories";
+import type { AssetFilter, AssetRepository, AssetSearch } from "../../../core/assets/repositories";
 import type { StorageKey } from "../../../core/assets/storage-key";
 import { DomainError } from "../../../shared/errors";
 import type { AssetId, CaptureId, ProjectId } from "../../../shared/id";
@@ -29,6 +29,34 @@ export class SqliteAssetRepository implements AssetRepository {
     if (filter.role) conditions.push(sql`json_extract(${assets.metadata}, '$.role') = ${filter.role}`);
     if (filter.device) conditions.push(sql`json_extract(${assets.metadata}, '$.device') = ${filter.device}`);
     return this.list(and(...conditions));
+  }
+
+  async search(query: AssetSearch): Promise<{ items: Asset[]; total: number }> {
+    const conditions: SQL[] = [];
+    if (query.projectId) conditions.push(eq(assets.projectId, query.projectId));
+    if (query.kinds?.length) conditions.push(inArray(assets.kind, [...query.kinds]));
+    if (query.role) conditions.push(sql`json_extract(${assets.metadata}, '$.role') = ${query.role}`);
+    if (query.device) conditions.push(sql`json_extract(${assets.metadata}, '$.device') = ${query.device}`);
+    const text = query.text?.trim().toLowerCase();
+    if (text) {
+      const pattern = `%${text.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+      conditions.push(
+        sql`(lower(coalesce(${assets.label}, '')) LIKE ${pattern} ESCAPE '\\' OR lower(coalesce(json_extract(${assets.metadata}, '$.sectionName'), '')) LIKE ${pattern} ESCAPE '\\')`
+      );
+    }
+    const where = conditions.length ? and(...conditions) : undefined;
+    const total = run("Asset", () => this.db.select({ n: count() }).from(assets).where(where).get())?.n ?? 0;
+    const rows = run("Asset", () =>
+      this.db
+        .select()
+        .from(assets)
+        .where(where)
+        .orderBy(desc(assets.createdAt), desc(assets.id))
+        .limit(Math.min(query.limit ?? 60, 200))
+        .offset(Math.max(query.offset ?? 0, 0))
+        .all()
+    );
+    return { items: rows.map((row) => toDomain(AssetSchema, row, "Asset")), total };
   }
 
   async countByProject(projectId: ProjectId): Promise<Partial<Record<AssetKind, number>>> {

@@ -22,7 +22,9 @@ import {
   changeProjectStatus,
   createNewProject,
   deleteProjectPermanently,
+  deleteUploadedAsset,
   removeSource,
+  setProjectCover,
   type ProjectServiceDeps,
 } from "../modules/projects/project-service";
 import { isDomainError, type DomainErrorCode } from "../shared/errors";
@@ -159,13 +161,49 @@ describe("upload manual", () => {
   });
 });
 
+describe("assets: capa, remoção e biblioteca global", () => {
+  it("capa só aceita imagem do próprio projeto; remover upload apaga bytes e limpa a capa", async () => {
+    const a = (await createNewProject(deps, { name: "Capa A", category: "Site" })).project;
+    const b = (await createNewProject(deps, { name: "Capa B", category: "Site" })).project;
+    const [imgA] = (await importUploads({ ...deps, probe }, a.id, [{ name: "hero-a.png", bytes: await png(500, 300, "#aa3300") }], "image")).created;
+    const [imgB] = (await importUploads({ ...deps, probe }, b.id, [{ name: "hero-b.png", bytes: await png(500, 300, "#0033aa") }], "image")).created;
+
+    expect((await setProjectCover(deps, a.id, imgA.id)).coverAssetId).toBe(imgA.id);
+    await expectCode(setProjectCover(deps, a.id, imgB.id), "NOT_FOUND"); // de outro projeto
+
+    await deleteUploadedAsset(deps, a.id, imgA.id);
+    expect(await repos.assets.getById(imgA.id)).toBeNull();
+    expect(await storage.exists(imgA.storageKey)).toBe(false);
+    expect((await repos.projects.getById(a.id))?.coverAssetId).toBeNull();
+  });
+
+  it("busca global por texto, tipo e projeto, com paginação", async () => {
+    const p = (await createNewProject(deps, { name: "Busca", category: "Site" })).project;
+    await importUploads({ ...deps, probe }, p.id, [
+      { name: "Hero Principal.png", bytes: await png(100, 100, "#010101") },
+      { name: "contato.png", bytes: await png(100, 100, "#020202") },
+    ], "image");
+    await importUploads({ ...deps, probe }, p.id, [{ name: "logo.png", bytes: await png(100, 100, "#030303") }], "logo");
+    expect((await repos.assets.search({ text: "hero" })).items.map((a) => a.label)).toEqual(["Hero Principal"]);
+    expect((await repos.assets.search({ kinds: ["logo"] })).total).toBe(1);
+    const page1 = await repos.assets.search({ projectId: p.id, limit: 2 });
+    const page2 = await repos.assets.search({ projectId: p.id, limit: 2, offset: 2 });
+    expect([page1.total, page1.items.length, page2.items.length]).toEqual([3, 2, 1]);
+  });
+});
+
 describe("importação da biblioteca v1", () => {
   let generated: string;
   let importDeps: LegacyImportDeps;
 
   async function writeLegacy(slug: string, createdAt = "2026-06-19T02:21:45.344Z"): Promise<void> {
     const json = JSON.stringify(v01).split("/generated/example-com/").join(`/generated/${slug}/`);
-    const catalog = { ...JSON.parse(json), createdAt, project: { ...v01.project, slug, name: `Legado ${slug}` } };
+    const catalog = {
+      ...JSON.parse(json),
+      createdAt,
+      project: { ...v01.project, slug, name: `Legado ${slug}` },
+      inspection: { colors: ["#0B2A36", "#fbfcfd", "#e63946"], fonts: ["Inter", "Inter Fallback"], techStack: ["Next.js"] },
+    };
     const root = path.join(generated, slug);
     mkdirSync(path.join(root, "screenshots"), { recursive: true });
     mkdirSync(path.join(root, "thumbnails"), { recursive: true });
@@ -205,6 +243,15 @@ describe("importação da biblioteca v1", () => {
     expect(project!.coverAssetId).toBe(desktop.id);
     expect((await repos.captures.listByProject(project!.id))[0]).toMatchObject({ status: "completed" });
     expect(await repos.legacyImports.get("site-antigo")).toMatchObject({ status: "imported", projectId: project!.id });
+    // a inspeção do v1 vira VisualProfile (hex normalizado, fontes de fallback fora, traços derivados)
+    expect(await repos.visualProfiles.latest(project!.id)).toMatchObject({
+      revision: 1,
+      source: "legacy",
+      palette: ["#0b2a36", "#fbfcfd", "#e63946"],
+      fonts: ["Inter"],
+      techStack: ["Next.js"],
+      traits: expect.arrayContaining(["dark", "colorful", "high-contrast"]),
+    });
 
     // idempotente: nada a fazer na segunda vez
     expect(await ensureLegacyImportQueued(importDeps)).toBeNull();

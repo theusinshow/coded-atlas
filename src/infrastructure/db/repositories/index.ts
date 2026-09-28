@@ -6,6 +6,7 @@ import { SqliteLegacyImportLedger } from "./legacy-ledger-repository";
 import { SqliteOutputRepository } from "./output-repository";
 import { SqliteProjectRepository } from "./project-repository";
 import { SqliteSourceRepository } from "./source-repository";
+import { SqliteVisualProfileRepository } from "./visual-profile-repository";
 
 export function createRepositories(db: AtlasDb) {
   return {
@@ -16,6 +17,7 @@ export function createRepositories(db: AtlasDb) {
     jobs: new SqliteJobRepository(db),
     outputs: new SqliteOutputRepository(db),
     legacyImports: new SqliteLegacyImportLedger(db),
+    visualProfiles: new SqliteVisualProfileRepository(db),
   };
 }
 

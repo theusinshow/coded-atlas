@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { AssetThumb } from "@/components/atlas/asset-image";
 import { SourcesPanel } from "@/components/atlas/sources-panel";
+import { VisualIdentity } from "@/components/atlas/visual-identity";
 import { Panel, SectionTitle, Stat } from "@/components/ui/primitives";
 import { JOB_TYPE_LABEL, JobStatusBadge } from "@/components/ui/status";
 import { getAtlasRuntime } from "@/src/infrastructure/runtime";
@@ -36,6 +37,7 @@ export default async function ProjectOverviewPage({ params }: Props) {
   const { slug } = await params;
   const runtime = await getAtlasRuntime();
   const o = await getProjectOverview(runtime.repos, slug);
+  const profile = await runtime.repos.visualProfiles.latest(o.project.id);
   const url = o.sources.find((s) => s.type === "url" || s.type === "local");
 
   return (
@@ -78,6 +80,11 @@ export default async function ProjectOverviewPage({ params }: Props) {
             </li>
           ))}
         </ul>
+      </section>
+
+      <section aria-labelledby="identidade">
+        <SectionTitle id="identidade">Identidade visual</SectionTitle>
+        <VisualIdentity profile={profile} />
       </section>
 
       <div className="grid gap-10 lg:grid-cols-2">

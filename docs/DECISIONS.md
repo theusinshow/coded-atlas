@@ -141,3 +141,13 @@ Accepted (2026-09-27).
 - **Mutations from the UI are Server Actions** that call application services; every ID from the client is parsed with its Zod schema. Server Action body limit raised to 200 MB for uploads (per-file limit enforced by the service).
 - **Local sources are dev-server URLs**, never filesystem paths (no machine paths in domain records).
 - **Thumbnails** are generated on demand (fixed widths 320/640/1280, WebP) and cached in the storage `cache/` namespace, keyed by the original's SHA-256; deleting the last reference to bytes also deletes their thumbnails.
+
+## ADR-030 — Capture system (2.3)
+
+Accepted (2026-09-27).
+
+- **One Capture per capture job**, typed `page` when it runs a `CapturePlan` (the plan is stored in `captures.params`) and `device` for the minimal viewport-only slice. Device dimensions stay in `lib/config.ts`; plans only name devices.
+- **The v1 capture routines are reused as libraries** (overlays, stability, section detection/naming, smooth scroll, inspection, scroll guard) by a new buffer-based engine; nothing in the 2.x path writes to `public/generated`.
+- **Partial failures are warnings, not errors**: an extra page or interaction state that fails is recorded in `job.result.warnings` and shown in the capture history; the capture still completes. Cancelation/timeout discards everything.
+- **VisualProfile lives in `core/creative`** and is append-only by revision. Font lists drop system/emoji/generic families; traits are deterministic from the palette (the first sampled color is the dominant background). The Brand Adapter (2.4) consumes it.
+- **Derived assets** (cover crop) are real Assets with `parentAssetId` and `metadata.origin = "derived"`; UI thumbnails stay a cache, not Assets.

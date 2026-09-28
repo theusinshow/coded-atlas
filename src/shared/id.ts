@@ -22,6 +22,8 @@ export const CaptureIdSchema = UlidSchema.brand<"CaptureId">();
 export const JobIdSchema = UlidSchema.brand<"JobId">();
 export const OutputIdSchema = UlidSchema.brand<"OutputId">();
 
+export const VisualProfileIdSchema = UlidSchema.brand<"VisualProfileId">();
+
 export type ProjectId = z.infer<typeof ProjectIdSchema>;
 export type SourceId = z.infer<typeof SourceIdSchema>;
 export type AssetId = z.infer<typeof AssetIdSchema>;

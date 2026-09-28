@@ -11,8 +11,18 @@ export interface AssetFilter {
   device?: "desktop" | "mobile";
 }
 
+export interface AssetSearch extends AssetFilter {
+  projectId?: ProjectId;
+  /** Busca no rótulo e no nome da seção. */
+  text?: string;
+  limit?: number;
+  offset?: number;
+}
+
 /** Asset é imutável: sem update (remoção só explícita, ex.: descartar upload). */
 export interface AssetRepository {
+  /** Biblioteca global: mais recentes primeiro, com total para paginação. */
+  search(query: AssetSearch): Promise<{ items: Asset[]; total: number }>;
   create(asset: Asset): Promise<Asset>;
   getById(id: AssetId): Promise<Asset | null>;
   listByProject(projectId: ProjectId, filter?: AssetFilter): Promise<Asset[]>;

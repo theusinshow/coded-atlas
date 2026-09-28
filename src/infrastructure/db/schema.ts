@@ -187,3 +187,25 @@ export const legacyImports = sqliteTable("legacy_imports", {
   importedAt: text("imported_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });
+
+/** VisualProfile: revisões append-only da identidade visual de um projeto. */
+export const visualProfiles = sqliteTable(
+  "visual_profiles",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    revision: integer("revision").notNull(),
+    palette: text("palette", { mode: "json" }).$type<string[]>().notNull(),
+    fonts: text("fonts", { mode: "json" }).$type<string[]>().notNull(),
+    techStack: text("tech_stack", { mode: "json" }).$type<string[]>().notNull(),
+    traits: text("traits", { mode: "json" }).$type<string[]>().notNull(),
+    ogImageUrl: text("og_image_url"),
+    logoAssetId: text("logo_asset_id").references(() => assets.id, { onDelete: "set null" }),
+    source: text("source").notNull(),
+    captureId: text("capture_id").references(() => captures.id, { onDelete: "set null" }),
+    createdAt: text("created_at").notNull(),
+  },
+  (t) => [uniqueIndex("visual_profiles_project_revision").on(t.projectId, t.revision)]
+);

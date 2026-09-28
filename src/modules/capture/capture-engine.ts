@@ -1,6 +1,8 @@
+import type { AssetMetadata } from "../../core/assets/asset";
+
 /**
- * Porta da engine de captura. A aplicação pede "uma foto deste viewport" e
- * recebe bytes; navegador, contexto e arquivos temporários são da implementação
+ * Porta da engine de captura. A aplicação pede fotos/vídeos e recebe bytes;
+ * navegador, contexto e arquivos temporários são da implementação
  * (src/infrastructure/playwright). O `signal` é obrigatório: abortar deve
  * interromper o trabalho real (fechar o navegador) e rejeitar a promessa.
  */
@@ -20,6 +22,52 @@ export interface ViewportShot {
   finalUrl: string;
 }
 
+export interface SiteCaptureRequest {
+  url: string;
+  viewports: ViewportSpec[];
+  fullPage: boolean;
+  sections: boolean;
+  video: boolean;
+  inspect: boolean;
+  /** URLs absolutas de páginas extras (já resolvidas e validadas). */
+  pages: string[];
+  states: { name: string; selector: string }[];
+  signal: AbortSignal;
+  onProgress?: (fraction: number, message: string) => void;
+}
+
+export interface CapturedMedia {
+  bytes: Uint8Array;
+  mimeType: string;
+  extension: string;
+  kind: "screenshot" | "section" | "video";
+  width: number | null;
+  height: number | null;
+  label: string;
+  metadata: AssetMetadata;
+}
+
+export interface SiteInspection {
+  colors: string[];
+  fonts: string[];
+  techStack: string[];
+  ogImage?: string;
+}
+
+export interface CaptureWarning {
+  code: string;
+  message: string;
+  device?: "desktop" | "mobile";
+}
+
+export interface SiteCaptureResult {
+  media: CapturedMedia[];
+  inspection: SiteInspection | null;
+  warnings: CaptureWarning[];
+  finalUrl: string;
+}
+
 export interface CaptureEngine {
   captureViewport(request: { url: string; viewport: ViewportSpec; signal: AbortSignal }): Promise<ViewportShot>;
+  captureSite(request: SiteCaptureRequest): Promise<SiteCaptureResult>;
 }

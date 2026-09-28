@@ -49,10 +49,16 @@ async function waitFor(predicate: () => Promise<boolean>, what: string, ms = 90_
 }
 
 async function main(): Promise<void> {
-  const fixture = createServer((_req, res) => {
+  const fixture = createServer((req, res) => {
     res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
-    res.end(`<!doctype html><html><body style="margin:0;background:#101418;color:#e6e6e6;font:48px sans-serif">
-      <header style="padding:60px">Fixture E2E</header><section style="height:1400px;padding:60px;background:#1b2530">Sobre</section></body></html>`);
+    if (req.url === "/sobre") return void res.end(`<html><body style="margin:0;background:#f4f1ea"><h1>Página sobre</h1></body></html>`);
+    res.end(`<!doctype html><html><head><style>
+      body{margin:0;background:#101418;color:#e6e6e6;font:40px Georgia,serif} header,section,footer{min-height:600px;padding:60px}
+      #menu{display:none;position:fixed;inset:0;background:#c4884c} body.open #menu{display:block}
+    </style></head><body>
+      <header id="hero"><h1>Fixture E2E</h1><button id="abrir" onclick="document.body.classList.add('open')">Menu</button></header>
+      <section id="servicos" style="background:#1b2530"><h2>Serviços</h2></section>
+      <section id="about"><h2>Sobre</h2></section><footer>Contato</footer><div id="menu">menu</div></body></html>`);
   });
   await new Promise<void>((r) => fixture.listen(0, "127.0.0.1", r));
   const fixtureUrl = `http://127.0.0.1:${(fixture.address() as AddressInfo).port}/`;
@@ -90,6 +96,41 @@ async function main(): Promise<void> {
       }, "asset da captura");
       await page.goto(`${BASE}/projects/e2e-${slug}/capture`);
       await page.getByText("concluída").first().waitFor();
+    });
+
+    await step("captura completa pela aba Captura (página extra + estado)", async () => {
+      await page.goto(`${BASE}/projects/e2e-${slug}/capture`);
+      await page.getByText("Páginas extras e estados de interação").click();
+      await page.getByLabel("Páginas extras").fill("/sobre");
+      await page.getByLabel("Estados").fill("Menu aberto | #abrir");
+      await page.getByRole("button", { name: "Capturar", exact: true }).click();
+      await waitFor(async () => {
+        const data = await api<{ assets: { metadata: { role?: string } }[]; jobs: { status: string; payload: { plan?: unknown } }[] }>(`/api/atlas/projects/${projectId}`);
+        const full = data.jobs.filter((j) => j.payload.plan);
+        if (full.some((j) => j.status === "failed")) throw new Error("captura completa falhou");
+        const roles = new Set(data.assets.map((a) => a.metadata.role));
+        return full.length >= 2 && full.every((j) => j.status === "completed") && ["section", "page-viewport", "state", "cover"].every((r) => roles.has(r));
+      }, "assets da captura completa", 180_000);
+      await page.reload();
+      await page.getByText("página(s) extra(s)").first().waitFor();
+    });
+
+    await step("detalhe do asset: linhagem e trocar a capa", async () => {
+      await page.goto(`${BASE}/projects/e2e-${slug}/assets?kind=section`);
+      await page.locator(`a[href*="/projects/e2e-${slug}/assets/"]`).first().click();
+      await page.getByRole("heading", { level: 2 }).first().waitFor();
+      await page.getByRole("button", { name: "Usar como capa" }).click();
+      await page.getByText("Capa atualizada.").waitFor();
+      await page.goto(`${BASE}/projects/e2e-${slug}/assets?kind=screenshot`);
+      await page.locator("li", { hasText: "Capa 1.91:1" }).first().locator("a").first().click();
+      await page.getByText("Derivado de:").waitFor();
+    });
+
+    await step("identidade visual e biblioteca global", async () => {
+      await page.goto(`${BASE}/projects/e2e-${slug}`);
+      await page.getByText("#101418").waitFor();
+      await page.goto(`${BASE}/library?q=servi&project=e2e-${slug}`);
+      await page.getByText("Serviços").first().waitFor();
     });
 
     await step("upload manual de imagem", async () => {

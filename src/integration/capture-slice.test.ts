@@ -7,6 +7,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { openDatabase, type AtlasDatabase } from "../infrastructure/db/client";
 import { createRepositories, type Repositories } from "../infrastructure/db/repositories";
 import { PlaywrightCaptureEngine } from "../infrastructure/playwright/playwright-capture-engine";
+import { SharpImageTransformer } from "../infrastructure/sharp/image-transformer";
 import { sha256Bytes } from "../infrastructure/storage/hash";
 import { LocalAssetStorage } from "../infrastructure/storage/local-asset-storage";
 import { createCaptureJobHandler } from "../modules/capture/capture-job";
@@ -57,7 +58,14 @@ function makeWorker(settle: boolean): JobWorker {
     jobs: repos.jobs,
     heartbeatIntervalMs: 50,
     handlers: {
-      capture: createCaptureJobHandler({ ...repos, storage, engine, viewport: VIEWPORT, timeoutMs: 60_000 }),
+      capture: createCaptureJobHandler({
+        ...repos,
+        storage,
+        engine,
+        images: new SharpImageTransformer(),
+        viewports: { desktop: VIEWPORT, mobile: { label: "mobile", width: 390, height: 700, deviceScaleFactor: 1 } },
+        timeoutMs: 60_000,
+      }),
     },
   });
 }

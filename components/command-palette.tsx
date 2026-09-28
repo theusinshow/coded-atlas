@@ -20,6 +20,7 @@ type Item = {
 const ACTIONS = [
   { id: "go-new", label: "Novo projeto", href: "/projects/new", hint: "Ação" },
   { id: "go-projects", label: "Biblioteca de projetos", href: "/projects", hint: "Ação" },
+  { id: "go-library", label: "Biblioteca de assets", href: "/library", hint: "Ação" },
   { id: "go-jobs", label: "Jobs", href: "/jobs", hint: "Ação" },
   { id: "go-settings", label: "Ajustes", href: "/settings", hint: "Ação" },
   { id: "go-legacy", label: "Catálogos v1", href: "/legacy", hint: "v1" },

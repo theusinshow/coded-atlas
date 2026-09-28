@@ -2,7 +2,7 @@
 
 ## Active phase
 
-**Atlas 2.3 — Asset & Capture System** (in progress). 2.1 Foundation and 2.2 Project System completed 2026-09-27.
+**Atlas 2.4 — Composition Engine** (in progress). 2.1 Foundation, 2.2 Project System and 2.3 Asset & Capture System completed 2026-09-27.
 
 **Owner authorization (2026-09-27):** execute the roadmap continuously from 2.2 through 2.14 (Atlas 3.0) without stopping between phases; the owner tests only at the end. Each phase still ends with typecheck/lint/test/build, `BUILD-PLAN.md` + this file updated and a commit.
 
@@ -12,7 +12,7 @@ Introduce the new persistence/domain/job foundation while preserving useful beha
 
 ## Current milestone
 
-**2.3 — Asset & Capture System**: formal Asset Library (global and per project), full capture pipeline as jobs (desktop/mobile viewport, full page, sections, extra pages, interaction states, optional scroll video, inspection → VisualProfile), lineage, dedupe, derived thumbnails/cover. After 2.3 the new capture replaces v1 `/generate` in the main flow.
+**2.4 — Composition Engine**: CompositionDefinition (slots, variants, constraints, capabilities, version), bindings, style tokens and style modes (project/atlas/hybrid), Brand Adapter from the VisualProfile, the 10 initial curated compositions, Quick Create UI and a static renderer (layers → HTML/CSS → Playwright → PNG/JPG/WebP) producing Outputs through render jobs.
 
 ## State of the code (2026-09-27)
 
@@ -61,6 +61,12 @@ Delivered in 2.2 (Project System):
 - Project lifecycle with storage GC on delete; sources (site, local dev URL, GitHub, uploads); manual upload with byte-level format detection.
 - The v1 library is imported automatically into SQLite/AssetStorage by a background `import` job (non-destructive, idempotent, ledger in `legacy_imports`).
 - `npm run e2e` drives the real UI against a server with a temporary `ATLAS_HOME`.
+
+Delivered in 2.3 (Asset & Capture System):
+
+- Full capture pipeline as jobs (`CapturePlan`, Quick/Complete profiles): devices, full page, named sections, extra pages, interaction states, scroll video, inspection; derived 1.91:1 cover with lineage; warnings in the job result.
+- `VisualProfile` (Understand) revisions from captures and from the v1 import; "Identidade visual" on the Overview.
+- Global `/library`, asset detail page (lineage, set cover, download, remove upload). v1 `/generate` is no longer part of the main flow (still at `/generate` under v1).
 
 ## Work allowed now
 

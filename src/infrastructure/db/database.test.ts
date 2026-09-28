@@ -57,6 +57,7 @@ describe("openDatabase", () => {
       "outputs",
       "projects",
       "sources",
+      "visual_profiles",
     ]);
     expect(database.sqlite.pragma("journal_mode", { simple: true })).toBe("wal");
     expect(database.sqlite.pragma("foreign_keys", { simple: true })).toBe(1);

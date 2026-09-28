@@ -12,6 +12,7 @@ import { createRepositories, type Repositories } from "./db/repositories";
 import { GeneratedDirStore } from "./legacy/generated-dir-store";
 import { createUrlPolicy, resolveUrlPolicyMode, type UrlPolicy } from "./net/url-policy";
 import { PlaywrightCaptureEngine } from "./playwright/playwright-capture-engine";
+import { SharpImageTransformer } from "./sharp/image-transformer";
 import { SharpMediaProbe } from "./sharp/media-probe";
 import { thumbCacheKeys, ThumbnailService } from "./sharp/thumbnails";
 import { LocalAssetStorage } from "./storage/local-asset-storage";
@@ -40,10 +41,13 @@ export interface AtlasRuntime {
 }
 
 export const RUNTIME_SETTINGS = {
-  /** Viewport da fatia migrada: o mesmo desktop do pipeline v1. */
-  captureViewport: legacyConfig.viewports.desktop satisfies ViewportSpec,
-  /** Teto de um job de captura (navegação + estabilidade + foto), com folga. */
-  captureJobTimeoutMs: Number(process.env.ATLAS_CAPTURE_JOB_TIMEOUT_MS ?? 5 * 60_000),
+  /** Viewports da captura: os mesmos do pipeline v1 (lib/config.ts). */
+  captureViewports: {
+    desktop: legacyConfig.viewports.desktop,
+    mobile: legacyConfig.viewports.mobile,
+  } satisfies Record<"desktop" | "mobile", ViewportSpec>,
+  /** Teto de um job de captura completa (2 devices, seções, páginas, vídeo), com folga. */
+  captureJobTimeoutMs: Number(process.env.ATLAS_CAPTURE_JOB_TIMEOUT_MS ?? 15 * 60_000),
 } as const;
 
 const GLOBAL_KEY = Symbol.for("coded-atlas.runtime");
@@ -73,6 +77,17 @@ async function createRuntime(): Promise<AtlasRuntime> {
     userAgent: legacyConfig.userAgent,
     // Em modo local a política só checa protocolo: interceptar toda requisição seria custo sem ganho.
     ...(urlPolicy.mode === "hosted-safe" ? { urlGuard: urlPolicy.assertAllowed } : {}),
+    limits: {
+      actionTimeoutMs: legacyConfig.actionTimeoutMs,
+      sectionMinHeight: legacyConfig.sectionMinHeight,
+      sectionDelayMs: legacyConfig.sectionDelayMs,
+      sectionScrollRatio: legacyConfig.sectionScrollRatio,
+      maxSections: legacyConfig.maxSections,
+      stateSettleMs: legacyConfig.stateSettleMs,
+      maxFullPageHeightPx: legacyConfig.maxFullPageHeightPx,
+      scrollMaxHeightPx: legacyConfig.scrollMaxHeightPx,
+      scrollMaxMs: legacyConfig.scrollMaxMs,
+    },
   });
 
   const projectDeps: ProjectServiceDeps = {
@@ -105,8 +120,10 @@ async function createRuntime(): Promise<AtlasRuntime> {
             ...repos,
             storage,
             engine,
-            viewport: RUNTIME_SETTINGS.captureViewport,
+            images: new SharpImageTransformer(),
+            viewports: RUNTIME_SETTINGS.captureViewports,
             timeoutMs: RUNTIME_SETTINGS.captureJobTimeoutMs,
+            assertUrlAllowed: urlPolicy.assertAllowed,
           }),
           import: createLegacyImportJobHandler(legacyImportDeps),
         },

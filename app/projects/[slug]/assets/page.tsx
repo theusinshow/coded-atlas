@@ -60,13 +60,13 @@ export default async function ProjectAssetsPage({ params, searchParams }: Props)
           <ul className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
             {[...assets].reverse().map((a) => (
               <li key={a.id} className="border border-line bg-surface">
-                <a href={assetFileUrl(a.id)} target="_blank" rel="noreferrer" className="block aspect-[16/10] overflow-hidden border-b border-line">
+                <Link href={`/projects/${project.slug}/assets/${a.id}`} className="block aspect-[16/10] overflow-hidden border-b border-line">
                   {a.mimeType.startsWith("video/") ? (
                     <video src={assetFileUrl(a.id)} muted preload="metadata" className="w-full h-full object-cover" />
                   ) : (
                     <AssetThumb id={a.id} alt={a.label ?? a.kind} width={640} className="w-full h-full" />
                   )}
-                </a>
+                </Link>
                 <div className="px-3 py-2">
                   <p className="text-[12px] text-zinc-200 truncate">{a.label ?? a.metadata.sectionName ?? a.kind}</p>
                   <p className="text-[10px] font-mono text-zinc-500 truncate">

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { newId, CaptureIdSchema, JobIdSchema, ProjectIdSchema, SourceIdSchema } from "../../shared/id";
 import { TimestampSchema, nowIso, parseOrThrow } from "../../shared/validation";
+import { CapturePlanSchema } from "./capture-plan";
 
 /**
  * Capture: uma OPERAÇÃO de captura, não um arquivo. Os Assets resultantes
@@ -25,6 +26,8 @@ export const CaptureParamsSchema = z.strictObject({
     .optional(),
   fullPage: z.boolean().optional(),
   selector: z.string().max(500).optional(),
+  /** Captura completa (2.3): o plano executado. */
+  plan: CapturePlanSchema.optional(),
 });
 export type CaptureParams = z.infer<typeof CaptureParamsSchema>;
 
