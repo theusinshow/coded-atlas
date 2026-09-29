@@ -5,8 +5,11 @@
  * Vários workers ao mesmo tempo são seguros: o claim no SQLite é atômico.
  */
 export async function register(): Promise<void> {
-  if (process.env.NEXT_RUNTIME !== "nodejs") return;
-  if (process.env.ATLAS_WORKER === "off") return;
-  const { startEmbeddedWorker } = await import("./src/infrastructure/embedded-worker");
-  await startEmbeddedWorker();
+  // O import fica DENTRO do if com NEXT_RUNTIME (substituído em build): assim o
+  // bundle Edge elimina o worker inteiro — com early return, o `next dev` tenta
+  // empacotar Sharp/SQLite para Edge e quebra (child_process).
+  if (process.env.NEXT_RUNTIME === "nodejs" && process.env.ATLAS_WORKER !== "off") {
+    const { startEmbeddedWorker } = await import("./src/infrastructure/embedded-worker");
+    await startEmbeddedWorker();
+  }
 }
