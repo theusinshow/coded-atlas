@@ -1,6 +1,7 @@
 "use client";
 import { useActionState, useState, useTransition } from "react";
 import {
+  changeSlugAction,
   deleteProjectAction,
   setProjectStatusAction,
   updateProjectAction,
@@ -22,6 +23,7 @@ interface ProjectView {
 export function ProjectSettingsForms({ project, categories }: { project: ProjectView; categories: string[] }) {
   const [editState, editAction, saving] = useActionState<ActionState, FormData>(updateProjectAction.bind(null, project.id), null);
   const [deleteState, deleteAction, deleting] = useActionState<ActionState, FormData>(deleteProjectAction.bind(null, project.id), null);
+  const [slugState, slugAction, renaming] = useActionState<ActionState, FormData>(changeSlugAction.bind(null, project.id), null);
   const [statusState, setStatusState] = useState<ActionState>(null);
   const [confirmation, setConfirmation] = useState("");
   const [pending, startTransition] = useTransition();
@@ -56,9 +58,6 @@ export function ProjectSettingsForms({ project, categories }: { project: Project
           <Field label="Descrição" htmlFor="ps-description">
             <textarea id="ps-description" name="description" rows={4} maxLength={2000} defaultValue={project.description ?? ""} className={INPUT_CLASS} />
           </Field>
-          <p className="text-[12px] text-cbm-gray-400">
-            Slug: <span className="font-mono text-cbm-gray-200">{project.slug}</span> (fixo — é o endereço do projeto)
-          </p>
           <FormError message={editState?.error} />
           {editState?.message && <p className="text-[12px] text-ok">{editState.message}</p>}
           <div className="flex justify-end">
@@ -66,6 +65,21 @@ export function ProjectSettingsForms({ project, categories }: { project: Project
               {saving ? "Salvando…" : "Salvar"}
             </Button>
           </div>
+        </form>
+      </section>
+
+      <section aria-labelledby="endereco">
+        <SectionTitle id="endereco">Endereço</SectionTitle>
+        <form action={slugAction} className="space-y-3">
+          <Field label="Slug" htmlFor="ps-slug" hint="Aparece na URL (/projects/slug). Trocar não afeta assets, peças nem documentos — links antigos param de funcionar.">
+            <div className="flex gap-2">
+              <input id="ps-slug" name="slug" required maxLength={80} pattern="[a-z0-9]+(-[a-z0-9]+)*" defaultValue={project.slug} className={`${INPUT_CLASS} font-mono`} />
+              <Button type="submit" disabled={renaming}>
+                {renaming ? "Trocando…" : "Trocar"}
+              </Button>
+            </div>
+          </Field>
+          <FormError message={slugState?.error} />
         </form>
       </section>
 

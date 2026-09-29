@@ -150,6 +150,21 @@ export async function updateProjectDetails(deps: Pick<ProjectServiceDeps, "proje
   return deps.projects.update(editProject(project, patch));
 }
 
+/**
+ * Troca o slug (endereço do projeto). A identidade é o ID: Assets, Outputs,
+ * documentos e o registro da importação v1 apontam para ele, então nada quebra —
+ * só a URL muda. Slug em uso por outro projeto = CONFLICT.
+ */
+export async function changeProjectSlug(deps: Pick<ProjectServiceDeps, "projects">, projectId: ProjectId, slug: string): Promise<Project> {
+  const project = await requireProject(deps.projects, projectId);
+  const next = SlugSchema.safeParse(slug.trim().toLowerCase());
+  if (!next.success) throw new DomainError("VALIDATION", "Slug inválido: use minúsculas, números e hífens (ex.: mj-engenharia).");
+  if (next.data === project.slug) return project;
+  const taken = await deps.projects.getBySlug(next.data);
+  if (taken) throw new DomainError("CONFLICT", `O slug "${next.data}" já é usado pelo projeto "${taken.name}".`);
+  return deps.projects.update({ ...project, slug: next.data });
+}
+
 export async function changeProjectStatus(
   deps: Pick<ProjectServiceDeps, "projects">,
   projectId: ProjectId,
@@ -187,14 +202,18 @@ export async function deleteProjectPermanently(
   const archives = new Set<StorageKey>();
   for (const record of (await deps.exports?.listByProject(projectId)) ?? []) if (record.result.archive) archives.add(record.result.archive.storageKey);
 
+  // O registro da importação é indexado pela PASTA v1 — que difere do slug atual se ele foi trocado.
+  // Lido ANTES de excluir: a exclusão zera o projectId do registro (FK set null).
+  const entry =
+    project.origin === "legacy" ? ((await deps.legacyImports.list()).find((e) => e.projectId === project.id) ?? (await deps.legacyImports.get(project.slug))) : null;
   await deps.projects.delete(projectId);
   await deps.sessions?.remove(projectId);
   if (project.origin === "legacy") {
     await deps.legacyImports.record({
-      slug: project.slug,
+      slug: entry?.slug ?? project.slug,
       projectId: null,
       status: "dismissed",
-      catalogCreatedAt: (await deps.legacyImports.get(project.slug))?.catalogCreatedAt ?? null,
+      catalogCreatedAt: entry?.catalogCreatedAt ?? null,
       error: null,
     });
   }

@@ -21,6 +21,7 @@ import {
   addSource,
   changeProjectStatus,
   createNewProject,
+  changeProjectSlug,
   deleteProjectPermanently,
   deleteUploadedAsset,
   removeSource,
@@ -275,6 +276,28 @@ describe("importação da biblioteca v1", () => {
     expect(await repos.legacyImports.get("descartavel")).toMatchObject({ status: "dismissed" });
     expect(await ensureLegacyImportQueued(importDeps)).toBeNull();
     expect(await repos.projects.getBySlug("descartavel")).toBeNull();
+  });
+
+  it("trocar o slug de um projeto importado: URL nova, recaptura v1 ainda atualiza o mesmo projeto, exclusão dispensa a pasta certa", async () => {
+    await writeLegacy("231");
+    await writeLegacy("outro");
+    await runImport();
+    const project = (await repos.projects.getBySlug("231"))!;
+    await expect(changeProjectSlug(deps, project.id, "Outro")).rejects.toSatisfy((e: unknown) => isDomainError(e) && e.code === "CONFLICT");
+    await expect(changeProjectSlug(deps, project.id, "lp interiores")).rejects.toThrow(/Slug inválido/);
+    const renamed = await changeProjectSlug(deps, project.id, " LP-Interiores ");
+    expect(renamed).toMatchObject({ id: project.id, slug: "lp-interiores" });
+    expect(await repos.projects.getBySlug("231")).toBeNull();
+    expect((await changeProjectSlug(deps, project.id, "lp-interiores")).slug).toBe("lp-interiores"); // mesmo slug: nada muda
+
+    await writeLegacy("231", "2026-07-01T00:00:00.000+00:00"); // recapturado no v1
+    expect((await runImport())?.result).toMatchObject({ refreshed: 1, created: 0 });
+    expect(await repos.captures.listByProject(project.id)).toHaveLength(2);
+
+    await deleteProjectPermanently(deps, project.id, "lp-interiores");
+    expect(await repos.legacyImports.get("231")).toMatchObject({ status: "dismissed", projectId: null });
+    expect(await repos.legacyImports.get("lp-interiores")).toBeNull();
+    expect(await ensureLegacyImportQueued(importDeps)).toBeNull(); // não volta duplicado
   });
 
   it("slug já usado por projeto 2.x → falha registrada, sem derrubar os outros", async () => {

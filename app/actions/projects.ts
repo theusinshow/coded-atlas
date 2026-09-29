@@ -9,6 +9,7 @@ import { ensureLegacyImportQueued } from "@/src/modules/import/legacy/legacy-imp
 import { importUploads, UPLOADABLE_KINDS } from "@/src/modules/import/upload";
 import {
   addSource,
+  changeProjectSlug,
   changeProjectStatus,
   createNewProject,
   deleteProjectPermanently,
@@ -74,6 +75,19 @@ export async function updateProjectAction(projectId: string, _prev: ActionState,
   } catch (err) {
     return failure(err);
   }
+}
+
+/** Troca o endereço do projeto e leva a tela para a URL nova. */
+export async function changeSlugAction(projectId: string, _prev: ActionState, form: FormData): Promise<ActionState> {
+  let slug: string;
+  try {
+    const { projectDeps } = await getAtlasRuntime();
+    slug = (await changeProjectSlug(projectDeps, ProjectIdSchema.parse(projectId), text(form, "slug") ?? "")).slug;
+  } catch (err) {
+    return failure(err);
+  }
+  revalidatePath("/projects");
+  redirect(`/projects/${slug}/settings`);
 }
 
 export async function setProjectStatusAction(projectId: string, status: "active" | "archived"): Promise<ActionState> {
