@@ -15,11 +15,11 @@ export interface BrainBadgeInfo {
 /** Quem vai pensar o plano — sempre explícito (IA ou regras determinísticas). */
 export function BrainBadge({ info }: { info: BrainBadgeInfo }) {
   return info.enabled ? (
-    <span className="inline-flex items-center gap-1.5 border border-accent/50 px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wider text-accent">
+    <span className="inline-flex items-center gap-1.5 border border-accent/50 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.22em] text-accent">
       Atlas Brain · {info.model}
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1.5 border border-line px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wider text-zinc-400" title="Defina OPENAI_API_KEY para ligar a IA">
+    <span className="inline-flex items-center gap-1.5 border border-line px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400" title="Defina OPENAI_API_KEY para ligar a IA">
       Regras do Atlas · IA desligada
     </span>
   );
@@ -43,10 +43,10 @@ export function PlanRequestForm({ projectId, slug, brain, directions = [] }: { p
         <legend className={LABEL_CLASS}>Objetivo</legend>
         <div className="grid grid-cols-2 gap-2">
           {(Object.keys(CREATIVE_GOALS) as CreativeGoal[]).map((id) => (
-            <label key={id} className={`cursor-pointer border px-3 py-2.5 transition-colors ${goal === id ? "border-accent bg-accent/5" : "border-line hover:border-zinc-500"}`}>
+            <label key={id} className={`cursor-pointer border px-3 py-2.5 transition-colors ${goal === id ? "border-accent bg-accent/5" : "border-line hover:border-cbm-gray-400"}`}>
               <input type="radio" name="goal" value={id} checked={goal === id} onChange={() => setGoal(id)} className="sr-only" />
-              <span className={`block text-[13px] ${goal === id ? "text-accent-bright" : "text-zinc-100"}`}>{CREATIVE_GOALS[id].label}</span>
-              <span className="block text-[11px] text-zinc-500 leading-snug">{CREATIVE_GOALS[id].hint}</span>
+              <span className={`block text-[13px] ${goal === id ? "text-cbm-white" : "text-cbm-gray-100"}`}>{CREATIVE_GOALS[id].label}</span>
+              <span className="block text-[11px] text-cbm-gray-400 leading-snug">{CREATIVE_GOALS[id].hint}</span>
             </label>
           ))}
         </div>
@@ -55,7 +55,7 @@ export function PlanRequestForm({ projectId, slug, brain, directions = [] }: { p
         <legend className={LABEL_CLASS}>Formatos (opcional — padrão do objetivo)</legend>
         <div className="flex flex-wrap gap-x-4 gap-y-2">
           {FORMAT_IDS.map((f) => (
-            <label key={f} className="flex items-center gap-1.5 text-[12px] text-zinc-300">
+            <label key={f} className="flex items-center gap-1.5 text-[12px] text-cbm-gray-200">
               <input type="checkbox" name="formats" value={f} />
               {FORMATS[f].label}
             </label>

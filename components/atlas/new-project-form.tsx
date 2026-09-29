@@ -65,7 +65,7 @@ export function NewProjectForm({ categories }: { categories: string[] }) {
       <Field label="Descrição" htmlFor="np-description">
         <textarea id="np-description" name="description" rows={3} maxLength={2000} className={INPUT_CLASS} />
       </Field>
-      <label className="flex items-center gap-2.5 text-sm text-zinc-300">
+      <label className="flex items-center gap-2.5 text-sm text-cbm-gray-200">
         <input type="checkbox" name="captureNow" defaultChecked disabled={!url} className="accent-[var(--color-accent)]" />
         Capturar o site assim que o projeto for criado
       </label>

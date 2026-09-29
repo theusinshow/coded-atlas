@@ -6,24 +6,24 @@ import { STYLE_MODES } from "@/components/create/types";
 import { Button, FormError, INPUT_CLASS, LABEL_CLASS } from "@/components/ui/primitives";
 
 export function DirectionList({ directions }: { directions: SavedDirection[] }) {
-  if (directions.length === 0) return <p className="text-[12px] text-zinc-500">Nenhuma direção salva. Salve uma a partir de um plano que funcionou.</p>;
+  if (directions.length === 0) return <p className="text-[12px] text-cbm-gray-400">Nenhuma direção salva. Salve uma a partir de um plano que funcionou.</p>;
   return (
     <ul className="space-y-2" aria-label="Direções salvas">
       {directions.map((d) => (
         <li key={d.id} className="border border-line px-3 py-2 text-[12px] space-y-1">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-zinc-100 flex items-center gap-2">
+            <p className="text-cbm-gray-100 flex items-center gap-2">
               {d.accent && <span className="inline-block w-2.5 h-2.5" style={{ background: d.accent }} aria-hidden />}
               {d.name}
             </p>
             <form action={deleteDirectionAction}>
               <input type="hidden" name="id" value={d.id} />
-              <button type="submit" className="text-[11px] text-zinc-600 hover:text-bad" aria-label={`Excluir direção ${d.name}`}>
+              <button type="submit" className="text-[11px] text-cbm-gray-400 hover:text-bad" aria-label={`Excluir direção ${d.name}`}>
                 excluir
               </button>
             </form>
           </div>
-          <p className="text-zinc-500">
+          <p className="text-cbm-gray-400">
             {STYLE_MODES.find((s) => s.id === d.styleMode)?.label} · {d.tone}
           </p>
         </li>
@@ -57,7 +57,7 @@ export function NewDirectionForm({ projectId }: { projectId: string }) {
   const input = `${INPUT_CLASS} !py-1.5 !text-[12px]`;
   return (
     <details className="border border-line">
-      <summary className="cursor-pointer px-3 py-2 text-[12px] text-zinc-400 hover:text-zinc-100">Nova direção à mão</summary>
+      <summary className="cursor-pointer px-3 py-2 text-[12px] text-cbm-gray-400 hover:text-cbm-gray-100">Nova direção à mão</summary>
       <form action={action} className="p-3 space-y-2">
         <input type="hidden" name="projectId" value={projectId} />
         <input name="name" required maxLength={80} placeholder="Nome" aria-label="Nome da direção" className={input} />
@@ -71,7 +71,7 @@ export function NewDirectionForm({ projectId }: { projectId: string }) {
               </option>
             ))}
           </select>
-          <label className="flex items-center gap-1.5 text-[12px] text-zinc-400 whitespace-nowrap">
+          <label className="flex items-center gap-1.5 text-[12px] text-cbm-gray-400 whitespace-nowrap">
             <input type="checkbox" name="useAccent" /> destaque
           </label>
           <input type="color" name="accent" aria-label="Cor de destaque" defaultValue="#c98a4b" className="h-8 w-10 bg-transparent border border-line" />

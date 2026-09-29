@@ -17,7 +17,7 @@ export function AssetThumb({
 }) {
   if (!id) {
     return (
-      <div className={`grid place-items-center bg-surface-2 text-[11px] font-mono text-zinc-600 ${className}`}>
+      <div className={`grid place-items-center bg-surface-2 text-[11px] font-mono text-cbm-gray-400 ${className}`}>
         sem imagem
       </div>
     );

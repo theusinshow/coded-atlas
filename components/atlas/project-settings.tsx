@@ -56,8 +56,8 @@ export function ProjectSettingsForms({ project, categories }: { project: Project
           <Field label="Descrição" htmlFor="ps-description">
             <textarea id="ps-description" name="description" rows={4} maxLength={2000} defaultValue={project.description ?? ""} className={INPUT_CLASS} />
           </Field>
-          <p className="text-[12px] text-zinc-500">
-            Slug: <span className="font-mono text-zinc-300">{project.slug}</span> (fixo — é o endereço do projeto)
+          <p className="text-[12px] text-cbm-gray-400">
+            Slug: <span className="font-mono text-cbm-gray-200">{project.slug}</span> (fixo — é o endereço do projeto)
           </p>
           <FormError message={editState?.error} />
           {editState?.message && <p className="text-[12px] text-ok">{editState.message}</p>}
@@ -72,7 +72,7 @@ export function ProjectSettingsForms({ project, categories }: { project: Project
       <section aria-labelledby="ciclo">
         <SectionTitle id="ciclo">Ciclo de vida</SectionTitle>
         <div className="flex flex-wrap items-center justify-between gap-4 border border-line p-4">
-          <p className="text-[13px] text-zinc-300 max-w-md">
+          <p className="text-[13px] text-cbm-gray-200 max-w-md">
             {project.status === "active"
               ? "Arquivar tira o projeto da biblioteca sem apagar nada. Dá para restaurar a qualquer momento."
               : "Projeto arquivado: fora da biblioteca, mas com todo o material preservado."}
@@ -87,7 +87,7 @@ export function ProjectSettingsForms({ project, categories }: { project: Project
       <section aria-labelledby="excluir">
         <SectionTitle id="excluir">Excluir definitivamente</SectionTitle>
         <form action={deleteAction} className="border border-bad/40 p-4 space-y-4">
-          <p className="text-[13px] text-zinc-300">
+          <p className="text-[13px] text-cbm-gray-200">
             Apaga o projeto, suas origens, capturas, assets e peças. Arquivos compartilhados com outros projetos são preservados.
             {project.origin === "legacy" && " A pasta do catálogo v1 não é tocada, e o projeto não volta na próxima sincronização."}
           </p>

@@ -19,7 +19,7 @@ export async function GET(_req: Request, { params }: Params): Promise<Response> 
     const name = (await params).file;
     const font = fontFiles().find((f) => path.posix.basename(f.file) === name);
     if (!font) throw new DomainError("NOT_FOUND", "Fonte não encontrada.");
-    const bytes = await readFile(path.join(process.cwd(), "node_modules", font.file));
+    const bytes = await readFile(path.join(process.cwd(), font.file));
     return new Response(new Uint8Array(bytes), {
       headers: { "Content-Type": "font/woff2", "Cache-Control": "public, max-age=31536000, immutable" },
     });

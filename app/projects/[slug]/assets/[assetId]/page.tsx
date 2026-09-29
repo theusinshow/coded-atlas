@@ -51,7 +51,7 @@ export default async function AssetDetailPage({ params }: Props) {
 
   return (
     <div className="space-y-8">
-      <Link href={`/projects/${project.slug}/assets`} className="text-[12px] text-zinc-500 hover:text-zinc-200">
+      <Link href={`/projects/${project.slug}/assets`} className="text-[12px] text-cbm-gray-400 hover:text-cbm-gray-200">
         ← Assets
       </Link>
       <div className="grid gap-8 lg:grid-cols-[1fr_22rem]">
@@ -65,8 +65,8 @@ export default async function AssetDetailPage({ params }: Props) {
         </div>
         <aside className="space-y-6">
           <div>
-            <h2 className="text-lg font-semibold text-zinc-100">{asset.label ?? asset.kind}</h2>
-            {project.coverAssetId === asset.id && <p className="text-[11px] font-mono uppercase tracking-wider text-accent mt-1">Capa do projeto</p>}
+            <h2 className="text-lg font-semibold text-cbm-gray-100">{asset.label ?? asset.kind}</h2>
+            {project.coverAssetId === asset.id && <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-accent mt-1">Capa do projeto</p>}
           </div>
           <AssetActions
             projectId={project.id}
@@ -79,8 +79,8 @@ export default async function AssetDetailPage({ params }: Props) {
             <dl className="divide-y divide-line">
               {rows.map(([k, v]) => (
                 <div key={k} className="grid grid-cols-[7rem_1fr] gap-2 px-3 py-2">
-                  <dt className="text-[11px] text-zinc-500">{k}</dt>
-                  <dd className="text-[12px] text-zinc-200 break-all">{v}</dd>
+                  <dt className="text-[11px] text-cbm-gray-400">{k}</dt>
+                  <dd className="text-[12px] text-cbm-gray-200 break-all">{v}</dd>
                 </div>
               ))}
             </dl>
@@ -105,11 +105,11 @@ export default async function AssetDetailPage({ params }: Props) {
 function LineageItem({ slug, id, label, image }: { slug: string; id: string; label: string; image: boolean }) {
   return (
     <li>
-      <Link href={`/projects/${slug}/assets/${id}`} className="flex items-center gap-3 border border-line p-2 hover:border-zinc-600">
+      <Link href={`/projects/${slug}/assets/${id}`} className="flex items-center gap-3 border border-line p-2 hover:border-cbm-gray-600">
         <span className="w-16 aspect-[16/10] overflow-hidden shrink-0">
           <AssetThumb id={image ? id : null} alt={label} width={320} className="w-full h-full" />
         </span>
-        <span className="text-[12px] text-zinc-300">{label}</span>
+        <span className="text-[12px] text-cbm-gray-200">{label}</span>
       </Link>
     </li>
   );

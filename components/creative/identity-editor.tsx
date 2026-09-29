@@ -9,7 +9,7 @@ export function IdentityEditor({ projectId, profile }: { projectId: string; prof
   const [state, action, pending] = useActionState<CreativeActionState, FormData>(reviseIdentityAction, null);
   return (
     <details className="border border-line">
-      <summary className="cursor-pointer px-3 py-2 text-[12px] text-zinc-400 hover:text-zinc-100">{profile ? "Corrigir identidade" : "Definir identidade à mão"}</summary>
+      <summary className="cursor-pointer px-3 py-2 text-[12px] text-cbm-gray-400 hover:text-cbm-gray-100">{profile ? "Corrigir identidade" : "Definir identidade à mão"}</summary>
       <form action={action} className="p-3 space-y-3">
         <input type="hidden" name="projectId" value={projectId} />
         <div>

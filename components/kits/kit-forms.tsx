@@ -19,13 +19,13 @@ export function KitGenerator({ projectId, directions }: { projectId: string; dir
         <legend className={LABEL_CLASS}>Kit</legend>
         <div className="grid gap-2">
           {KIT_PRESETS.map((p) => (
-            <label key={p.id} className={`cursor-pointer border px-3 py-3 transition-colors ${preset === p.id ? "border-accent bg-accent/5" : "border-line hover:border-zinc-500"}`}>
+            <label key={p.id} className={`cursor-pointer border px-3 py-3 transition-colors ${preset === p.id ? "border-accent bg-accent/5" : "border-line hover:border-cbm-gray-400"}`}>
               <input type="radio" name="presetId" value={p.id} checked={preset === p.id} onChange={() => setPreset(p.id)} className="sr-only" />
-              <span className={`block text-[13px] ${preset === p.id ? "text-accent-bright" : "text-zinc-100"}`}>{p.name}</span>
-              <span className="block text-[11px] text-zinc-500 leading-snug">{p.description}</span>
+              <span className={`block text-[13px] ${preset === p.id ? "text-cbm-white" : "text-cbm-gray-100"}`}>{p.name}</span>
+              <span className="block text-[11px] text-cbm-gray-400 leading-snug">{p.description}</span>
               <span className="mt-1.5 flex flex-wrap gap-1">
                 {p.items.map((i) => (
-                  <span key={i.id} className="border border-line px-1.5 py-0.5 text-[10px] font-mono text-zinc-400">
+                  <span key={i.id} className="border border-line px-1.5 py-0.5 text-[10px] font-mono text-cbm-gray-400">
                     {i.label} · {KIND_LABEL[i.kind]}
                   </span>
                 ))}
@@ -63,7 +63,7 @@ export function KitRenderForm({ kitId, hasVideo, busyJobId }: { kitId: string; h
   return (
     <form action={action} className="space-y-3">
       <input type="hidden" name="kitId" value={kitId} />
-      <div className="flex flex-wrap items-center gap-4 text-[12px] text-zinc-300">
+      <div className="flex flex-wrap items-center gap-4 text-[12px] text-cbm-gray-200">
         <label className="flex items-center gap-1.5">
           Imagens
           <select name="image" defaultValue="png" className="h-8 bg-surface border border-line px-2 text-[12px]">

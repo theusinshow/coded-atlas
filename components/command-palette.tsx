@@ -146,21 +146,21 @@ export function CommandPalette() {
         className="w-full max-w-xl bg-surface border border-line-soft shadow-2xl"
       >
         <div className="flex items-center gap-3 px-4 border-b border-line">
-          <span className="text-zinc-500 text-sm" aria-hidden>⌕</span>
+          <span className="text-cbm-gray-400 text-sm" aria-hidden>⌕</span>
           <input
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder="Buscar projeto ou ação..."
-            className="flex-1 bg-transparent py-3.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none"
+            className="flex-1 bg-transparent py-3.5 text-sm text-cbm-gray-100 placeholder:text-cbm-gray-400 focus:outline-none"
           />
-          <kbd className="text-[10px] font-mono text-zinc-500 border border-line px-1.5 py-0.5">esc</kbd>
+          <kbd className="text-[10px] font-mono text-cbm-gray-400 border border-line px-1.5 py-0.5">esc</kbd>
         </div>
 
         <ul className="max-h-80 overflow-y-auto py-1">
           {items.length === 0 && (
-            <li className="px-4 py-6 text-center text-[13px] text-zinc-500">
+            <li className="px-4 py-6 text-center text-[13px] text-cbm-gray-400">
               {projects === null ? "Carregando..." : "Nada encontrado."}
             </li>
           )}
@@ -177,14 +177,14 @@ export function CommandPalette() {
                   ].join(" ")}
                 >
                   <span className="min-w-0">
-                    <span className={["text-sm", sel ? "text-zinc-50" : "text-zinc-200"].join(" ")}>
+                    <span className={["text-sm", sel ? "text-cbm-white" : "text-cbm-gray-200"].join(" ")}>
                       {item.label}
                     </span>
                     {item.sub && (
-                      <span className="block text-[11px] font-mono text-zinc-500 truncate">{item.sub}</span>
+                      <span className="block text-[11px] font-mono text-cbm-gray-400 truncate">{item.sub}</span>
                     )}
                   </span>
-                  <span className={["text-[10px] font-mono uppercase tracking-wider shrink-0", sel ? "text-accent" : "text-zinc-600"].join(" ")}>
+                  <span className={["text-[10px] font-medium uppercase tracking-[0.22em] shrink-0", sel ? "text-accent" : "text-cbm-gray-400"].join(" ")}>
                     {item.hint}
                   </span>
                 </button>

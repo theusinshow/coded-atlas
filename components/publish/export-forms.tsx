@@ -46,10 +46,10 @@ export function ExportForm({ formId, mode, projectId, destinations, defaultName 
         <span className="font-mono text-accent tabular-nums" data-export-count={count}>
           {count} {count === 1 ? "peça marcada" : "peças marcadas"}
         </span>
-        <button type="button" onClick={() => selectAll(true)} className="text-zinc-400 hover:text-zinc-100">
+        <button type="button" onClick={() => selectAll(true)} className="text-cbm-gray-400 hover:text-cbm-gray-100">
           Marcar todas
         </button>
-        <button type="button" onClick={() => selectAll(false)} className="text-zinc-400 hover:text-zinc-100">
+        <button type="button" onClick={() => selectAll(false)} className="text-cbm-gray-400 hover:text-cbm-gray-100">
           Limpar
         </button>
       </div>
@@ -62,11 +62,11 @@ export function ExportForm({ formId, mode, projectId, destinations, defaultName 
             return (
               <label
                 key={d.id}
-                className={`border px-3 py-2.5 transition-colors ${!available ? "opacity-50 cursor-not-allowed border-line" : active ? "cursor-pointer border-accent bg-accent/5" : "cursor-pointer border-line hover:border-zinc-500"}`}
+                className={`border px-3 py-2.5 transition-colors ${!available ? "opacity-50 cursor-not-allowed border-line" : active ? "cursor-pointer border-accent bg-accent/5" : "cursor-pointer border-line hover:border-cbm-gray-400"}`}
               >
                 <input type="radio" name="destination" value={d.id} checked={active} disabled={!available} onChange={() => setDestination(d.id)} className="sr-only" />
-                <span className={`block text-[13px] ${active ? "text-accent-bright" : "text-zinc-100"}`}>{d.title}</span>
-                <span className="block text-[11px] text-zinc-500 leading-snug break-all">{d.hint(destinations)}</span>
+                <span className={`block text-[13px] ${active ? "text-cbm-white" : "text-cbm-gray-100"}`}>{d.title}</span>
+                <span className="block text-[11px] text-cbm-gray-400 leading-snug break-all">{d.hint(destinations)}</span>
               </label>
             );
           })}

@@ -42,22 +42,22 @@ export default async function JobsPage() {
                 <li key={job.id} className="grid gap-2 px-4 py-3 sm:grid-cols-[9rem_1fr_7rem_auto] sm:items-center">
                   <JobStatusBadge status={job.status} />
                   <div className="min-w-0">
-                    <p className="text-[13px] text-zinc-200">
+                    <p className="text-[13px] text-cbm-gray-200">
                       {JOB_TYPE_LABEL[job.type] ?? job.type}
                       {project && (
                         <>
                           {" · "}
-                          <Link href={`/projects/${project.slug}`} className="text-zinc-400 hover:text-accent">
+                          <Link href={`/projects/${project.slug}`} className="text-cbm-gray-400 hover:text-accent">
                             {project.name}
                           </Link>
                         </>
                       )}
                     </p>
-                    <p className={`text-[11px] truncate ${job.error ? "text-bad" : "text-zinc-500"}`}>
+                    <p className={`text-[11px] truncate ${job.error ? "text-bad" : "text-cbm-gray-400"}`}>
                       {job.error?.message ?? job.message ?? new Date(job.createdAt).toLocaleString("pt-BR")}
                     </p>
                   </div>
-                  <span className="text-[11px] font-mono text-zinc-500 tabular-nums">
+                  <span className="text-[11px] font-mono text-cbm-gray-400 tabular-nums">
                     {isTerminal(job.status) ? duration(job.startedAt, job.finishedAt) : `${job.progress}%`}
                   </span>
                   <div className="justify-self-end">{!isTerminal(job.status) && <CancelJobButton jobId={job.id} />}</div>

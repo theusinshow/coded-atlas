@@ -35,7 +35,7 @@ export default async function CompositionEditorPage({ params }: Props) {
 
   return (
     <div className="space-y-8">
-      <Link href={`/projects/${project.slug}/create`} className="text-[12px] text-zinc-500 hover:text-zinc-200">
+      <Link href={`/projects/${project.slug}/create`} className="text-[12px] text-cbm-gray-400 hover:text-cbm-gray-200">
         ← Composições
       </Link>
       <CompositionEditor
@@ -46,7 +46,7 @@ export default async function CompositionEditorPage({ params }: Props) {
       />
       {renders.length > 0 && (
         <section aria-labelledby="renders" className="space-y-3">
-          <h2 id="renders" className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+          <h2 id="renders" className="text-[11px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400">
             Renders desta peça ({renders.length})
           </h2>
           <ul className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">

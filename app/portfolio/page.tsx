@@ -61,7 +61,7 @@ export default async function PortfolioPage() {
               <SectionTitle
                 id={`p-${project.id}`}
                 aside={
-                  <Link href={`/projects/${project.slug}/publish`} className="text-[11px] text-zinc-500 hover:text-zinc-200">
+                  <Link href={`/projects/${project.slug}/publish`} className="text-[11px] text-cbm-gray-400 hover:text-cbm-gray-200">
                     Abrir em Publicar →
                   </Link>
                 }

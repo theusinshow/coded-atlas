@@ -172,15 +172,15 @@ export function CaseEditor({ documentId, name: initialName, project, initialCont
   }
 
   const emptyTexts = sections.filter((s) => s.type === "text" && !s.body.trim()).length;
-  const btn = "h-8 px-3 border border-line text-[12px] text-zinc-300 hover:border-zinc-500 hover:text-zinc-50 disabled:opacity-30";
+  const btn = "h-8 px-3 border border-line text-[12px] text-cbm-gray-200 hover:border-cbm-gray-400 hover:text-cbm-white disabled:opacity-30";
 
   return (
-    <div className="fixed inset-0 z-40 flex flex-col bg-base text-zinc-100" data-case-editor>
+    <div className="fixed inset-0 z-40 flex flex-col bg-base text-cbm-gray-100" data-case-editor>
       <header className="h-12 shrink-0 flex items-center gap-3 border-b border-line px-3">
-        <Link href={`/projects/${project.slug}/cases`} className="text-[12px] text-zinc-500 hover:text-zinc-100 whitespace-nowrap">
+        <Link href={`/projects/${project.slug}/cases`} className="text-[12px] text-cbm-gray-400 hover:text-cbm-gray-100 whitespace-nowrap">
           ← {project.name}
         </Link>
-        <span className="text-zinc-700">/</span>
+        <span className="text-cbm-gray-600">/</span>
         <input
           aria-label="Nome do case"
           value={name}
@@ -189,7 +189,7 @@ export function CaseEditor({ documentId, name: initialName, project, initialCont
           onBlur={() => name.trim() && name.trim() !== initialName && void renameDocumentAction(documentId, name.trim())}
           className="min-w-0 w-64 bg-transparent text-[13px] px-1.5 h-8 border border-transparent hover:border-line focus:border-accent focus:outline-none"
         />
-        <span className={`text-[11px] font-mono ${saveState === "error" || saveState === "conflict" ? "text-bad" : "text-zinc-500"}`} data-save-state={saveState}>
+        <span className={`text-[11px] font-mono ${saveState === "error" || saveState === "conflict" ? "text-bad" : "text-cbm-gray-400"}`} data-save-state={saveState}>
           {SAVE_LABEL[saveState]}
         </span>
         <div className="ml-auto flex items-center gap-1.5">
@@ -217,7 +217,7 @@ export function CaseEditor({ documentId, name: initialName, project, initialCont
             </button>
           )}
           <div className="relative">
-            <button type="button" className="h-8 px-4 bg-accent text-zinc-950 text-[12px] font-medium hover:bg-accent-bright" onClick={() => setMenu((m) => !m)} aria-expanded={menu}>
+            <button type="button" className="h-8 px-4 bg-signal text-cbm-black text-[10px] font-display font-semibold uppercase tracking-[0.12em] hover:bg-signal-dark" onClick={() => setMenu((m) => !m)} aria-expanded={menu}>
               Exportar
             </button>
             {menu && (
@@ -229,13 +229,13 @@ export function CaseEditor({ documentId, name: initialName, project, initialCont
                     ["png", "Módulos PNG 1400 px (Behance)"],
                   ] as const
                 ).map(([f, label]) => (
-                  <label key={f} className="flex items-center gap-2 text-[12px] text-zinc-300">
+                  <label key={f} className="flex items-center gap-2 text-[12px] text-cbm-gray-200">
                     <input type="checkbox" checked={formats.includes(f)} onChange={(e) => setFormats((cur) => (e.target.checked ? [...cur, f] : cur.filter((x) => x !== f)))} />
                     {label}
                   </label>
                 ))}
-                <p className="text-[11px] text-zinc-500">Trechos de texto vazios não entram na exportação.</p>
-                <button type="button" disabled={pending || formats.length === 0} onClick={exportCase} className="w-full h-8 bg-accent text-zinc-950 text-[12px] font-medium disabled:opacity-40">
+                <p className="text-[11px] text-cbm-gray-400">Trechos de texto vazios não entram na exportação.</p>
+                <button type="button" disabled={pending || formats.length === 0} onClick={exportCase} className="w-full h-8 bg-signal text-cbm-black text-[10px] font-display font-semibold uppercase tracking-[0.12em] hover:bg-signal-dark disabled:opacity-40">
                   Exportar agora
                 </button>
               </div>
@@ -259,19 +259,19 @@ export function CaseEditor({ documentId, name: initialName, project, initialCont
               ))}
             </select>
           </div>
-          <button type="button" onClick={() => setSelected(null)} className={`text-left px-3 py-2 text-[12px] border-b border-line ${selected === null ? "bg-surface-2 text-zinc-50" : "text-zinc-400 hover:bg-surface"}`}>
+          <button type="button" onClick={() => setSelected(null)} className={`text-left px-3 py-2 text-[12px] border-b border-line ${selected === null ? "bg-surface-2 text-cbm-white" : "text-cbm-gray-400 hover:bg-surface"}`}>
             Capa e dados do case
           </button>
           <ol className="flex-1 overflow-y-auto" aria-label="Seções">
             {sections.map((s, i) => (
-              <li key={s.id} data-case-row={s.type} className={`group flex items-center gap-2 px-3 h-9 text-[12px] cursor-pointer ${selected === s.id ? "bg-surface-2 text-zinc-50" : "text-zinc-400 hover:bg-surface"}`} onClick={() => setSelected(s.id)}>
-                <span className="w-16 shrink-0 text-[10px] font-mono uppercase text-zinc-600">{TYPE_LABEL[s.type].split(" ")[0]}</span>
-                <span className={`flex-1 truncate ${s.type === "text" && !s.body.trim() ? "italic text-zinc-600" : ""}`}>{summary(s)}</span>
+              <li key={s.id} data-case-row={s.type} className={`group flex items-center gap-2 px-3 h-9 text-[12px] cursor-pointer ${selected === s.id ? "bg-surface-2 text-cbm-white" : "text-cbm-gray-400 hover:bg-surface"}`} onClick={() => setSelected(s.id)}>
+                <span className="w-16 shrink-0 text-[10px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400">{TYPE_LABEL[s.type].split(" ")[0]}</span>
+                <span className={`flex-1 truncate ${s.type === "text" && !s.body.trim() ? "italic text-cbm-gray-400" : ""}`}>{summary(s)}</span>
                 <span className="hidden group-hover:flex gap-1">
-                  <button type="button" aria-label="Subir" onClick={(e) => (e.stopPropagation(), move(i, -1))} className="text-zinc-500 hover:text-zinc-100">
+                  <button type="button" aria-label="Subir" onClick={(e) => (e.stopPropagation(), move(i, -1))} className="text-cbm-gray-400 hover:text-cbm-gray-100">
                     ↑
                   </button>
-                  <button type="button" aria-label="Descer" onClick={(e) => (e.stopPropagation(), move(i, 1))} className="text-zinc-500 hover:text-zinc-100">
+                  <button type="button" aria-label="Descer" onClick={(e) => (e.stopPropagation(), move(i, 1))} className="text-cbm-gray-400 hover:text-cbm-gray-100">
                     ↓
                   </button>
                   <button
@@ -282,7 +282,7 @@ export function CaseEditor({ documentId, name: initialName, project, initialCont
                       change((c) => ({ ...c, sections: c.sections.filter((x) => x.id !== s.id) }));
                       if (selected === s.id) setSelected(null);
                     }}
-                    className="text-zinc-500 hover:text-bad"
+                    className="text-cbm-gray-400 hover:text-bad"
                   >
                     ×
                   </button>
@@ -334,7 +334,7 @@ export function CaseEditor({ documentId, name: initialName, project, initialCont
 
 function SectionInspector({ section, assets, outputs, onChange }: { section: CaseSection; assets: StudioAsset[]; outputs: CaseOutputOption[]; onChange: (patch: Partial<CaseSection>, key?: string) => void }) {
   const images = assets.filter((a) => a.mimeType.startsWith("image/"));
-  const area = "w-full bg-surface-2 border border-line text-zinc-100 text-[12px] p-2 focus:outline-none focus:border-accent";
+  const area = "w-full bg-surface-2 border border-line text-cbm-gray-100 text-[12px] p-2 focus:outline-none focus:border-accent";
   return (
     <Section title={TYPE_LABEL[section.type]}>
       {"heading" in section && <TextField label="Título" value={section.heading} maxLength={120} onChange={(v) => onChange({ heading: v }, "heading")} />}
@@ -355,7 +355,7 @@ function SectionInspector({ section, assets, outputs, onChange }: { section: Cas
       )}
       {section.type === "gallery" && (
         <div className="space-y-2">
-          <p className="text-[11px] text-zinc-500">Clique para incluir/remover ({section.assetIds.length}/12).</p>
+          <p className="text-[11px] text-cbm-gray-400">Clique para incluir/remover ({section.assetIds.length}/12).</p>
           <AssetPicker
             assets={images}
             value={null}
@@ -388,7 +388,7 @@ function SectionInspector({ section, assets, outputs, onChange }: { section: Cas
             <div key={i} className="grid grid-cols-[1fr_1.4fr_auto] gap-1.5">
               <input aria-label={`Rótulo ${i + 1}`} value={item.label} maxLength={60} onChange={(e) => onChange({ items: section.items.map((x, j) => (j === i ? { ...x, label: e.target.value || " " } : x)) }, `fact-l-${i}`)} className="h-8 bg-surface-2 border border-line px-2 text-[12px]" />
               <input aria-label={`Valor ${i + 1}`} value={item.value} maxLength={160} onChange={(e) => onChange({ items: section.items.map((x, j) => (j === i ? { ...x, value: e.target.value || " " } : x)) }, `fact-v-${i}`)} className="h-8 bg-surface-2 border border-line px-2 text-[12px]" />
-              <button type="button" aria-label="Remover item" onClick={() => onChange({ items: section.items.filter((_, j) => j !== i) })} className="text-zinc-500 hover:text-bad px-1">
+              <button type="button" aria-label="Remover item" onClick={() => onChange({ items: section.items.filter((_, j) => j !== i) })} className="text-cbm-gray-400 hover:text-bad px-1">
                 ×
               </button>
             </div>
@@ -400,7 +400,7 @@ function SectionInspector({ section, assets, outputs, onChange }: { section: Cas
           )}
         </div>
       )}
-      {section.type === "identity" && <p className="text-[11px] text-zinc-500">Mostra a paleta e as fontes da identidade congelada no case.</p>}
+      {section.type === "identity" && <p className="text-[11px] text-cbm-gray-400">Mostra a paleta e as fontes da identidade congelada no case.</p>}
     </Section>
   );
 }

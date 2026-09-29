@@ -59,8 +59,8 @@ export default async function ProjectPublishPage({ params }: Props) {
       <section aria-labelledby="pacote">
         <SectionTitle id="pacote">Criar pacote</SectionTitle>
         <Panel className="p-4 space-y-3">
-          <p className="text-[12px] text-zinc-400">
-            Marque as peças abaixo (<span className="text-zinc-200">Incluir</span>) — o pacote sai organizado por tipo (imagens, vídeos, documentos, web) com um{" "}
+          <p className="text-[12px] text-cbm-gray-400">
+            Marque as peças abaixo (<span className="text-cbm-gray-200">Incluir</span>) — o pacote sai organizado por tipo (imagens, vídeos, documentos, web) com um{" "}
             <span className="font-mono">manifest.json</span>.
           </p>
           <ExportForm formId={FORM_ID} mode="package" projectId={project.id} destinations={destinationStatus(exportDeps)} defaultName={`${project.name} · pacote`} />
@@ -73,11 +73,11 @@ export default async function ProjectPublishPage({ params }: Props) {
             <div key={group.jobId ?? group.items[0].id} className="space-y-3" data-render-group={group.jobId ?? ""}>
               {group.items.length > 1 && group.jobId && (
                 <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line pb-2">
-                  <p className="text-[12px] text-zinc-300">
+                  <p className="text-[12px] text-cbm-gray-200">
                     {group.items.some((o) => o.metadata.page !== undefined) ? `Carrossel · ${new Set(group.items.map((o) => o.metadata.page)).size} páginas` : "Render"} · {group.items.length} arquivos ·{" "}
-                    <span className="text-zinc-500">{new Date(group.items[0].createdAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</span>
+                    <span className="text-cbm-gray-400">{new Date(group.items[0].createdAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</span>
                   </p>
-                  <a href={`/api/atlas/jobs/${group.jobId}/outputs`} className="text-[11px] font-mono uppercase tracking-wider text-accent hover:text-accent-bright">
+                  <a href={`/api/atlas/jobs/${group.jobId}/outputs`} className="text-[11px] font-medium uppercase tracking-[0.22em] text-accent hover:text-accent-bright">
                     Baixar tudo (.zip)
                   </a>
                 </div>
@@ -88,12 +88,12 @@ export default async function ProjectPublishPage({ params }: Props) {
                     <OutputCard output={o} />
                     <PickOutput formId={FORM_ID} outputId={o.id} />
                     {o.metadata.documentId && (
-                      <Link href={`/studio/${o.metadata.documentId}`} className="text-[11px] text-zinc-500 hover:text-zinc-200">
+                      <Link href={`/studio/${o.metadata.documentId}`} className="text-[11px] text-cbm-gray-400 hover:text-cbm-gray-200">
                         Abrir no canvas (rev {o.metadata.documentRevision}) →
                       </Link>
                     )}
                     {o.metadata.instanceId && (
-                      <Link href={`/projects/${project.slug}/create/${o.metadata.instanceId}`} className="text-[11px] text-zinc-500 hover:text-zinc-200">
+                      <Link href={`/projects/${project.slug}/create/${o.metadata.instanceId}`} className="text-[11px] text-cbm-gray-400 hover:text-cbm-gray-200">
                         Abrir composição →
                       </Link>
                     )}

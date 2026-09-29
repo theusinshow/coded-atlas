@@ -61,7 +61,7 @@ export default async function ProjectsPage({ searchParams }: Props) {
 
       {importJob[0] && (
         <section aria-label="Importação da biblioteca v1" className="space-y-2">
-          <p className="text-[12px] text-zinc-400">Importando a biblioteca v1 para o banco novo (os arquivos originais não são alterados).</p>
+          <p className="text-[12px] text-cbm-gray-400">Importando a biblioteca v1 para o banco novo (os arquivos originais não são alterados).</p>
           <JobFollower jobId={importJob[0].id} />
         </section>
       )}
@@ -88,7 +88,7 @@ export default async function ProjectsPage({ searchParams }: Props) {
             </option>
           ))}
         </select>
-        <button type="submit" className="h-[42px] px-4 border border-line text-sm text-zinc-200 hover:bg-surface">
+        <button type="submit" className="h-[42px] px-4 border border-line text-sm text-cbm-gray-200 hover:bg-surface">
           Filtrar
         </button>
       </form>
@@ -107,20 +107,20 @@ export default async function ProjectsPage({ searchParams }: Props) {
         <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {withSources.map(({ project, url }) => (
             <li key={project.id}>
-              <Link href={`/projects/${project.slug}`} className="group block border border-line bg-base hover:border-zinc-600 transition-colors">
+              <Link href={`/projects/${project.slug}`} className="group block border border-line bg-base hover:border-cbm-gray-600 transition-colors">
                 <div className="relative aspect-video border-b border-line overflow-hidden">
                   <AssetThumb id={project.coverAssetId} alt={`Capa de ${project.name}`} className="w-full h-full group-hover:scale-[1.02] transition-transform duration-500" />
-                  <span className="absolute top-2 left-2 text-[10px] font-mono uppercase tracking-wider text-zinc-300 bg-base/85 px-1.5 py-0.5 border border-line">
+                  <span className="absolute top-2 left-2 text-[10px] font-medium uppercase tracking-[0.22em] text-cbm-gray-200 bg-base/85 px-1.5 py-0.5 border border-line">
                     {project.category}
                   </span>
                 </div>
                 <div className="p-4 space-y-1">
                   <div className="flex items-center gap-2">
-                    <p className="text-[15px] font-semibold text-zinc-100 truncate">{project.name}</p>
+                    <p className="text-[15px] font-semibold text-cbm-gray-100 truncate">{project.name}</p>
                     <ProjectStatusBadge status={project.status} />
                   </div>
-                  <p className="text-[13px] text-zinc-400 truncate">{project.client ?? " "}</p>
-                  <div className="flex items-center justify-between pt-2 text-[11px] font-mono text-zinc-500">
+                  <p className="text-[13px] text-cbm-gray-400 truncate">{project.client ?? " "}</p>
+                  <div className="flex items-center justify-between pt-2 text-[11px] font-mono text-cbm-gray-400">
                     <span className="truncate">{hostOf(url) || project.slug}</span>
                     <span>{project.origin === "legacy" ? "v1" : ""}</span>
                   </div>

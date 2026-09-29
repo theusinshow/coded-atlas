@@ -13,7 +13,7 @@ interface Props {
 }
 
 const STATUS: Record<string, { label: string; className: string }> = {
-  ready: { label: "pronto para renderizar", className: "text-zinc-300" },
+  ready: { label: "pronto para renderizar", className: "text-cbm-gray-200" },
   rendering: { label: "renderizando", className: "text-accent" },
   rendered: { label: "renderizado", className: "text-ok" },
   failed: { label: "falhou", className: "text-bad" },
@@ -30,7 +30,7 @@ export default async function ProjectKitsPage({ params }: Props) {
     <div className="grid gap-10 lg:grid-cols-[26rem_1fr]">
       <section aria-labelledby="gerar">
         <SectionTitle id="gerar">Gerar Media Kit</SectionTitle>
-        <p className="text-[13px] text-zinc-400 mb-4">Um conjunto completo de entregáveis com a mesma direção criativa. Cada item vira um rascunho que você pode editar antes de renderizar.</p>
+        <p className="text-[13px] text-cbm-gray-400 mb-4">Um conjunto completo de entregáveis com a mesma direção criativa. Cada item vira um rascunho que você pode editar antes de renderizar.</p>
         <KitGenerator projectId={project.id} directions={directions.map((d) => ({ id: d.id, name: d.name }))} />
       </section>
       <section aria-labelledby="kits">
@@ -42,12 +42,12 @@ export default async function ProjectKitsPage({ params }: Props) {
             {kits.map((kit) => (
               <li key={kit.id}>
                 <Link href={`/projects/${project.slug}/kits/${kit.id}`} className="block group">
-                  <Panel className="p-4 space-y-1.5 group-hover:border-zinc-500 transition-colors">
+                  <Panel className="p-4 space-y-1.5 group-hover:border-cbm-gray-400 transition-colors">
                     <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <p className="text-[13px] text-zinc-100">{kit.name}</p>
-                      <span className={`text-[10px] font-mono uppercase tracking-wider ${STATUS[kit.status].className}`}>{STATUS[kit.status].label}</span>
+                      <p className="text-[13px] text-cbm-gray-100">{kit.name}</p>
+                      <span className={`text-[10px] font-medium uppercase tracking-[0.22em] ${STATUS[kit.status].className}`}>{STATUS[kit.status].label}</span>
                     </div>
-                    <p className="text-[12px] text-zinc-500">
+                    <p className="text-[12px] text-cbm-gray-400">
                       {getKitPreset(kit.presetId)?.name ?? kit.presetId} · {kit.items.filter((i) => i.instanceId || i.documentId).length}/{kit.items.length} itens · {kit.direction.tone}
                     </p>
                   </Panel>

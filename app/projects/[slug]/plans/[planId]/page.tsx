@@ -39,45 +39,45 @@ export default async function PlanPage({ params }: Props) {
 
   return (
     <div className="space-y-10">
-      <Link href={`/projects/${project.slug}/plans`} className="text-[12px] text-zinc-500 hover:text-zinc-200">
+      <Link href={`/projects/${project.slug}/plans`} className="text-[12px] text-cbm-gray-400 hover:text-cbm-gray-200">
         ← Planos
       </Link>
 
       <section className="grid gap-6 lg:grid-cols-[1fr_20rem]">
         <div className="space-y-3">
-          <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-accent">
+          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-accent">
             {goal.label} · {plan.source === "brain" ? `Atlas Brain · ${plan.model}` : "Regras do Atlas"}
             {plan.parentId && " · revisão"}
           </p>
-          <h2 className="text-xl text-zinc-50 leading-snug">{plan.summary}</h2>
+          <h2 className="text-xl text-cbm-white leading-snug">{plan.summary}</h2>
           <dl className="grid sm:grid-cols-3 gap-3 text-[12px]">
             <div>
-              <dt className="text-zinc-500 font-mono text-[10px] uppercase tracking-wider">Tom</dt>
-              <dd className="text-zinc-200">{plan.direction.tone}</dd>
+              <dt className="text-cbm-gray-400 font-medium text-[10px] uppercase tracking-[0.22em]">Tom</dt>
+              <dd className="text-cbm-gray-200">{plan.direction.tone}</dd>
             </div>
             <div>
-              <dt className="text-zinc-500 font-mono text-[10px] uppercase tracking-wider">Ênfase</dt>
-              <dd className="text-zinc-200">{plan.direction.emphasis}</dd>
+              <dt className="text-cbm-gray-400 font-medium text-[10px] uppercase tracking-[0.22em]">Ênfase</dt>
+              <dd className="text-cbm-gray-200">{plan.direction.emphasis}</dd>
             </div>
             <div>
-              <dt className="text-zinc-500 font-mono text-[10px] uppercase tracking-wider">Estilo</dt>
-              <dd className="text-zinc-200 flex items-center gap-2">
+              <dt className="text-cbm-gray-400 font-medium text-[10px] uppercase tracking-[0.22em]">Estilo</dt>
+              <dd className="text-cbm-gray-200 flex items-center gap-2">
                 {STYLE_MODES.find((m) => m.id === plan.direction.styleMode)?.label}
                 {plan.direction.accent && <span className="inline-block w-3 h-3 border border-line" style={{ background: plan.direction.accent }} title={plan.direction.accent} />}
               </dd>
             </div>
           </dl>
           {(plan.request.notes || plan.request.feedback) && (
-            <p className="text-[12px] text-zinc-500">
+            <p className="text-[12px] text-cbm-gray-400">
               {plan.request.notes && <>Observações: {plan.request.notes}. </>}
               {plan.request.feedback && <>Revisão pedida: {plan.request.feedback}</>}
             </p>
           )}
-          {plan.request.formats.length > 0 && <p className="text-[11px] font-mono text-zinc-600">Formatos: {plan.request.formats.map((f) => FORMATS[f].label).join(", ")}</p>}
+          {plan.request.formats.length > 0 && <p className="text-[11px] font-mono text-cbm-gray-400">Formatos: {plan.request.formats.map((f) => FORMATS[f].label).join(", ")}</p>}
         </div>
         <Panel className="p-4 space-y-3 self-start">
           {plan.status === "applied" && <p className="text-[12px] text-ok">{plan.appliedInstanceIds.length} peça(s) criadas em Criar.</p>}
-          {plan.status === "discarded" && <p className="text-[12px] text-zinc-500">Plano descartado.</p>}
+          {plan.status === "discarded" && <p className="text-[12px] text-cbm-gray-400">Plano descartado.</p>}
           {canApply && (
             <form action={applyPlanAction}>
               <input type="hidden" name="planId" value={plan.id} />
@@ -94,7 +94,7 @@ export default async function PlanPage({ params }: Props) {
               </Button>
             </form>
           )}
-          <p className="text-[11px] text-zinc-500">As peças viram rascunhos editáveis (em Criar, ou páginas de um carrossel no Studio). Nada é renderizado ou publicado sozinho.</p>
+          <p className="text-[11px] text-cbm-gray-400">As peças viram rascunhos editáveis (em Criar, ou páginas de um carrossel no Studio). Nada é renderizado ou publicado sozinho.</p>
           <div className="border-t border-line pt-3">
             <SaveDirectionForm planId={plan.id} />
           </div>
@@ -112,7 +112,7 @@ export default async function PlanPage({ params }: Props) {
       {plan.warnings.length > 0 && (
         <ul className="border border-warn/40 bg-warn/5 px-3 py-2 space-y-1" aria-label="Avisos do plano">
           {plan.warnings.map((w, i) => (
-            <li key={i} className="text-[12px] text-zinc-300">
+            <li key={i} className="text-[12px] text-cbm-gray-200">
               <span className="text-warn">⚠</span> {w}
             </li>
           ))}
@@ -137,7 +137,7 @@ export default async function PlanPage({ params }: Props) {
                   </Link>
                   <div className="min-w-0">
                     <p className="text-[11px] font-mono text-accent tabular-nums">{Math.round(r.score * 100)}</p>
-                    <p className="text-[12px] text-zinc-300 leading-snug">{r.reason}</p>
+                    <p className="text-[12px] text-cbm-gray-200 leading-snug">{r.reason}</p>
                   </div>
                 </li>
               );

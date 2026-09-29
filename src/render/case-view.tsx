@@ -2,7 +2,7 @@
 /** @jsxImportSource react */
 import type { CSSProperties, ReactNode } from "react";
 import { isPublishable, type CaseContent, type CaseSection } from "../core/case/case-document";
-import { fontFamily, type StyleTokens } from "../core/creative/tokens";
+import { fontFamily, fontSize, type StyleTokens } from "../core/creative/tokens";
 import { browserChromeHeight, phoneBezel, phoneRadius } from "../core/documents/devices";
 
 /**
@@ -33,7 +33,10 @@ export function CaseView({ content, tokens, resolveAsset, resolveOutput, mode = 
   const pad = "clamp(20px, 5vw, 72px)";
   const sections = content.sections.filter((s) => mode === "edit" || isPublishable(s));
   const cover = meta.coverAssetId ? resolveAsset(meta.coverAssetId) : null;
-  const ctx: SectionCtx = { tokens, resolveAsset, resolveOutput, mono, body, display, pad, mode, content };
+  // k: compensação de largura do display (Panchang); rad: raio conforme a forma do estilo (Coded by M = reto).
+  const k = fontSize(100, "display", tokens) / 100;
+  const rad = (px: number) => px * tokens.radiusScale;
+  const ctx: SectionCtx = { tokens, resolveAsset, resolveOutput, mono, body, display, pad, mode, content, k, rad };
 
   return (
     <article data-atlas-case="" style={{ background: c.background, color: c.text, fontFamily: body, WebkitFontSmoothing: "antialiased", minHeight: "100%" }}>
@@ -41,18 +44,18 @@ export function CaseView({ content, tokens, resolveAsset, resolveOutput, mode = 
         <p style={{ fontFamily: mono, fontSize: 13, letterSpacing: "0.18em", textTransform: "uppercase", color: c.primary, margin: 0 }}>
           {[meta.category, meta.year].filter(Boolean).join(" · ")}
         </p>
-        <h1 style={{ fontFamily: display, fontSize: "clamp(40px, 7.2vw, 112px)", lineHeight: 1, letterSpacing: "-0.035em", fontWeight: 700, margin: "20px 0 0" }}>{meta.title}</h1>
+        <h1 style={{ fontFamily: display, fontSize: `clamp(${40 * k}px, ${7.2 * k}vw, ${112 * k}px)`, lineHeight: 1, letterSpacing: "-0.035em", fontWeight: 700, margin: "20px 0 0" }}>{meta.title}</h1>
         {meta.subtitle && <p style={{ fontSize: "clamp(17px, 1.6vw, 22px)", lineHeight: 1.55, color: c.textMuted, maxWidth: 760, margin: "28px 0 0" }}>{meta.subtitle}</p>}
         {cover && (
           // eslint-disable-next-line @next/next/no-img-element -- kernel de render: <img> puro
-          <img src={cover} alt={`Capa — ${meta.title}`} style={{ display: "block", width: "100%", marginTop: "clamp(32px, 5vw, 64px)", borderRadius: 18, boxShadow: "0 40px 80px -30px rgba(0,0,0,0.6)" }} />
+          <img src={cover} alt={`Capa — ${meta.title}`} style={{ display: "block", width: "100%", marginTop: "clamp(32px, 5vw, 64px)", borderRadius: rad(18), boxShadow: "0 40px 80px -30px rgba(0,0,0,0.6)" }} />
         )}
       </header>
       {sections.map((section) => (
         <SectionFrame key={section.id} section={section} ctx={ctx} selected={section.id === selectedId} />
       ))}
       <footer data-case-section="footer" style={{ maxWidth: MAX, margin: "0 auto", padding: `clamp(48px, 7vw, 96px) ${pad}`, borderTop: `1px solid ${c.line}`, display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 16 }}>
-        <span style={{ fontFamily: display, fontSize: 22, fontWeight: 600 }}>{meta.title}</span>
+        <span style={{ fontFamily: display, fontSize: 22 * k, fontWeight: 600 }}>{meta.title}</span>
         <span style={{ fontFamily: mono, fontSize: 13, color: c.textMuted, letterSpacing: "0.08em" }}>
           {meta.url && <>{meta.url.replace(/^https?:\/\//, "").replace(/\/$/, "")} · </>}Desenvolvido por Coded by M
         </span>
@@ -71,6 +74,8 @@ interface SectionCtx {
   pad: string;
   mode: "edit" | "publish";
   content: CaseContent;
+  k: number;
+  rad: (px: number) => number;
 }
 
 function SectionFrame({ section, ctx, selected }: { section: CaseSection; ctx: SectionCtx; selected: boolean }) {
@@ -90,7 +95,7 @@ function Caption({ children, ctx }: { children: string; ctx: SectionCtx }) {
   return children ? <p style={{ fontFamily: ctx.mono, fontSize: 12, color: ctx.tokens.colors.textMuted, margin: "14px 0 0", letterSpacing: "0.04em" }}>{children}</p> : null;
 }
 
-function Picture({ src, alt, radius = 14 }: { src: string | null; alt: string; radius?: number }) {
+function Picture({ src, alt, radius }: { src: string | null; alt: string; radius: number }) {
   if (!src) return <div style={{ aspectRatio: "16 / 10", borderRadius: radius, background: "rgba(128,128,128,0.15)" }} />;
   // eslint-disable-next-line @next/next/no-img-element -- kernel de render
   return <img src={src} alt={alt} style={{ display: "block", width: "100%", borderRadius: radius }} />;
@@ -141,7 +146,7 @@ function SectionBody({ section, ctx }: { section: CaseSection; ctx: SectionCtx }
         const chrome = browserChromeHeight(1200);
         return (
           <figure style={{ margin: 0 }}>
-            <div style={{ borderRadius: 14, overflow: "hidden", background: c.surface, boxShadow: `0 40px 80px -30px rgba(0,0,0,0.6), inset 0 0 0 1px ${c.line}` }}>
+            <div style={{ borderRadius: ctx.rad(14), overflow: "hidden", background: c.surface, boxShadow: `0 40px 80px -30px rgba(0,0,0,0.6), inset 0 0 0 1px ${c.line}` }}>
               <div style={{ height: chrome, display: "flex", alignItems: "center", gap: 8, padding: "0 18px" }}>
                 {[0, 1, 2].map((i) => (
                   <span key={i} style={{ width: 11, height: 11, borderRadius: "50%", background: c.line }} />
@@ -155,7 +160,7 @@ function SectionBody({ section, ctx }: { section: CaseSection; ctx: SectionCtx }
       }
       return (
         <figure style={{ margin: 0 }}>
-          <Picture src={src} alt={section.caption || "Imagem"} />
+          <Picture src={src} alt={section.caption || "Imagem"} radius={ctx.rad(14)} />
           <Caption ctx={ctx}>{section.caption}</Caption>
         </figure>
       );
@@ -165,7 +170,7 @@ function SectionBody({ section, ctx }: { section: CaseSection; ctx: SectionCtx }
         <figure style={{ margin: 0 }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "clamp(12px, 2vw, 24px)" }}>
             {section.assetIds.map((id) => (
-              <Picture key={id} src={ctx.resolveAsset(id)} alt={section.caption || "Seção"} radius={12} />
+              <Picture key={id} src={ctx.resolveAsset(id)} alt={section.caption || "Seção"} radius={ctx.rad(12)} />
             ))}
           </div>
           <Caption ctx={ctx}>{section.caption}</Caption>
@@ -174,7 +179,7 @@ function SectionBody({ section, ctx }: { section: CaseSection; ctx: SectionCtx }
     case "piece":
       return (
         <figure style={{ margin: 0 }}>
-          <Picture src={ctx.resolveOutput(section.outputId)} alt={section.caption || "Peça"} />
+          <Picture src={ctx.resolveOutput(section.outputId)} alt={section.caption || "Peça"} radius={ctx.rad(14)} />
           <Caption ctx={ctx}>{section.caption}</Caption>
         </figure>
       );
@@ -190,13 +195,13 @@ function SectionBody({ section, ctx }: { section: CaseSection; ctx: SectionCtx }
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 12 }}>
                 {palette.map((hex) => (
                   <div key={hex}>
-                    <div style={{ aspectRatio: "4 / 3", borderRadius: 10, background: hex, boxShadow: `inset 0 0 0 1px ${c.line}` }} />
+                    <div style={{ aspectRatio: "4 / 3", borderRadius: ctx.rad(10), background: hex, boxShadow: `inset 0 0 0 1px ${c.line}` }} />
                     <p style={{ fontFamily: ctx.mono, fontSize: 12, color: c.textMuted, margin: "8px 0 0", textTransform: "uppercase" }}>{hex}</p>
                   </div>
                 ))}
               </div>
             )}
-            {fonts.length > 0 && <p style={{ fontFamily: ctx.display, fontSize: "clamp(28px, 3.4vw, 44px)", margin: "28px 0 0", letterSpacing: "-0.02em" }}>{fonts.join(" · ")}</p>}
+            {fonts.length > 0 && <p style={{ fontFamily: ctx.display, fontSize: `clamp(${28 * ctx.k}px, ${3.4 * ctx.k}vw, ${44 * ctx.k}px)`, margin: "28px 0 0", letterSpacing: "-0.02em" }}>{fonts.join(" · ")}</p>}
           </div>
         </div>
       );

@@ -45,20 +45,20 @@ export function CompositionGallery({ projectId, slug, assets, profile, profilesB
     <div className="space-y-10">
       <section aria-labelledby="canvas" className="space-y-3">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <h2 id="canvas" className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+          <h2 id="canvas" className="text-[11px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400">
             Documentos ({documents.length})
           </h2>
           <form action={createBlankCanvasAction} className="flex items-center gap-2">
             <input type="hidden" name="projectId" value={projectId} />
-            <label htmlFor="blank-kind" className="text-[12px] text-zinc-500">
+            <label htmlFor="blank-kind" className="text-[12px] text-cbm-gray-400">
               Em branco
             </label>
-            <select id="blank-kind" name="kind" defaultValue="canvas" className="h-8 bg-surface border border-line text-[12px] text-zinc-300 px-2" aria-label="Tipo">
+            <select id="blank-kind" name="kind" defaultValue="canvas" className="h-8 bg-surface border border-line text-[12px] text-cbm-gray-200 px-2" aria-label="Tipo">
               <option value="canvas">Canvas</option>
               <option value="carousel">Carrossel (3 páginas)</option>
               <option value="motion">Vídeo (1 cena)</option>
             </select>
-            <select id="blank-format" name="formatId" defaultValue={format} className="h-8 bg-surface border border-line text-[12px] text-zinc-300 px-2">
+            <select id="blank-format" name="formatId" defaultValue={format} className="h-8 bg-surface border border-line text-[12px] text-cbm-gray-200 px-2">
               {FORMAT_IDS.map((id) => (
                 <option key={id} value={id}>
                   {FORMATS[id].label}
@@ -71,7 +71,7 @@ export function CompositionGallery({ projectId, slug, assets, profile, profilesB
           </form>
         </div>
         {documents.length === 0 ? (
-          <p className="text-[12px] text-zinc-500">Edição livre: abra uma composição com “Editar no canvas” ou comece em branco.</p>
+          <p className="text-[12px] text-cbm-gray-400">Edição livre: abra uma composição com “Editar no canvas” ou comece em branco.</p>
         ) : (
           <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 items-end">
             {documents.map((doc) => {
@@ -81,13 +81,13 @@ export function CompositionGallery({ projectId, slug, assets, profile, profilesB
                 <li key={doc.id}>
                   <Link href={`/studio/${doc.id}`} className="group block space-y-2" data-document={doc.id}>
                     <div className="relative">
-                      <ArtboardPreview artboard={contentPages(doc.content)[0].artboard} tokens={tokens} className="border border-line group-hover:border-zinc-500 transition-colors" />
+                      <ArtboardPreview artboard={contentPages(doc.content)[0].artboard} tokens={tokens} className="border border-line group-hover:border-cbm-gray-400 transition-colors" />
                       {isCarousel(doc.content) && (
-                        <span className="absolute right-1.5 top-1.5 bg-black/70 px-1.5 py-0.5 text-[10px] font-mono text-zinc-200">{doc.content.pages.length} pág.</span>
+                        <span className="absolute right-1.5 top-1.5 bg-black/70 px-1.5 py-0.5 text-[10px] font-mono text-cbm-gray-200">{doc.content.pages.length} pág.</span>
                       )}
                     </div>
-                    <p className="text-[12px] text-zinc-200 truncate">
-                      {doc.name} <span className="text-zinc-600 font-mono text-[10px]">rev {doc.headRevision}</span>
+                    <p className="text-[12px] text-cbm-gray-200 truncate">
+                      {doc.name} <span className="text-cbm-gray-400 font-mono text-[10px]">rev {doc.headRevision}</span>
                     </p>
                   </Link>
                 </li>
@@ -99,10 +99,10 @@ export function CompositionGallery({ projectId, slug, assets, profile, profilesB
 
       <section aria-labelledby="apresentacao" className="border border-line bg-surface/40 p-4 flex flex-wrap items-center gap-3">
         <div className="min-w-0 flex-1">
-          <h2 id="apresentacao" className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+          <h2 id="apresentacao" className="text-[11px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400">
             Apresentação do projeto
           </h2>
-          <p className="text-[12px] text-zinc-500 mt-1">Slides 16:9 com capa, contexto, o site, responsivo, detalhes, identidade e encerramento — com notas do apresentador. Exporta PDF, PPTX e imagens.</p>
+          <p className="text-[12px] text-cbm-gray-400 mt-1">Slides 16:9 com capa, contexto, o site, responsivo, detalhes, identidade e encerramento — com notas do apresentador. Exporta PDF, PPTX e imagens.</p>
         </div>
         <form action={createPresentationAction}>
           <input type="hidden" name="projectId" value={projectId} />
@@ -114,21 +114,21 @@ export function CompositionGallery({ projectId, slug, assets, profile, profilesB
 
       <section aria-labelledby="receitas" className="border border-line bg-surface/40 p-4 flex flex-wrap items-center gap-3">
         <div className="min-w-0 flex-1">
-          <h2 id="receitas" className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+          <h2 id="receitas" className="text-[11px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400">
             Vídeo por receita
           </h2>
-          <p className="text-[12px] text-zinc-500 mt-1">Estruturas prontas (abertura, site, mobile, scroll, assinatura) montadas com o material do projeto e animadas por presets.</p>
+          <p className="text-[12px] text-cbm-gray-400 mt-1">Estruturas prontas (abertura, site, mobile, scroll, assinatura) montadas com o material do projeto e animadas por presets.</p>
         </div>
         <form action={createVideoFromRecipeAction} className="flex flex-wrap items-center gap-2">
           <input type="hidden" name="projectId" value={projectId} />
-          <select name="recipeId" aria-label="Receita de vídeo" className="h-8 max-w-64 bg-surface border border-line text-[12px] text-zinc-300 px-2">
+          <select name="recipeId" aria-label="Receita de vídeo" className="h-8 max-w-64 bg-surface border border-line text-[12px] text-cbm-gray-200 px-2">
             {VIDEO_RECIPES.map((r) => (
               <option key={r.id} value={r.id} title={r.description}>
                 {r.name} · {r.durationRange[0]}–{r.durationRange[1]} s
               </option>
             ))}
           </select>
-          <select name="formatId" aria-label="Formato do vídeo por receita" defaultValue="story-9x16" className="h-8 bg-surface border border-line text-[12px] text-zinc-300 px-2">
+          <select name="formatId" aria-label="Formato do vídeo por receita" defaultValue="story-9x16" className="h-8 bg-surface border border-line text-[12px] text-cbm-gray-200 px-2">
             {FORMAT_IDS.map((id) => (
               <option key={id} value={id}>
                 {FORMATS[id].label}
@@ -144,21 +144,21 @@ export function CompositionGallery({ projectId, slug, assets, profile, profilesB
       {tallPages.length > 0 && (
         <section aria-labelledby="scroll" className="border border-line bg-surface/40 p-4 flex flex-wrap items-center gap-3">
           <div className="min-w-0 flex-1">
-            <h2 id="scroll" className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+            <h2 id="scroll" className="text-[11px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400">
               Vídeo rápido · Website Scroll
             </h2>
-            <p className="text-[12px] text-zinc-500 mt-1">A página inteira capturada rolando dentro de uma janela de navegador — pronto para Reels e apresentação.</p>
+            <p className="text-[12px] text-cbm-gray-400 mt-1">A página inteira capturada rolando dentro de uma janela de navegador — pronto para Reels e apresentação.</p>
           </div>
           <form action={createWebsiteScrollAction} className="flex flex-wrap items-center gap-2">
             <input type="hidden" name="projectId" value={projectId} />
-            <select name="assetId" aria-label="Página inteira" className="h-8 max-w-56 bg-surface border border-line text-[12px] text-zinc-300 px-2">
+            <select name="assetId" aria-label="Página inteira" className="h-8 max-w-56 bg-surface border border-line text-[12px] text-cbm-gray-200 px-2">
               {tallPages.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.label ?? `${a.metadata.device ?? ""} ${a.metadata.pagePath ?? "página inteira"}`.trim()} · {a.width}×{a.height}
                 </option>
               ))}
             </select>
-            <select name="formatId" aria-label="Formato do vídeo" defaultValue="story-9x16" className="h-8 bg-surface border border-line text-[12px] text-zinc-300 px-2">
+            <select name="formatId" aria-label="Formato do vídeo" defaultValue="story-9x16" className="h-8 bg-surface border border-line text-[12px] text-cbm-gray-200 px-2">
               {FORMAT_IDS.map((id) => (
                 <option key={id} value={id}>
                   {FORMATS[id].label}
@@ -174,7 +174,7 @@ export function CompositionGallery({ projectId, slug, assets, profile, profilesB
 
       {instances.length > 0 && (
         <section aria-labelledby="pecas">
-          <h2 id="pecas" className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-3">
+          <h2 id="pecas" className="text-[11px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400 mb-3">
             Suas peças ({instances.length})
           </h2>
           <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 items-end">
@@ -186,8 +186,8 @@ export function CompositionGallery({ projectId, slug, assets, profile, profilesB
               return (
                 <li key={instance.id}>
                   <Link href={`/projects/${slug}/create/${instance.id}`} className="group block space-y-2">
-                    <ArtboardPreview {...model} className="border border-line group-hover:border-zinc-500 transition-colors" />
-                    <p className="text-[12px] text-zinc-200 truncate">{instance.name}</p>
+                    <ArtboardPreview {...model} className="border border-line group-hover:border-cbm-gray-400 transition-colors" />
+                    <p className="text-[12px] text-cbm-gray-200 truncate">{instance.name}</p>
                   </Link>
                 </li>
               );
@@ -199,10 +199,10 @@ export function CompositionGallery({ projectId, slug, assets, profile, profilesB
       <section aria-labelledby="galeria" className="space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 id="galeria" className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+            <h2 id="galeria" className="text-[11px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400">
               Composições curadas
             </h2>
-            <p className="text-[13px] text-zinc-500 mt-1">Já preenchidas com o material do projeto. Escolha uma para ajustar e renderizar.</p>
+            <p className="text-[13px] text-cbm-gray-400 mt-1">Já preenchidas com o material do projeto. Escolha uma para ajustar e renderizar.</p>
           </div>
           <div role="radiogroup" aria-label="Formato" className="flex flex-wrap gap-1">
             {FORMAT_IDS.map((id) => (
@@ -213,7 +213,7 @@ export function CompositionGallery({ projectId, slug, assets, profile, profilesB
                 aria-checked={format === id}
                 onClick={() => setFormat(id)}
                 className={`h-8 px-3 text-[12px] border transition-colors ${
-                  format === id ? "border-accent text-accent-bright" : "border-line text-zinc-400 hover:text-zinc-100"
+                  format === id ? "border-accent text-cbm-white" : "border-line text-cbm-gray-400 hover:text-cbm-gray-100"
                 }`}
               >
                 {FORMATS[id].label}
@@ -235,8 +235,8 @@ export function CompositionGallery({ projectId, slug, assets, profile, profilesB
                 <ArtboardPreview {...model} className="border border-line" />
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-[13px] text-zinc-100">{definition.name}</p>
-                    <p className="text-[10px] font-mono uppercase tracking-wider text-accent">{FAMILY_LABEL[definition.family]}</p>
+                    <p className="text-[13px] text-cbm-gray-100">{definition.name}</p>
+                    <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-accent">{FAMILY_LABEL[definition.family]}</p>
                   </div>
                   <form action={createInstanceAction}>
                     <input type="hidden" name="projectId" value={projectId} />
@@ -247,7 +247,7 @@ export function CompositionGallery({ projectId, slug, assets, profile, profilesB
                     </button>
                   </form>
                 </div>
-                <p className="text-[12px] text-zinc-500 leading-snug">{definition.description}</p>
+                <p className="text-[12px] text-cbm-gray-400 leading-snug">{definition.description}</p>
               </li>
             );
           })}

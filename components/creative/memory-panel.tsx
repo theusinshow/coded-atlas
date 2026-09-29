@@ -9,7 +9,7 @@ import { Button, FormError, INPUT_CLASS } from "@/components/ui/primitives";
 const POLARITY: Record<CreativeMemory["polarity"], { label: string; className: string }> = {
   prefer: { label: "preferir", className: "text-ok" },
   avoid: { label: "evitar", className: "text-bad" },
-  note: { label: "nota", className: "text-zinc-400" },
+  note: { label: "nota", className: "text-cbm-gray-400" },
 };
 const SUBJECT: Record<CreativeMemory["subject"], string> = { composition: "Composição", style: "Estilo", tone: "Tom", general: "Geral" };
 
@@ -32,24 +32,24 @@ export function MemoryPanel({ memories, projectId }: { memories: CreativeMemory[
   return (
     <div className="space-y-3">
       {scoped.length === 0 ? (
-        <p className="text-[12px] text-zinc-500">Nada ainda. {projectId ? "Aplicar ou descartar planos também ensina o Atlas." : "Ex.: “evitar gradientes”, “sempre creditar a Coded by M”."}</p>
+        <p className="text-[12px] text-cbm-gray-400">Nada ainda. {projectId ? "Aplicar ou descartar planos também ensina o Atlas." : "Ex.: “evitar gradientes”, “sempre creditar a Coded by M”."}</p>
       ) : (
         <ul className="divide-y divide-line border border-line" aria-label="Memórias">
           {scoped.map((m) => (
             <li key={m.id} className="flex items-center gap-3 px-3 py-2 text-[12px]">
-              <span className={`w-14 font-mono text-[10px] uppercase ${POLARITY[m.polarity].className}`}>{POLARITY[m.polarity].label}</span>
-              <span className="w-20 text-zinc-500">{SUBJECT[m.subject]}</span>
-              <span className="flex-1 min-w-0 text-zinc-200 truncate" title={m.value}>
+              <span className={`w-14 font-medium text-[10px] uppercase tracking-[0.22em] ${POLARITY[m.polarity].className}`}>{POLARITY[m.polarity].label}</span>
+              <span className="w-20 text-cbm-gray-400">{SUBJECT[m.subject]}</span>
+              <span className="flex-1 min-w-0 text-cbm-gray-200 truncate" title={m.value}>
                 {describe(m)}
               </span>
               {m.source === "signal" && (
-                <span className="text-[10px] font-mono text-zinc-600" title="Aprendido de planos aplicados/descartados">
+                <span className="text-[10px] font-mono text-cbm-gray-400" title="Aprendido de planos aplicados/descartados">
                   aprendido ×{m.weight}
                 </span>
               )}
               <form action={removeMemoryAction}>
                 <input type="hidden" name="id" value={m.id} />
-                <button type="submit" className="text-[11px] text-zinc-600 hover:text-bad" aria-label={`Remover memória ${describe(m)}`}>
+                <button type="submit" className="text-[11px] text-cbm-gray-400 hover:text-bad" aria-label={`Remover memória ${describe(m)}`}>
                   remover
                 </button>
               </form>

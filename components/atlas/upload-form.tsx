@@ -33,7 +33,7 @@ export function UploadForm({ projectId }: { projectId: string }) {
           required
           accept="image/png,image/jpeg,image/webp,image/avif,image/gif,image/svg+xml,video/mp4,video/webm,audio/mpeg,audio/wav,audio/ogg,audio/mp4,.m4a"
           aria-label="Arquivos"
-          className={`${INPUT_CLASS} file:mr-3 file:border-0 file:bg-surface-2 file:text-zinc-200 file:px-3 file:py-1`}
+          className={`${INPUT_CLASS} file:mr-3 file:border-0 file:bg-surface-2 file:text-cbm-gray-200 file:px-3 file:py-1`}
         />
         <select name="kind" aria-label="Tipo de asset" defaultValue="image" className={INPUT_CLASS}>
           {KINDS.map((k) => (
@@ -46,7 +46,7 @@ export function UploadForm({ projectId }: { projectId: string }) {
           {pending ? "Enviando…" : "Enviar"}
         </Button>
       </div>
-      <p className="text-[11px] text-zinc-500">PNG, JPG, WebP, AVIF, GIF, SVG, MP4 ou WebM · até 30 arquivos · 50 MB cada.</p>
+      <p className="text-[11px] text-cbm-gray-400">PNG, JPG, WebP, AVIF, GIF, SVG, MP4 ou WebM · até 30 arquivos · 50 MB cada.</p>
       <FormError message={state?.error} />
       {state?.message && <p className="text-[12px] text-ok">{state.message}</p>}
     </form>

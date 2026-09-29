@@ -41,8 +41,8 @@ export function Studio(props: StudioProps) {
 }
 
 const SAVE_LABEL: Record<SaveState, { text: string; className: string }> = {
-  saved: { text: "Salvo", className: "text-zinc-500" },
-  dirty: { text: "Alterado", className: "text-zinc-400" },
+  saved: { text: "Salvo", className: "text-cbm-gray-400" },
+  dirty: { text: "Alterado", className: "text-cbm-gray-400" },
   saving: { text: "Salvando…", className: "text-accent" },
   error: { text: "Falha ao salvar", className: "text-bad" },
   conflict: { text: "Conflito", className: "text-bad" },
@@ -157,23 +157,23 @@ function RevisionsMenu({ documentId, onClose }: { documentId: string; onClose: (
   return (
     <div className="absolute right-0 top-full mt-1 w-80 max-h-96 overflow-y-auto border border-line bg-surface shadow-2xl z-20" role="dialog" aria-label="Revisões">
       <div className="flex items-center justify-between px-3 py-2 border-b border-line">
-        <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">Revisões</p>
-        <button type="button" onClick={onClose} className="text-[11px] text-zinc-500 hover:text-zinc-200">
+        <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400">Revisões</p>
+        <button type="button" onClick={onClose} className="text-[11px] text-cbm-gray-400 hover:text-cbm-gray-200">
           Fechar
         </button>
       </div>
       {error && <p className="px-3 py-2 text-[12px] text-bad">{error}</p>}
-      {!revisions && !error && <p className="px-3 py-3 text-[12px] text-zinc-500">Carregando…</p>}
+      {!revisions && !error && <p className="px-3 py-3 text-[12px] text-cbm-gray-400">Carregando…</p>}
       <ul>
         {revisions?.map((r) => (
           <li key={r.revision} className="flex items-center gap-2 px-3 py-2 border-b border-line/60 text-[12px]">
-            <span className="font-mono text-zinc-300 w-12">rev {r.revision}</span>
-            <span className="flex-1 text-zinc-500">
+            <span className="font-mono text-cbm-gray-200 w-12">rev {r.revision}</span>
+            <span className="flex-1 text-cbm-gray-400">
               {ORIGIN[r.origin]} · {new Date(r.updatedAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
               {r.pinned && <span className="text-accent"> · renderizada</span>}
             </span>
             {r.revision === current ? (
-              <span className="text-[10px] font-mono uppercase text-zinc-600">atual</span>
+              <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400">atual</span>
             ) : (
               <button
                 type="button"
@@ -218,10 +218,10 @@ function RenderMenu({ documentId, onJob, kind }: { documentId: string; onJob: (i
   const [pending, start] = useTransition();
   return (
     <div className="absolute right-0 top-full mt-1 w-64 border border-line bg-surface shadow-2xl z-20 p-3 space-y-3" role="dialog" aria-label="Renderizar">
-      <p className="text-[11px] text-zinc-400">{RENDER_OPTIONS[kind].hint} A peça aparece em Publicar.</p>
+      <p className="text-[11px] text-cbm-gray-400">{RENDER_OPTIONS[kind].hint} A peça aparece em Publicar.</p>
       <div className="flex gap-3">
         {options.map((f) => (
-          <label key={f} className="flex items-center gap-1.5 text-[12px] font-mono uppercase text-zinc-300">
+          <label key={f} className="flex items-center gap-1.5 text-[12px] font-medium uppercase tracking-[0.22em] text-cbm-gray-200">
             <input type="checkbox" checked={formats.includes(f)} onChange={(e) => setFormats((cur) => (e.target.checked ? [...cur, f] : cur.filter((x) => x !== f)))} />
             {f}
           </label>
@@ -235,7 +235,7 @@ function RenderMenu({ documentId, onJob, kind }: { documentId: string; onJob: (i
               ["final", "Final"],
             ] as const
           ).map(([id, label]) => (
-            <button key={id} type="button" role="radio" aria-checked={quality === id} onClick={() => setQuality(id)} className={`flex-1 h-7 text-[11px] ${quality === id ? "bg-surface-2 text-accent-bright" : "text-zinc-400"}`}>
+            <button key={id} type="button" role="radio" aria-checked={quality === id} onClick={() => setQuality(id)} className={`flex-1 h-7 text-[11px] ${quality === id ? "bg-surface-2 text-cbm-white" : "text-cbm-gray-400"}`}>
               {label}
             </button>
           ))}
@@ -244,7 +244,7 @@ function RenderMenu({ documentId, onJob, kind }: { documentId: string; onJob: (i
       <button
         type="button"
         disabled={pending || formats.length === 0}
-        className="w-full h-8 bg-accent text-zinc-950 text-[12px] font-medium hover:bg-accent-bright disabled:opacity-40"
+        className="w-full h-8 bg-signal text-cbm-black text-[10px] font-display font-semibold uppercase tracking-[0.12em] hover:bg-signal-dark disabled:opacity-40"
         onClick={() =>
           start(async () => {
             setError(null);
@@ -299,15 +299,15 @@ function StudioShell({ documentId, name: initialName, project, assets: allAssets
   const tokens = useMemo(() => resolveTokens(profile, style.mode, style.primary ? { primary: style.primary } : {}), [profile, style.mode, style.primary]);
   const scale = zoom === "fit" ? fitScale : zoom;
   const label = SAVE_LABEL[saveState];
-  const btn = "h-8 px-3 border border-line text-[12px] text-zinc-300 hover:border-zinc-500 hover:text-zinc-50 disabled:opacity-30 disabled:hover:border-line";
+  const btn = "h-8 px-3 border border-line text-[12px] text-cbm-gray-200 hover:border-cbm-gray-400 hover:text-cbm-white disabled:opacity-30 disabled:hover:border-line";
 
   return (
-    <div className="fixed inset-0 z-40 flex flex-col bg-base text-zinc-100" data-studio>
+    <div className="fixed inset-0 z-40 flex flex-col bg-base text-cbm-gray-100" data-studio>
       <header className="h-12 shrink-0 flex items-center gap-3 border-b border-line px-3">
-        <Link href={`/projects/${project.slug}/create`} className="text-[12px] text-zinc-500 hover:text-zinc-100 whitespace-nowrap">
+        <Link href={`/projects/${project.slug}/create`} className="text-[12px] text-cbm-gray-400 hover:text-cbm-gray-100 whitespace-nowrap">
           ← {project.name}
         </Link>
-        <span className="text-zinc-700">/</span>
+        <span className="text-cbm-gray-600">/</span>
         <input
           aria-label="Nome do documento"
           value={name}
@@ -318,7 +318,7 @@ function StudioShell({ documentId, name: initialName, project, assets: allAssets
             if (!trimmed) return setName(initialName);
             if (trimmed !== initialName) void renameDocumentAction(documentId, trimmed);
           }}
-          className="min-w-0 w-64 bg-transparent text-[13px] text-zinc-100 px-1.5 h-8 border border-transparent hover:border-line focus:border-accent focus:outline-none"
+          className="min-w-0 w-64 bg-transparent text-[13px] text-cbm-gray-100 px-1.5 h-8 border border-transparent hover:border-line focus:border-accent focus:outline-none"
         />
         <span className={`text-[11px] font-mono whitespace-nowrap ${label.className}`} title={saveError ?? undefined} data-save-state={saveState}>
           {label.text} · rev {revision}
@@ -341,7 +341,7 @@ function StudioShell({ documentId, name: initialName, project, assets: allAssets
             aria-label="Zoom"
             value={zoom === "fit" ? "fit" : String(zoom)}
             onChange={(e) => setZoom(e.target.value === "fit" ? "fit" : Number(e.target.value))}
-            className="h-8 bg-surface border border-line text-[12px] text-zinc-300 px-2"
+            className="h-8 bg-surface border border-line text-[12px] text-cbm-gray-200 px-2"
           >
             <option value="fit">Ajustar ({Math.round(fitScale * 100)}%)</option>
             {[0.25, 0.5, 0.75, 1].map((z) => (
@@ -380,7 +380,7 @@ function StudioShell({ documentId, name: initialName, project, assets: allAssets
           <div className="relative">
             <button
               type="button"
-              className="h-8 px-4 bg-accent text-zinc-950 text-[12px] font-medium hover:bg-accent-bright"
+              className="h-8 px-4 bg-signal text-cbm-black text-[10px] font-display font-semibold uppercase tracking-[0.12em] hover:bg-signal-dark"
               onClick={() => setMenu((m) => (m === "render" ? null : "render"))}
               aria-expanded={menu === "render"}
             >
@@ -415,7 +415,7 @@ function StudioShell({ documentId, name: initialName, project, assets: allAssets
                 type="button"
                 aria-selected={tab === id}
                 onClick={() => setTab(id)}
-                className={`flex-1 h-10 text-[12px] ${tab === id ? "text-accent-bright border-b-2 border-accent -mb-px" : "text-zinc-400 hover:text-zinc-100"}`}
+                className={`flex-1 h-10 text-[12px] ${tab === id ? "text-cbm-white border-b-2 border-accent -mb-px" : "text-cbm-gray-400 hover:text-cbm-gray-100"}`}
               >
                 {text}
               </button>
@@ -450,13 +450,13 @@ function StudioShell({ documentId, name: initialName, project, assets: allAssets
                 <Link href={`/projects/${project.slug}/publish`} className="text-accent hover:text-accent-bright">
                   Ver em Publicar →
                 </Link>
-                <button type="button" className="text-zinc-500 hover:text-zinc-200" onClick={() => setJobId(null)}>
+                <button type="button" className="text-cbm-gray-400 hover:text-cbm-gray-200" onClick={() => setJobId(null)}>
                   Fechar
                 </button>
               </div>
             </div>
           )}
-          <p className="pointer-events-none absolute right-3 top-3 text-[10px] font-mono text-zinc-600">{Math.round(scale * 100)}%</p>
+          <p className="pointer-events-none absolute right-3 top-3 text-[10px] font-mono text-cbm-gray-400">{Math.round(scale * 100)}%</p>
         </main>
 
         <aside className="w-80 shrink-0 border-l border-line overflow-y-auto" aria-label="Inspetor">

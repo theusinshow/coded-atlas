@@ -5,7 +5,7 @@ import type { CSSProperties, ReactNode } from "react";
 import type { Artboard } from "../core/documents/artboard";
 import { browserChromeHeight, phoneBezel, phoneRadius } from "../core/documents/devices";
 import type { BrowserLayer, DeviceLayer, Layer, Shadow, ShapeLayer, TextLayer, AssetLayer } from "../core/documents/layer";
-import { fontFamily, resolveColor, type StyleTokens } from "../core/creative/tokens";
+import { fontFamily, fontSize, resolveColor, type StyleTokens } from "../core/creative/tokens";
 
 /**
  * Renderizador de Artboard em React com estilos inline — a única implementação
@@ -182,7 +182,7 @@ function Picture({ assetId, fit, focusY, ctx, radius }: { assetId: string | null
 
 function AssetView({ layer, ctx }: { layer: AssetLayer; ctx: RenderContext }) {
   return (
-    <div style={{ ...frameStyle(layer, ctx), borderRadius: layer.radius, overflow: "hidden", boxShadow: shadowCss(layer.shadow, ctx.s) }}>
+    <div style={{ ...frameStyle(layer, ctx), borderRadius: layer.radius * ctx.tokens.radiusScale, overflow: "hidden", boxShadow: shadowCss(layer.shadow, ctx.s) }}>
       <Picture assetId={layer.assetId} fit={layer.fit} focusY={layer.focusY} ctx={ctx} radius={0} />
     </div>
   );
@@ -195,7 +195,7 @@ function TextView({ layer, ctx }: { layer: TextLayer; ctx: RenderContext }) {
         ...frameStyle(layer, ctx),
         color: resolveColor(layer.color, ctx.tokens),
         fontFamily: fontFamily(layer.font, ctx.tokens),
-        fontSize: layer.size,
+        fontSize: fontSize(layer.size, layer.font, ctx.tokens),
         fontWeight: layer.weight,
         lineHeight: layer.lineHeight,
         letterSpacing: `${layer.letterSpacing}em`,
@@ -220,7 +220,7 @@ function ShapeView({ layer, ctx }: { layer: ShapeLayer; ctx: RenderContext }) {
         ...frameStyle(layer, ctx),
         background: fill,
         border,
-        borderRadius: layer.shape === "ellipse" ? "50%" : layer.radius,
+        borderRadius: layer.shape === "ellipse" ? "50%" : layer.radius * ctx.tokens.radiusScale,
         boxShadow: shadowCss(layer.shadow, ctx.s),
         boxSizing: "border-box",
       }}
@@ -266,24 +266,33 @@ function PhoneView({ layer, ctx }: { layer: DeviceLayer; ctx: RenderContext }) {
 function BrowserView({ layer, ctx }: { layer: BrowserLayer; ctx: RenderContext }) {
   const chrome = browserChromeHeight(layer.width);
   const dark = layer.theme === "dark";
-  const bar = dark ? "#16181d" : "#f1f1f3";
-  const dot = dark ? "#3a3e47" : "#c8c8ce";
-  const pill = dark ? "#23262d" : "#e2e2e6";
-  const urlColor = dark ? "#8a909b" : "#6b6f77";
+  // BrowserFrame da Coded by M (cbm-port): barra #0b130d, borda off-white 15%, 1 dot no sinal, cantos retos.
+  const cbm = ctx.tokens.frame === "cbm" && dark;
+  const bar = cbm ? "#0b130d" : dark ? "#16181d" : "#f1f1f3";
+  const dot = cbm ? "rgba(245,242,237,0.25)" : dark ? "#3a3e47" : "#c8c8ce";
+  const pill = cbm ? "rgba(245,242,237,0.06)" : dark ? "#23262d" : "#e2e2e6";
+  const urlColor = cbm ? "rgba(245,242,237,0.5)" : dark ? "#8a909b" : "#6b6f77";
+  const edge = cbm ? "rgba(245,242,237,0.15)" : dark ? "#2a2d35" : "#d4d4d8";
   const dotSize = chrome * 0.24;
   return (
     <div
       style={{
         ...frameStyle(layer, ctx),
         background: bar,
-        borderRadius: layer.radius,
+        borderRadius: layer.radius * ctx.tokens.radiusScale,
         overflow: "hidden",
-        boxShadow: [shadowCss(layer.shadow, ctx.s), `inset 0 0 0 1px ${dark ? "#2a2d35" : "#d4d4d8"}`].filter(Boolean).join(", "),
+        boxShadow: [shadowCss(layer.shadow, ctx.s), `inset 0 0 0 1px ${edge}`].filter(Boolean).join(", "),
       }}
     >
-      <div style={{ height: chrome, display: "flex", alignItems: "center", gap: dotSize * 0.7, padding: `0 ${chrome * 0.45}px` }}>
+      {cbm && (
+        <span
+          aria-hidden
+          style={{ position: "absolute", right: chrome * 0.18, bottom: chrome * 0.18, width: chrome * 0.36, height: chrome * 0.36, borderRight: `${Math.max(1, ctx.s)}px solid #fb3640`, borderBottom: `${Math.max(1, ctx.s)}px solid #fb3640`, zIndex: 2 }}
+        />
+      )}
+      <div style={{ height: chrome, display: "flex", alignItems: "center", gap: dotSize * 0.7, padding: `0 ${chrome * 0.45}px`, ...(cbm ? { borderBottom: "1px solid rgba(245,242,237,0.1)" } : {}) }}>
         {[0, 1, 2].map((i) => (
-          <span key={i} style={{ width: dotSize, height: dotSize, borderRadius: "50%", background: dot, flexShrink: 0 }} />
+          <span key={i} style={{ width: dotSize, height: dotSize, borderRadius: "50%", background: cbm && i === 0 ? "#fb3640" : dot, flexShrink: 0 }} />
         ))}
         {layer.url && (
           <span
@@ -292,7 +301,7 @@ function BrowserView({ layer, ctx }: { layer: BrowserLayer; ctx: RenderContext }
               flex: 1,
               maxWidth: "46%",
               height: chrome * 0.52,
-              borderRadius: chrome,
+              borderRadius: cbm ? 2 * ctx.s : chrome,
               background: pill,
               color: urlColor,
               fontFamily: fontFamily("mono", ctx.tokens),

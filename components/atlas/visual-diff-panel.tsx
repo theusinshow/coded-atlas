@@ -28,7 +28,7 @@ export function VisualDiffForm({ candidates }: { candidates: DiffCandidate[] }) 
   const afterGroup = candidates.find((c) => c.id === after)?.group;
 
   if (!firstPair) {
-    return <p className="text-[12px] text-zinc-500">Faça ao menos duas capturas do mesmo device para comparar (recapture o site e volte aqui).</p>;
+    return <p className="text-[12px] text-cbm-gray-400">Faça ao menos duas capturas do mesmo device para comparar (recapture o site e volte aqui).</p>;
   }
 
   const options = (list: DiffCandidate[]) =>

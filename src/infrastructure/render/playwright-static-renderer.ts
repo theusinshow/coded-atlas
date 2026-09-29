@@ -12,7 +12,7 @@ import { getRenderBundle } from "./render-bundle";
  * Assets e fontes são servidos por interceptação de rota (page-routes.ts).
  */
 export class PlaywrightStaticRenderer implements StaticRenderer {
-  constructor(private readonly options: { nodeModules?: string; timeoutMs?: number } = {}) {}
+  constructor(private readonly options: { projectRoot?: string; timeoutMs?: number } = {}) {}
 
   async renderBatch(
     items: readonly RenderItem[],
@@ -31,7 +31,7 @@ export class PlaywrightStaticRenderer implements StaticRenderer {
         const { width, height } = item.artboard;
         const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1 });
         page.setDefaultTimeout(this.options.timeoutMs ?? 30_000);
-        await installRenderRoutes(page, { loadAsset: options.loadAsset, nodeModules: this.options.nodeModules });
+        await installRenderRoutes(page, { loadAsset: options.loadAsset, projectRoot: this.options.projectRoot });
 
         // Dados da peça como JSON seguro dentro de <script> (sem "</script>" possível).
         const payload = JSON.stringify({ artboard: item.artboard, tokens: item.tokens, origin: ORIGIN }).replace(/</g, "\\u003c");

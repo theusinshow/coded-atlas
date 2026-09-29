@@ -24,7 +24,7 @@ export function CaptureForm({ projectId, sources }: { projectId: string; sources
   const jobId = state?.jobId && state.jobId !== finishedJobId ? state.jobId : null;
 
   if (sources.length === 0) {
-    return <p className="text-[13px] text-zinc-500">Adicione a URL do site (ou do servidor de desenvolvimento) nas origens para capturar.</p>;
+    return <p className="text-[13px] text-cbm-gray-400">Adicione a URL do site (ou do servidor de desenvolvimento) nas origens para capturar.</p>;
   }
 
   return (
@@ -40,12 +40,12 @@ export function CaptureForm({ projectId, sources }: { projectId: string; sources
       </Field>
 
       <fieldset>
-        <legend className="block text-[11px] font-mono text-zinc-400 tracking-wider uppercase mb-2">Perfil</legend>
+        <legend className="block text-[11px] font-medium text-cbm-gray-400 tracking-[0.22em] uppercase mb-2">Perfil</legend>
         <div className="grid grid-cols-2 gap-2">
           {(Object.keys(PROFILES) as (keyof typeof PROFILES)[]).map((key) => (
             <label
               key={key}
-              className={`border p-3 cursor-pointer ${profile === key ? "border-accent bg-accent/5" : "border-line hover:border-zinc-600"}`}
+              className={`border p-3 cursor-pointer ${profile === key ? "border-accent bg-accent/5" : "border-line hover:border-cbm-gray-600"}`}
             >
               <input
                 type="radio"
@@ -58,14 +58,14 @@ export function CaptureForm({ projectId, sources }: { projectId: string; sources
                 }}
                 className="sr-only"
               />
-              <span className="block text-sm text-zinc-100">{PROFILES[key].label}</span>
-              <span className="block text-[11px] text-zinc-500 mt-1">{PROFILES[key].hint}</span>
+              <span className="block text-sm text-cbm-gray-100">{PROFILES[key].label}</span>
+              <span className="block text-[11px] text-cbm-gray-400 mt-1">{PROFILES[key].hint}</span>
             </label>
           ))}
         </div>
       </fieldset>
 
-      <fieldset className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px] text-zinc-300">
+      <fieldset className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px] text-cbm-gray-200">
         <legend className="sr-only">Ajustes</legend>
         <label className="flex items-center gap-2"><input type="checkbox" name="device-desktop" defaultChecked /> Desktop</label>
         <label className="flex items-center gap-2"><input type="checkbox" name="device-mobile" defaultChecked /> Mobile</label>
@@ -77,7 +77,7 @@ export function CaptureForm({ projectId, sources }: { projectId: string; sources
       </fieldset>
 
       <details className="border border-line p-3">
-        <summary className="text-[12px] text-zinc-400 cursor-pointer">Páginas extras e estados de interação</summary>
+        <summary className="text-[12px] text-cbm-gray-400 cursor-pointer">Páginas extras e estados de interação</summary>
         <div className="space-y-4 pt-3">
           <Field label="Páginas extras" htmlFor="cf-pages" hint="Uma por linha: /sobre, /contato ou URL completa do mesmo site (máx. 10).">
             <textarea id="cf-pages" name="pages" rows={3} className={INPUT_CLASS} placeholder={"/sobre\n/servicos"} />

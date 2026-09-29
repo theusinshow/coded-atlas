@@ -5,14 +5,14 @@ import type { StyleTokens } from "@/src/core/creative/tokens";
 
 /** Controles compactos do inspetor do Studio (tokens do design system, sem decoração). */
 
-export const FIELD_LABEL = "block text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-1";
-const INPUT = "w-full h-8 bg-surface-2 border border-line text-zinc-100 text-[12px] px-2 focus:outline-none focus:border-accent tabular-nums";
+export const FIELD_LABEL = "block text-[10px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400 mb-1";
+const INPUT = "w-full h-8 bg-surface-2 border border-line text-cbm-gray-100 text-[12px] px-2 focus:outline-none focus:border-accent tabular-nums";
 
 export function Section({ title, children, aside }: { title: string; children: ReactNode; aside?: ReactNode }) {
   return (
     <section className="border-b border-line px-4 py-4 space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="text-[10px] font-mono uppercase tracking-[0.14em] text-zinc-400">{title}</h3>
+        <h3 className="text-[10px] font-medium uppercase tracking-[0.14em] text-cbm-gray-400">{title}</h3>
         {aside}
       </div>
       {children}
@@ -70,7 +70,7 @@ export function NumberField({
             if (e.target.value.trim() !== "" && Number.isFinite(n)) onChange(clamp(n, min, max));
           }}
         />
-        {suffix && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-zinc-600 pointer-events-none">{suffix}</span>}
+        {suffix && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-cbm-gray-400 pointer-events-none">{suffix}</span>}
       </div>
     </div>
   );
@@ -118,7 +118,7 @@ export function Segmented<T extends string | number>({
             aria-checked={value === o.id}
             title={o.title}
             onClick={() => onChange(o.id)}
-            className={`flex-1 h-7 px-1.5 text-[11px] transition-colors ${value === o.id ? "bg-surface-2 text-accent-bright" : "text-zinc-400 hover:text-zinc-100"}`}
+            className={`flex-1 h-7 px-1.5 text-[11px] transition-colors ${value === o.id ? "bg-surface-2 text-cbm-white" : "text-cbm-gray-400 hover:text-cbm-gray-100"}`}
           >
             {o.label}
           </button>
@@ -134,7 +134,7 @@ export function RangeField({ label, value, onChange, min, max, step, format }: {
     <div>
       <label htmlFor={id} className={`${FIELD_LABEL} flex justify-between`}>
         <span>{label}</span>
-        <span className="text-zinc-400 normal-case tracking-normal">{format ? format(value) : value}</span>
+        <span className="text-cbm-gray-400 normal-case tracking-normal">{format ? format(value) : value}</span>
       </label>
       <input id={id} type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full accent-[var(--color-accent)]" />
     </div>
@@ -207,7 +207,7 @@ export function ColorField({
             onChange={(e) => onChange(e.target.value.toLowerCase())}
           />
         </label>
-        <span className="ml-1 text-[10px] font-mono text-zinc-500">{value === null ? "nenhuma" : isHex ? value : TOKEN_LABEL[value as ColorToken]}</span>
+        <span className="ml-1 text-[10px] font-mono text-cbm-gray-400">{value === null ? "nenhuma" : isHex ? value : TOKEN_LABEL[value as ColorToken]}</span>
       </div>
     </div>
   );
@@ -215,7 +215,7 @@ export function ColorField({
 
 export function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <label className="flex items-center gap-2 text-[12px] text-zinc-300 cursor-pointer select-none">
+    <label className="flex items-center gap-2 text-[12px] text-cbm-gray-200 cursor-pointer select-none">
       <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
       {label}
     </label>

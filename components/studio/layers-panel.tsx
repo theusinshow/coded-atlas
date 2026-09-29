@@ -22,18 +22,18 @@ export function LayersPanel() {
   const toggle = (id: string, field: "visible" | "locked", value: boolean) =>
     apply((c) => ({ ...c, artboard: { ...c.artboard, layers: updateLayer(c.artboard.layers, id, { [field]: value }) } }));
 
-  if (layers.length === 0) return <p className="px-4 py-6 text-[12px] text-zinc-500">Nenhuma camada. Adicione texto, formas ou imagens na aba Adicionar.</p>;
+  if (layers.length === 0) return <p className="px-4 py-6 text-[12px] text-cbm-gray-400">Nenhuma camada. Adicione texto, formas ou imagens na aba Adicionar.</p>;
   return (
     <ul className="py-1" aria-label="Camadas">
       {displayRows(layers).map(({ layer, depth }) => (
         <li key={layer.id}>
           <div
             data-layer-row={layer.id}
-            className={`group flex items-center gap-2 h-8 pr-2 text-[12px] cursor-pointer ${selectedId === layer.id ? "bg-surface-2 text-zinc-50" : "text-zinc-400 hover:bg-surface hover:text-zinc-100"}`}
+            className={`group flex items-center gap-2 h-8 pr-2 text-[12px] cursor-pointer ${selectedId === layer.id ? "bg-surface-2 text-cbm-white" : "text-cbm-gray-400 hover:bg-surface hover:text-cbm-gray-100"}`}
             style={{ paddingLeft: 12 + depth * 14 }}
             onClick={() => select(layer.id)}
           >
-            <span className="w-4 text-center text-[11px] text-zinc-500" title={LAYER_TYPE_LABEL[layer.type]} aria-hidden>
+            <span className="w-4 text-center text-[11px] text-cbm-gray-400" title={LAYER_TYPE_LABEL[layer.type]} aria-hidden>
               {TYPE_GLYPH[layer.type]}
             </span>
             <span className={`flex-1 truncate ${layer.visible ? "" : "opacity-40"}`}>{layerLabel(layer)}</span>
@@ -45,7 +45,7 @@ export function LayersPanel() {
                 e.stopPropagation();
                 toggle(layer.id, "visible", !layer.visible);
               }}
-              className={`text-[10px] font-mono uppercase w-8 ${layer.visible ? "text-zinc-600 opacity-0 group-hover:opacity-100" : "text-warn"}`}
+              className={`text-[10px] font-medium uppercase tracking-[0.22em] w-8 ${layer.visible ? "text-cbm-gray-400 opacity-0 group-hover:opacity-100" : "text-warn"}`}
             >
               {layer.visible ? "ver" : "oculto"}
             </button>
@@ -57,7 +57,7 @@ export function LayersPanel() {
                 e.stopPropagation();
                 toggle(layer.id, "locked", !layer.locked);
               }}
-              className={`text-[10px] font-mono uppercase w-10 ${layer.locked ? "text-accent" : "text-zinc-600 opacity-0 group-hover:opacity-100"}`}
+              className={`text-[10px] font-medium uppercase tracking-[0.22em] w-10 ${layer.locked ? "text-accent" : "text-cbm-gray-400 opacity-0 group-hover:opacity-100"}`}
             >
               {layer.locked ? "travado" : "travar"}
             </button>
@@ -92,8 +92,8 @@ export function AddPanel({ assets }: { assets: StudioAsset[] }) {
     <div className="p-4 space-y-5">
       <div className="grid grid-cols-2 gap-1.5">
         {buttons.map((b) => (
-          <button key={b.label} type="button" onClick={() => add(b.make)} className="h-9 border border-line text-[12px] text-zinc-300 hover:border-zinc-500 hover:text-zinc-50 flex items-center gap-2 px-3">
-            <span className="text-zinc-500 w-3 text-center" aria-hidden>
+          <button key={b.label} type="button" onClick={() => add(b.make)} className="h-9 border border-line text-[12px] text-cbm-gray-200 hover:border-cbm-gray-400 hover:text-cbm-white flex items-center gap-2 px-3">
+            <span className="text-cbm-gray-400 w-3 text-center" aria-hidden>
               {b.hint}
             </span>
             {b.label}
@@ -101,7 +101,7 @@ export function AddPanel({ assets }: { assets: StudioAsset[] }) {
         ))}
       </div>
       <div>
-        <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-2">Imagem do projeto</p>
+        <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400 mb-2">Imagem do projeto</p>
         <AssetPicker assets={assets} columns={2} maxHeight="calc(100vh - 360px)" onPick={(asset) => add((b) => newImage(b, asset))} />
       </div>
     </div>

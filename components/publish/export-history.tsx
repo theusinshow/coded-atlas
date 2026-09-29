@@ -5,11 +5,11 @@ const DESTINATION_LABEL = { download: "ZIP", folder: "Pasta local", github: "Git
 type ViewStatus = ExportRecord["status"] | "cancelled";
 
 const STATUS: Record<ViewStatus, { label: string; className: string }> = {
-  queued: { label: "Na fila", className: "text-zinc-300 border-line" },
+  queued: { label: "Na fila", className: "text-cbm-gray-200 border-line" },
   running: { label: "Entregando", className: "text-accent border-accent/50" },
   delivered: { label: "Entregue", className: "text-ok border-ok/40" },
   failed: { label: "Falhou", className: "text-bad border-bad/50" },
-  cancelled: { label: "Cancelado", className: "text-zinc-500 border-line" },
+  cancelled: { label: "Cancelado", className: "text-cbm-gray-400 border-line" },
 };
 
 function bytes(n: number): string {
@@ -30,24 +30,24 @@ export function ExportHistory({ records, jobStatus }: { records: ExportRecord[];
         return (
           <li key={r.id} className="grid gap-2 px-4 py-3 sm:grid-cols-[1fr_auto] sm:items-center" data-export={r.id} data-export-status={status}>
             <div className="min-w-0">
-              <p className="text-[13px] text-zinc-100 truncate">{r.name}</p>
-              <p className="text-[11px] font-mono text-zinc-500">
+              <p className="text-[13px] text-cbm-gray-100 truncate">{r.name}</p>
+              <p className="text-[11px] font-mono text-cbm-gray-400">
                 {DESTINATION_LABEL[r.destination]} · {r.outputIds.length} {r.outputIds.length === 1 ? "peça" : "peças"}
                 {r.result.files ? ` · ${r.result.files} arquivos` : ""}
                 {r.result.archive ? ` · ${bytes(r.result.archive.byteSize)}` : ""} · {new Date(r.createdAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
               </p>
-              {r.result.folder && <p className="text-[11px] font-mono text-zinc-400 break-all">pasta: {r.result.folder}/</p>}
+              {r.result.folder && <p className="text-[11px] font-mono text-cbm-gray-400 break-all">pasta: {r.result.folder}/</p>}
               {r.result.error && <p className="text-[11px] text-bad">{r.result.error}</p>}
             </div>
             <div className="flex items-center gap-3 justify-self-start sm:justify-self-end">
-              <span className={`inline-flex border px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wider ${s.className}`}>{s.label}</span>
+              <span className={`inline-flex border px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.22em] ${s.className}`}>{s.label}</span>
               {status === "delivered" && r.result.archive && (
-                <a href={`/api/atlas/exports/${r.id}/file`} className="text-[11px] font-mono uppercase tracking-wider text-accent hover:text-accent-bright">
+                <a href={`/api/atlas/exports/${r.id}/file`} className="text-[11px] font-medium uppercase tracking-[0.22em] text-accent hover:text-accent-bright">
                   Baixar (.zip)
                 </a>
               )}
               {status === "delivered" && r.result.commitUrl && (
-                <a href={r.result.commitUrl} target="_blank" rel="noreferrer" className="text-[11px] font-mono uppercase tracking-wider text-accent hover:text-accent-bright">
+                <a href={r.result.commitUrl} target="_blank" rel="noreferrer" className="text-[11px] font-medium uppercase tracking-[0.22em] text-accent hover:text-accent-bright">
                   Ver commit →
                 </a>
               )}
@@ -62,7 +62,7 @@ export function ExportHistory({ records, jobStatus }: { records: ExportRecord[];
 /** Checkbox de seleção de uma peça, ligado ao formulário de entrega pelo atributo `form`. */
 export function PickOutput({ formId, outputId }: { formId: string; outputId: string }) {
   return (
-    <label className="flex items-center gap-1.5 text-[11px] text-zinc-400 hover:text-zinc-100 cursor-pointer">
+    <label className="flex items-center gap-1.5 text-[11px] text-cbm-gray-400 hover:text-cbm-gray-100 cursor-pointer">
       <input type="checkbox" name="outputId" value={outputId} form={formId} className="accent-[var(--color-accent)]" />
       Incluir
     </label>

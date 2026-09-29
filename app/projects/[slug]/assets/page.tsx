@@ -68,8 +68,8 @@ export default async function ProjectAssetsPage({ params, searchParams }: Props)
                   )}
                 </Link>
                 <div className="px-3 py-2">
-                  <p className="text-[12px] text-zinc-200 truncate">{a.label ?? a.metadata.sectionName ?? a.kind}</p>
-                  <p className="text-[10px] font-mono text-zinc-500 truncate">
+                  <p className="text-[12px] text-cbm-gray-200 truncate">{a.label ?? a.metadata.sectionName ?? a.kind}</p>
+                  <p className="text-[10px] font-mono text-cbm-gray-400 truncate">
                     {[a.kind, a.metadata.device, a.width && a.height ? `${a.width}×${a.height}` : null].filter(Boolean).join(" · ")}
                   </p>
                 </div>
@@ -87,7 +87,7 @@ function FilterLink({ href, active, label }: { href: string; active: boolean; la
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`px-2.5 py-1 text-[12px] border ${active ? "border-accent text-accent-bright" : "border-line text-zinc-400 hover:text-zinc-100"}`}
+      className={`px-2.5 py-1 text-[12px] border ${active ? "border-accent text-cbm-white" : "border-line text-cbm-gray-400 hover:text-cbm-gray-100"}`}
     >
       {label}
     </Link>

@@ -43,7 +43,7 @@ export function JobFollower({ jobId, onDone }: { jobId: string; onDone?: (status
     await fetch(`/api/atlas/jobs/${jobId}/cancel`, { method: "POST" });
   }
 
-  if (!job) return <p className="text-[12px] text-zinc-500">Conectando ao job…</p>;
+  if (!job) return <p className="text-[12px] text-cbm-gray-400">Conectando ao job…</p>;
   const active = !TERMINAL.has(job.status);
   return (
     <div className="border border-line bg-surface p-3 space-y-2" aria-live="polite">
@@ -53,14 +53,14 @@ export function JobFollower({ jobId, onDone }: { jobId: string; onDone?: (status
       </div>
       <div className="h-1 bg-surface-2 overflow-hidden">
         <div
-          className={`h-full transition-[width] duration-500 ${job.status === "failed" ? "bg-bad" : job.status === "cancelled" ? "bg-zinc-600" : "bg-accent"}`}
+          className={`h-full transition-[width] duration-500 ${job.status === "failed" ? "bg-bad" : job.status === "cancelled" ? "bg-cbm-gray-600" : "bg-signal"}`}
           style={{ width: `${job.progress}%` }}
         />
       </div>
       <div className="flex items-center justify-between gap-3 min-h-5">
-        <p className="text-[12px] text-zinc-400 truncate">{job.error?.message ?? job.message ?? ""}</p>
+        <p className="text-[12px] text-cbm-gray-400 truncate">{job.error?.message ?? job.message ?? ""}</p>
         {active && (
-          <button type="button" onClick={cancel} className="text-[11px] font-mono uppercase tracking-wider text-zinc-500 hover:text-bad">
+          <button type="button" onClick={cancel} className="text-[11px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400 hover:text-bad">
             Cancelar
           </button>
         )}

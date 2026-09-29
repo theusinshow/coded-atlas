@@ -30,10 +30,10 @@ export function PlanItems({ plan, assets, profile, canApply }: { plan: CreativeP
             <ArtboardPreview {...model} className="border border-line" />
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-[13px] text-zinc-100">
+                <p className="text-[13px] text-cbm-gray-100">
                   {index + 1}. {definition.name}
                 </p>
-                <p className="text-[10px] font-mono uppercase tracking-wider text-accent">
+                <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-accent">
                   {FORMATS[item.formatId].label} · {definition.variants.find((v) => v.id === item.variant)?.label ?? item.variant}
                 </p>
               </div>
@@ -47,7 +47,7 @@ export function PlanItems({ plan, assets, profile, canApply }: { plan: CreativeP
                 </form>
               )}
             </div>
-            <p className="text-[12px] text-zinc-400 leading-snug">{item.rationale}</p>
+            <p className="text-[12px] text-cbm-gray-400 leading-snug">{item.rationale}</p>
             <CreativeIssues issues={lintArtboard(model.artboard, model.tokens)} compact />
           </li>
         );

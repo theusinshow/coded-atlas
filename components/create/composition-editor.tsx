@@ -74,7 +74,7 @@ function Choice<T extends string>({ label, value, options, onChange }: { label: 
             title={o.hint}
             onClick={() => onChange(o.id)}
             className={`h-8 px-2.5 text-[12px] border transition-colors ${
-              value === o.id ? "border-accent text-accent-bright" : "border-line text-zinc-400 hover:text-zinc-100"
+              value === o.id ? "border-accent text-cbm-white" : "border-line text-cbm-gray-400 hover:text-cbm-gray-100"
             }`}
           >
             {o.label}
@@ -93,13 +93,13 @@ function AssetSlotField({ slot, value, assets, onChange }: { slot: SlotDefinitio
       <div className="flex items-center gap-3">
         <AssetThumb id={current?.id} alt={current?.label ?? slot.label} width={320} className="w-20 aspect-[16/10] border border-line shrink-0" />
         <div className="min-w-0 flex-1">
-          <p className="text-[12px] text-zinc-200 truncate">
+          <p className="text-[12px] text-cbm-gray-200 truncate">
             {slot.label}
             {slot.required && <span className="text-accent"> *</span>}
           </p>
-          <p className="text-[11px] text-zinc-500 truncate">{current ? (current.label ?? current.kind) : "vazio"}</p>
+          <p className="text-[11px] text-cbm-gray-400 truncate">{current ? (current.label ?? current.kind) : "vazio"}</p>
         </div>
-        <button type="button" onClick={() => setOpen((v) => !v)} className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 hover:text-accent" aria-expanded={open}>
+        <button type="button" onClick={() => setOpen((v) => !v)} className="text-[11px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400 hover:text-accent" aria-expanded={open}>
           {open ? "Fechar" : "Trocar"}
         </button>
       </div>
@@ -205,7 +205,7 @@ function Editor({ instance, definition, assets, profile, latestProfile }: Props 
             <ArtboardPreview {...model} className="shadow-2xl shadow-black/50" />
           </div>
         </div>
-        <p className="text-[11px] font-mono text-zinc-500">
+        <p className="text-[11px] font-mono text-cbm-gray-400">
           {size.label} · {size.width}×{size.height}px · {definition.name} v{definition.version}
           {activeProfile ? ` · identidade rev ${activeProfile.revision}` : " · sem identidade capturada"}
         </p>
@@ -234,9 +234,9 @@ function Editor({ instance, definition, assets, profile, latestProfile }: Props 
               onChange={(e) => update({ primary: e.target.value.toLowerCase() })}
               className="h-8 w-12 bg-transparent border border-line cursor-pointer"
             />
-            <span className="text-[12px] font-mono text-zinc-400">{draft.primary ?? `${model.tokens.colors.primary} (automática)`}</span>
+            <span className="text-[12px] font-mono text-cbm-gray-400">{draft.primary ?? `${model.tokens.colors.primary} (automática)`}</span>
             {draft.primary && (
-              <button type="button" onClick={() => update({ primary: undefined })} className="ml-auto text-[11px] text-zinc-500 hover:text-zinc-200">
+              <button type="button" onClick={() => update({ primary: undefined })} className="ml-auto text-[11px] text-cbm-gray-400 hover:text-cbm-gray-200">
                 Automática
               </button>
             )}
@@ -244,11 +244,11 @@ function Editor({ instance, definition, assets, profile, latestProfile }: Props 
         </div>
 
         {latestProfile && profile && latestProfile.revision !== profile.revision && (
-          <div className="border border-line bg-surface px-3 py-2.5 text-[12px] text-zinc-300 space-y-1.5">
+          <div className="border border-line bg-surface px-3 py-2.5 text-[12px] text-cbm-gray-200 space-y-1.5">
             <p>
               Esta peça usa a identidade rev {profile.revision}; a captura mais nova gerou a rev {latestProfile.revision}.
             </p>
-            <label className="flex items-center gap-2 text-zinc-400">
+            <label className="flex items-center gap-2 text-cbm-gray-400">
               <input type="checkbox" checked={draft.refreshProfile} onChange={(e) => update({ refreshProfile: e.target.checked })} />
               Usar a identidade mais nova
             </label>
@@ -271,12 +271,12 @@ function Editor({ instance, definition, assets, profile, latestProfile }: Props 
               />
             ) : (
               <div key={slot.id}>
-                <label htmlFor={`slot-${slot.id}`} className="flex justify-between text-[12px] text-zinc-300 mb-1">
+                <label htmlFor={`slot-${slot.id}`} className="flex justify-between text-[12px] text-cbm-gray-200 mb-1">
                   <span>
                     {slot.label}
                     {slot.required && <span className="text-accent"> *</span>}
                   </span>
-                  <span className="text-[11px] font-mono text-zinc-600">
+                  <span className="text-[11px] font-mono text-cbm-gray-400">
                     {(() => {
                       const b = draft.bindings[slot.id];
                       return b && "text" in b ? b.text.length : 0;
@@ -306,7 +306,7 @@ function Editor({ instance, definition, assets, profile, latestProfile }: Props 
             <legend className={LABEL_CLASS}>Arquivos do render</legend>
             <div className="flex gap-4">
               {(["png", "jpg", "webp"] as const).map((f) => (
-                <label key={f} className="flex items-center gap-1.5 text-[12px] text-zinc-300 uppercase font-mono">
+                <label key={f} className="flex items-center gap-1.5 text-[12px] text-cbm-gray-200 uppercase tracking-[0.22em] font-medium">
                   <input
                     type="checkbox"
                     checked={formats.includes(f)}
@@ -334,7 +334,7 @@ function Editor({ instance, definition, assets, profile, latestProfile }: Props 
               Excluir
             </Button>
           </div>
-          <p className="text-[11px] text-zinc-500 min-h-4" aria-live="polite">
+          <p className="text-[11px] text-cbm-gray-400 min-h-4" aria-live="polite">
             {dirty ? "Alterações não salvas — Renderizar também salva." : (notice ?? "")}
           </p>
           <FormError message={error} />

@@ -12,6 +12,12 @@ export type StyleMode = z.infer<typeof StyleModeSchema>;
 
 /** Fontes curadas e empacotadas (render determinístico, sem internet). */
 export const FONT_FAMILIES = {
+  /** Coded by M (design system cbm-port): Panchang em títulos, Satoshi no corpo. */
+  // widthFactor: largura média relativa à Space Grotesk (base em que as composições
+  // foram desenhadas), medida no Chromium. O kernel compensa o corpo para a mesma
+  // largura de linha — Panchang é 49% mais larga; as demais ficam em ±7% (sem ajuste).
+  panchang: { css: "Panchang", kind: "sans", weights: [500, 600, 700, 800], widthFactor: 1.49 },
+  satoshi: { css: "Satoshi", kind: "sans", weights: [300, 400, 500, 700] },
   "space-grotesk": { css: "Space Grotesk", kind: "sans", weights: [400, 500, 600, 700] },
   inter: { css: "Inter", kind: "sans", weights: [400, 500, 600, 700] },
   sora: { css: "Sora", kind: "sans", weights: [400, 500, 600, 700] },
@@ -25,22 +31,33 @@ const Hex = z.string().regex(/^#[0-9a-f]{6}$/);
 export const StyleTokensSchema = z.strictObject({
   colors: z.strictObject(Object.fromEntries(COLOR_TOKENS.map((t) => [t, Hex])) as Record<ColorToken, typeof Hex>),
   fonts: z.strictObject({ display: FontFamilyIdSchema, body: FontFamilyIdSchema, mono: FontFamilyIdSchema }),
+  /** Forma: 0 = cantos retos (Coded by M: "angular, não arredondado"), 1 = raios da composição. */
+  radiusScale: z.number().min(0).max(1),
+  /** Moldura de browser: neutra (modo projeto) ou a BrowserFrame da Coded by M (1 dot no sinal, marca de canto). */
+  frame: z.enum(["neutral", "cbm"]),
 });
 export type StyleTokens = z.infer<typeof StyleTokensSchema>;
 
-/** Linguagem visual da Coded by M/Atlas: neutros frios escuros + acento cobre (mesmo do globals.css). */
+/**
+ * Linguagem visual da Coded by M (design system cbm-port, DESIGN-LANGUAGE.md):
+ * base profunda #000F08, estrutura off-white #F5F2ED, sinal #FB3640; Panchang +
+ * Satoshi. Os mesmos valores da UI do Atlas (globals.css).
+ */
 export const ATLAS_TOKENS: StyleTokens = {
   colors: {
-    background: "#0f1014",
-    surface: "#181a20",
-    line: "#2a2d35",
-    text: "#eef0f3",
-    textMuted: "#9aa1ac",
-    primary: "#c98a4b",
-    onPrimary: "#111111",
-    accent: "#c98a4b",
+    background: "#000f08",
+    surface: "#070b08",
+    line: "#1a2418",
+    text: "#f5f2ed",
+    textMuted: "#8a8780",
+    primary: "#fb3640",
+    onPrimary: "#000f08",
+    accent: "#fb3640",
   },
-  fonts: { display: "space-grotesk", body: "inter", mono: "jetbrains-mono" },
+  // Micro-labels da marca são Satoshi uppercase com tracking largo — não monoespaçada.
+  fonts: { display: "panchang", body: "satoshi", mono: "satoshi" },
+  radiusScale: 0,
+  frame: "cbm",
 };
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -55,6 +72,12 @@ export function mix(a: string, b: string, amount: number): string {
 }
 
 const readableOn = (bg: string) => (contrastRatio("#ffffff", bg) >= contrastRatio("#111111", bg) ? "#ffffff" : "#111111");
+
+/** Sobre a cor de marca, nos modos da Coded by M: off-white/base quentes (nunca #fff/#000) quando passam AA. */
+function readableOnBrand(bg: string): string {
+  const warm = contrastRatio(ATLAS_TOKENS.colors.text, bg) >= contrastRatio(ATLAS_TOKENS.colors.background, bg) ? ATLAS_TOKENS.colors.text : ATLAS_TOKENS.colors.background;
+  return contrastRatio(warm, bg) >= TEXT_CONTRAST ? warm : readableOn(bg);
+}
 
 /** Texto pequeno na cor de marca (rótulos) precisa de AA: 4,5:1 sobre o fundo. */
 const TEXT_CONTRAST = 4.5;
@@ -131,21 +154,25 @@ export function resolveTokens(profile: VisualProfile | null, mode: StyleMode, ov
         onPrimary: readableOn(primary),
         accent,
       },
-      fonts: projectFonts(profile, ATLAS_TOKENS.fonts),
+      fonts: projectFonts(profile, { ...ATLAS_TOKENS.fonts, mono: "jetbrains-mono" }),
+      radiusScale: 1,
+      frame: "neutral",
     };
   } else {
     const brand = brandColor(palette, ATLAS_TOKENS.colors.background, 3);
     const primary = brand ? ensureContrast(brand, ATLAS_TOKENS.colors.background) : ATLAS_TOKENS.colors.primary;
     tokens = {
-      colors: { ...ATLAS_TOKENS.colors, primary, accent: primary, onPrimary: readableOn(primary) },
+      colors: { ...ATLAS_TOKENS.colors, primary, accent: primary, onPrimary: readableOnBrand(primary) },
       fonts: { ...projectFonts(profile, ATLAS_TOKENS.fonts), body: ATLAS_TOKENS.fonts.body },
+      radiusScale: ATLAS_TOKENS.radiusScale,
+      frame: ATLAS_TOKENS.frame,
     };
   }
 
   if (overrides.primary && /^#[0-9a-f]{6}$/.test(overrides.primary)) {
     tokens.colors.primary = overrides.primary;
     tokens.colors.accent = overrides.primary;
-    tokens.colors.onPrimary = readableOn(overrides.primary);
+    tokens.colors.onPrimary = tokens.radiusScale === 0 ? readableOnBrand(overrides.primary) : readableOn(overrides.primary);
   }
   return StyleTokensSchema.parse(tokens);
 }
@@ -153,6 +180,12 @@ export function resolveTokens(profile: VisualProfile | null, mode: StyleMode, ov
 /** Resolve uma referência de cor (token ou hex) para um valor CSS. */
 export function resolveColor(ref: ColorRef, tokens: StyleTokens): string {
   return ref.startsWith("#") ? ref : tokens.colors[ref as ColorToken];
+}
+
+/** Corpo efetivo: compensa famílias muito largas para caber na linha desenhada. */
+export function fontSize(size: number, role: FontRole, tokens: StyleTokens): number {
+  const family = FONT_FAMILIES[tokens.fonts[role]];
+  return "widthFactor" in family ? Math.round((size / family.widthFactor) * 10) / 10 : size;
 }
 
 export function fontFamily(role: FontRole, tokens: StyleTokens): string {

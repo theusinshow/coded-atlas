@@ -89,32 +89,32 @@ export default async function KitPage({ params }: Props) {
   return (
     <div className="space-y-10">
       <RenderFonts />
-      <Link href={`/projects/${project.slug}/kits`} className="text-[12px] text-zinc-500 hover:text-zinc-200">
+      <Link href={`/projects/${project.slug}/kits`} className="text-[12px] text-cbm-gray-400 hover:text-cbm-gray-200">
         ← Kits
       </Link>
 
       <section className="grid gap-6 lg:grid-cols-[1fr_22rem]">
         <div className="space-y-3">
-          <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-accent">{getKitPreset(kit.presetId)?.name ?? "Media Kit"}</p>
-          <h2 className="text-xl text-zinc-50">{kit.name}</h2>
+          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-accent">{getKitPreset(kit.presetId)?.name ?? "Media Kit"}</p>
+          <h2 className="text-xl text-cbm-white">{kit.name}</h2>
           <Panel className="p-4 grid sm:grid-cols-3 gap-3 text-[12px]" aria-label="Direção criativa do kit">
             <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Tom</p>
-              <p className="text-zinc-200">{kit.direction.tone}</p>
+              <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400">Tom</p>
+              <p className="text-cbm-gray-200">{kit.direction.tone}</p>
             </div>
             <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Ênfase</p>
-              <p className="text-zinc-200">{kit.direction.emphasis}</p>
+              <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400">Ênfase</p>
+              <p className="text-cbm-gray-200">{kit.direction.emphasis}</p>
             </div>
             <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Estilo</p>
-              <p className="text-zinc-200 flex items-center gap-2">
+              <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400">Estilo</p>
+              <p className="text-cbm-gray-200 flex items-center gap-2">
                 {STYLE_MODES.find((m) => m.id === kit.direction.styleMode)?.label}
                 {kit.direction.accent && <span className="inline-block w-3 h-3 border border-line" style={{ background: kit.direction.accent }} title={kit.direction.accent} />}
               </p>
             </div>
           </Panel>
-          <p className="text-[11px] text-zinc-500">Todos os itens usam esta direção. Edite qualquer item antes de renderizar — o render usa a versão atual de cada um.</p>
+          <p className="text-[11px] text-cbm-gray-400">Todos os itens usam esta direção. Edite qualquer item antes de renderizar — o render usa a versão atual de cada um.</p>
         </div>
         <Panel className="p-4 space-y-4 self-start">
           <KitRenderForm kitId={kit.id} hasVideo={hasVideo} busyJobId={busyJobId} />
@@ -141,26 +141,26 @@ export default async function KitPage({ params }: Props) {
                 <div className="relative">
                   <ArtboardPreview artboard={preview.artboard} tokens={preview.tokens} className="border border-line" />
                   {item.kind !== "composition" && (
-                    <span className="absolute right-1.5 top-1.5 bg-black/70 px-1.5 py-0.5 text-[10px] font-mono uppercase text-zinc-200">{item.kind === "video" ? "▶ vídeo" : "carrossel"}</span>
+                    <span className="absolute right-1.5 top-1.5 bg-base/80 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.22em] text-cbm-gray-200">{item.kind === "video" ? "▶ vídeo" : "carrossel"}</span>
                   )}
                 </div>
               ) : (
-                <div className="aspect-[4/5] grid place-items-center border border-dashed border-line text-[11px] text-zinc-500 p-4 text-center">{item.note ?? "Não gerado"}</div>
+                <div className="aspect-[4/5] grid place-items-center border border-dashed border-line text-[11px] text-cbm-gray-400 p-4 text-center">{item.note ?? "Não gerado"}</div>
               )}
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="text-[13px] text-zinc-100">
+                  <p className="text-[13px] text-cbm-gray-100">
                     {index + 1}. {item.label}
                   </p>
-                  <p className="text-[10px] font-mono uppercase tracking-wider text-accent">{meta}</p>
+                  <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-accent">{meta}</p>
                 </div>
                 {href && (
-                  <Link href={href} className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 hover:text-accent shrink-0">
+                  <Link href={href} className="text-[11px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400 hover:text-accent shrink-0">
                     Editar
                   </Link>
                 )}
               </div>
-              {item.note && preview && <p className="text-[11px] text-zinc-500">{item.note}</p>}
+              {item.note && preview && <p className="text-[11px] text-cbm-gray-400">{item.note}</p>}
             </li>
           ))}
         </ul>

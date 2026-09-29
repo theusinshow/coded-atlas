@@ -19,7 +19,7 @@ const PDF_PAGE_HEIGHT = Math.round(CASE_MODULE_WIDTH * Math.SQRT2);
  * zipado; (2) PDF paginado sem quebrar seções; (3) um PNG por seção (módulos).
  */
 export class ChromiumCaseExporter implements CaseExporter {
-  constructor(private readonly options: { nodeModules?: string } = {}) {}
+  constructor(private readonly options: { projectRoot?: string } = {}) {}
 
   async export(
     input: Parameters<CaseExporter["export"]>[0],
@@ -43,7 +43,7 @@ export class ChromiumCaseExporter implements CaseExporter {
       browser = await chromium.launch({ headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
       const page = await browser.newPage({ viewport: { width: CASE_MODULE_WIDTH, height: 900 }, deviceScaleFactor: 1 });
       page.setDefaultTimeout(60_000);
-      await installRenderRoutes(page, { loadAsset, loadOutput, nodeModules: this.options.nodeModules });
+      await installRenderRoutes(page, { loadAsset, loadOutput, projectRoot: this.options.projectRoot });
       const payload = JSON.stringify({ content: input.content, tokens: input.tokens, origin: RENDER_ORIGIN }).replace(/</g, "\\u003c");
       await page.setContent(
         `<!doctype html><html><head><meta charset="utf-8"><style>${renderFontCss()}
@@ -109,11 +109,11 @@ html,body{margin:0;padding:0;background:${input.tokens.colors.background}}
     html = html.replace(new RegExp(`${origin}/output/([^"'\\s)]+)`, "g"), rewrite("output", "pieces", outputs));
 
     const families = new Set<string>((["display", "body", "mono"] as const).map((role) => FONT_FAMILIES[input.tokens.fonts[role] as FontFamilyId].css));
-    const nodeModules = this.options.nodeModules ?? path.join(process.cwd(), "node_modules");
+    const projectRoot = this.options.projectRoot ?? process.cwd();
     const faces: string[] = [];
     for (const font of fontFiles().filter((f) => families.has(f.family))) {
       const name = `fonts/${path.posix.basename(font.file)}`;
-      entries.push({ name, bytes: new Uint8Array(await readFile(path.join(nodeModules, font.file))) });
+      entries.push({ name, bytes: new Uint8Array(await readFile(path.join(projectRoot, font.file))) });
       faces.push(`@font-face{font-family:'${font.family}';font-style:normal;font-weight:${font.weight};font-display:swap;src:url(${name}) format('woff2');}`);
     }
     const title = input.title.replace(/[<>&"]/g, "");

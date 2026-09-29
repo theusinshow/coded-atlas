@@ -79,7 +79,7 @@ export default async function LibraryPage({ searchParams }: Props) {
             </option>
           ))}
         </select>
-        <button type="submit" className="h-[42px] px-4 border border-line text-sm text-zinc-200 hover:bg-surface">
+        <button type="submit" className="h-[42px] px-4 border border-line text-sm text-cbm-gray-200 hover:bg-surface">
           Filtrar
         </button>
       </form>
@@ -100,8 +100,8 @@ export default async function LibraryPage({ searchParams }: Props) {
                   )}
                 </Link>
                 <div className="px-3 py-2">
-                  <p className="text-[12px] text-zinc-200 truncate">{a.label ?? a.metadata.sectionName ?? a.kind}</p>
-                  <p className="text-[10px] font-mono text-zinc-500 truncate">
+                  <p className="text-[12px] text-cbm-gray-200 truncate">{a.label ?? a.metadata.sectionName ?? a.kind}</p>
+                  <p className="text-[10px] font-mono text-cbm-gray-400 truncate">
                     {[owner?.name, a.kind, a.metadata.device].filter(Boolean).join(" · ")}
                   </p>
                 </div>
@@ -114,7 +114,7 @@ export default async function LibraryPage({ searchParams }: Props) {
       {pages > 1 && (
         <nav aria-label="Paginação" className="flex items-center justify-between text-[13px]">
           {page > 1 ? <Link href={link(page - 1)} className="text-accent">← Anteriores</Link> : <span />}
-          <span className="text-zinc-500">
+          <span className="text-cbm-gray-400">
             Página {page} de {pages}
           </span>
           {page < pages ? <Link href={link(page + 1)} className="text-accent">Próximos →</Link> : <span />}

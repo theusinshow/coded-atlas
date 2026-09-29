@@ -43,19 +43,19 @@ export function AssetPicker({
             key={f.id}
             type="button"
             onClick={() => setFilter(f.id)}
-            className={`px-2 py-1 text-[11px] border ${filter === f.id ? "border-accent text-accent-bright" : "border-line text-zinc-500 hover:text-zinc-200"}`}
+            className={`px-2 py-1 text-[11px] border ${filter === f.id ? "border-accent text-cbm-white" : "border-line text-cbm-gray-400 hover:text-cbm-gray-200"}`}
           >
             {f.label}
           </button>
         ))}
         {onClear && (
-          <button type="button" onClick={onClear} className="ml-auto px-2 py-1 text-[11px] text-zinc-500 hover:text-bad">
+          <button type="button" onClick={onClear} className="ml-auto px-2 py-1 text-[11px] text-cbm-gray-400 hover:text-bad">
             Deixar vazio
           </button>
         )}
       </div>
       {visible.length === 0 ? (
-        <p className="text-[12px] text-zinc-500 px-1 py-3">Nenhum asset neste filtro.</p>
+        <p className="text-[12px] text-cbm-gray-400 px-1 py-3">Nenhum asset neste filtro.</p>
       ) : (
         <ul className={`grid gap-1.5 overflow-y-auto ${columns === 2 ? "grid-cols-2" : "grid-cols-3"}`} style={{ maxHeight }}>
           {visible.map((a) => (
@@ -65,10 +65,10 @@ export function AssetPicker({
                 onClick={() => onPick(a)}
                 title={a.label ?? a.kind}
                 data-asset={a.id}
-                className={`block w-full aspect-[16/10] border overflow-hidden ${a.id === value ? "border-accent" : "border-line hover:border-zinc-500"}`}
+                className={`block w-full aspect-[16/10] border overflow-hidden ${a.id === value ? "border-accent" : "border-line hover:border-cbm-gray-400"}`}
               >
                 {a.mimeType.startsWith("video/") ? (
-                  <span className="grid w-full h-full place-items-center bg-surface-2 text-[10px] font-mono uppercase tracking-wider text-accent">▶ vídeo</span>
+                  <span className="grid w-full h-full place-items-center bg-surface-2 text-[10px] font-medium uppercase tracking-[0.22em] text-accent">▶ vídeo</span>
                 ) : (
                   <AssetThumb id={a.id} alt={a.label ?? a.kind} width={320} className="w-full h-full" />
                 )}

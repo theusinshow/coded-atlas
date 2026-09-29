@@ -35,14 +35,14 @@ export function LayerAnimationSection({ layer }: { layer: Layer }) {
     editScene((s) => ({ ...s, animations: s.animations.map((a) => (a.id === id ? { ...a, ...patch } : a)) }), `${id}:${Object.keys(patch).join(",")}`);
 
   return (
-    <Section title="Animação" aside={<span className="text-[10px] font-mono text-zinc-600">{tracks.length} preset(s)</span>}>
-      {tracks.length === 0 && <p className="text-[11px] text-zinc-500">Parada nesta cena. Adicione um preset abaixo.</p>}
+    <Section title="Animação" aside={<span className="text-[10px] font-mono text-cbm-gray-400">{tracks.length} preset(s)</span>}>
+      {tracks.length === 0 && <p className="text-[11px] text-cbm-gray-400">Parada nesta cena. Adicione um preset abaixo.</p>}
       <ul className="space-y-3">
         {tracks.map((track) => (
           <li key={track.id} className="border border-line p-2.5 space-y-2" data-track={track.preset}>
             <div className="flex items-center justify-between">
-              <p className="text-[12px] text-zinc-100">{MOTION_PRESETS[track.preset].label}</p>
-              <button type="button" className="text-[11px] text-zinc-500 hover:text-bad" onClick={() => editScene((s) => ({ ...s, animations: s.animations.filter((a) => a.id !== track.id) }))}>
+              <p className="text-[12px] text-cbm-gray-100">{MOTION_PRESETS[track.preset].label}</p>
+              <button type="button" className="text-[11px] text-cbm-gray-400 hover:text-bad" onClick={() => editScene((s) => ({ ...s, animations: s.animations.filter((a) => a.id !== track.id) }))}>
                 remover
               </button>
             </div>
@@ -71,7 +71,7 @@ export function LayerAnimationSection({ layer }: { layer: Layer }) {
               animations: [...s.animations, { id: newLayerId(), layerId: layer.id, preset, delayMs: 0, durationMs: def.kind === "scroll" ? Math.max(1000, s.durationMs - 800) : def.defaultDurationMs, easing: def.defaultEasing, intensity: 1 }],
             }));
           }}
-          className="w-full h-8 bg-surface-2 border border-line text-zinc-100 text-[12px] px-2"
+          className="w-full h-8 bg-surface-2 border border-line text-cbm-gray-100 text-[12px] px-2"
         >
           <option value="">Escolher…</option>
           {available.map((id) => (
@@ -107,13 +107,13 @@ export function SceneSection() {
       )}
       <button
         type="button"
-        className="h-8 w-full border border-line text-[12px] text-zinc-300 hover:border-zinc-500 hover:text-zinc-50"
+        className="h-8 w-full border border-line text-[12px] text-cbm-gray-200 hover:border-cbm-gray-400 hover:text-cbm-white"
         onClick={() => editScene((s) => ({ ...s, animations: autoAnimate(s.artboard, s.durationMs) }))}
         title="Substitui as animações desta cena por presets escolhidos pelo tipo de cada camada"
       >
         Animar cena automaticamente
       </button>
-      <p className="text-[11px] text-zinc-500">{scene.animations.length} animação(ões) nesta cena. Selecione uma camada para ajustar a dela.</p>
+      <p className="text-[11px] text-cbm-gray-400">{scene.animations.length} animação(ões) nesta cena. Selecione uma camada para ajustar a dela.</p>
     </Section>
   );
 }
@@ -128,7 +128,7 @@ export function SoundtrackSection({ audioAssets }: { audioAssets: StudioAsset[] 
   return (
     <Section title="Trilha">
       {audioAssets.length === 0 ? (
-        <p className="text-[11px] text-zinc-500">Envie um áudio (MP3, WAV, OGG, M4A) em Assets → tipo “Áudio (trilha)” para usar aqui.</p>
+        <p className="text-[11px] text-cbm-gray-400">Envie um áudio (MP3, WAV, OGG, M4A) em Assets → tipo “Áudio (trilha)” para usar aqui.</p>
       ) : (
         <>
           <div>
@@ -139,7 +139,7 @@ export function SoundtrackSection({ audioAssets }: { audioAssets: StudioAsset[] 
               id="soundtrack"
               value={audio?.assetId ?? ""}
               onChange={(e) => set(e.target.value ? { assetId: e.target.value, volume: audio?.volume ?? 0.8, fadeOutMs: audio?.fadeOutMs ?? 1200 } : null)}
-              className="w-full h-8 bg-surface-2 border border-line text-zinc-100 text-[12px] px-2"
+              className="w-full h-8 bg-surface-2 border border-line text-cbm-gray-100 text-[12px] px-2"
             >
               <option value="">Sem trilha (mudo)</option>
               {audioAssets.map((a) => (
@@ -181,7 +181,7 @@ export function SlideNotesSection() {
           const notes = e.target.value;
           api.getState().applyDoc((d) => (isPresentation(d) ? updatePage(d, index, (s) => ({ ...s, notes })) : d), { key: `notes:${index}`, keepSelection: true });
         }}
-        className="w-full bg-surface-2 border border-line text-zinc-100 text-[12px] p-2 focus:outline-none focus:border-accent"
+        className="w-full bg-surface-2 border border-line text-cbm-gray-100 text-[12px] p-2 focus:outline-none focus:border-accent"
       />
     </Section>
   );

@@ -23,11 +23,11 @@ export function OutputCard({ output, compact = false }: { output: Output; compac
           muted
           playsInline
           preload="metadata"
-          className="block w-full border border-line bg-black"
+          className="block w-full border border-line bg-base"
           style={output.width && output.height ? { aspectRatio: `${output.width} / ${output.height}` } : undefined}
         />
       ) : (
-        <a href={outputFileUrl(output.id)} target="_blank" rel="noreferrer" className="block border border-line hover:border-zinc-500 transition-colors bg-surface-2">
+        <a href={outputFileUrl(output.id)} target="_blank" rel="noreferrer" className="block border border-line hover:border-cbm-gray-400 transition-colors bg-surface-2">
           {isImage ? (
             <img
               src={outputThumbUrl(output.id, compact ? 320 : 640)}
@@ -39,24 +39,24 @@ export function OutputCard({ output, compact = false }: { output: Output; compac
           ) : (
             <div className="aspect-video grid place-items-center text-center">
               <span className="text-2xl font-mono text-accent">{output.format.toUpperCase()}</span>
-              <span className="text-[10px] font-mono text-zinc-500">{output.format === "pptx" ? "apresentação" : output.format === "pdf" ? "documento" : output.format === "zip" ? (output.metadata.caseModule === "web" ? "página web" : "pacote") : "arquivo"}</span>
+              <span className="text-[10px] font-mono text-cbm-gray-400">{output.format === "pptx" ? "apresentação" : output.format === "pdf" ? "documento" : output.format === "zip" ? (output.metadata.caseModule === "web" ? "página web" : "pacote") : "arquivo"}</span>
             </div>
           )}
         </a>
       )}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className={compact ? "text-[11px] text-zinc-300 truncate" : "text-[12px] text-zinc-200 truncate"} title={output.label ?? undefined}>
+          <p className={compact ? "text-[11px] text-cbm-gray-200 truncate" : "text-[12px] text-cbm-gray-200 truncate"} title={output.label ?? undefined}>
             {output.label ?? "Peça"}
           </p>
-          <p className="text-[11px] font-mono text-zinc-500">
+          <p className="text-[11px] font-mono text-cbm-gray-400">
             {output.format.toUpperCase()}
             {output.width && output.height ? ` · ${output.width}×${output.height}` : ""}
             {output.durationMs ? ` · ${(output.durationMs / 1000).toFixed(1)} s` : ""}
             {output.metadata.quality === "preview" ? " · preview" : ""} · {formatBytes(output.byteSize)}
           </p>
         </div>
-        <a href={outputFileUrl(output.id, true)} className="text-[11px] font-mono uppercase tracking-wider text-accent hover:text-accent-bright shrink-0">
+        <a href={outputFileUrl(output.id, true)} className="text-[11px] font-medium uppercase tracking-[0.22em] text-accent hover:text-accent-bright shrink-0">
           Baixar
         </a>
       </div>

@@ -124,6 +124,7 @@ Delivered in 2.14 (Publish & Portfolio):
 
 ## Work allowed now
 
+- ✅ **Coded by M design system alignment** — done 2026-09-28 (ADR-045) (owner provided the canonical design system on 2026-09-28: `Coded by M — Design System.zip`, cbm-port@0.1.0). Map the Atlas UI and the "Coded by M" style mode of generated pieces to the real foundation tokens (colors, Satoshi/Panchang, radius 0, signal rarity, focus) through the Atlas semantic layer (`docs/DESIGN-SYSTEM.md`);
 - bug fixes and hardening of what 2.1–2.14 delivered;
 - documentation and test improvements;
 - small polish items the owner reports.

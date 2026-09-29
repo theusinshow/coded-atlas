@@ -48,7 +48,7 @@ export default async function ProjectOverviewPage({ params }: Props) {
           <AssetThumb id={o.cover?.id} alt={`Capa de ${o.project.name}`} width={1280} className="w-full h-full" />
         </div>
         <div className="space-y-5">
-          {o.project.description && <p className="text-sm text-zinc-300 leading-relaxed">{o.project.description}</p>}
+          {o.project.description && <p className="text-sm text-cbm-gray-200 leading-relaxed">{o.project.description}</p>}
           {url && (
             <a href={url.locator} target="_blank" rel="noreferrer" className="block text-[13px] font-mono text-accent hover:text-accent-bright truncate">
               {url.locator} ↗
@@ -62,16 +62,16 @@ export default async function ProjectOverviewPage({ params }: Props) {
           </div>
           {o.totalAssets > 0 && (
             <div className="flex flex-wrap gap-2">
-              <Link href={`/projects/${o.project.slug}/kits`} className="inline-flex h-10 items-center bg-accent px-4 text-sm font-medium text-zinc-950 hover:bg-accent-bright">
+              <Link href={`/projects/${o.project.slug}/kits`} className="inline-flex h-10 items-center bg-signal px-5 text-[11px] font-display font-semibold uppercase tracking-[0.12em] text-cbm-black hover:bg-signal-dark">
                 Gerar Media Kit
               </Link>
-              <Link href={`/projects/${o.project.slug}/create`} className="inline-flex h-10 items-center border border-line px-4 text-sm text-zinc-200 hover:border-zinc-500">
+              <Link href={`/projects/${o.project.slug}/create`} className="inline-flex h-10 items-center border border-line px-4 text-sm text-cbm-gray-200 hover:border-cbm-gray-400">
                 Criar
               </Link>
             </div>
           )}
           {o.project.origin === "legacy" && (
-            <p className="text-[12px] text-zinc-500">Importado da biblioteca v1 (arquivos originais preservados em public/generated).</p>
+            <p className="text-[12px] text-cbm-gray-400">Importado da biblioteca v1 (arquivos originais preservados em public/generated).</p>
           )}
         </div>
       </section>
@@ -91,7 +91,7 @@ export default async function ProjectOverviewPage({ params }: Props) {
         </SectionTitle>
         <ul className="space-y-2">
           {o.recommendations.map((r) => (
-            <li key={r} className="flex gap-3 text-sm text-zinc-300">
+            <li key={r} className="flex gap-3 text-sm text-cbm-gray-200">
               <span className="tri text-accent mt-1.5" aria-hidden />
               {r}
             </li>
@@ -114,19 +114,19 @@ export default async function ProjectOverviewPage({ params }: Props) {
         </section>
 
         <section aria-labelledby="atividade">
-          <SectionTitle id="atividade" aside={<Link href="/jobs" className="text-[12px] text-zinc-500 hover:text-zinc-200">Todos os jobs</Link>}>
+          <SectionTitle id="atividade" aside={<Link href="/jobs" className="text-[12px] text-cbm-gray-400 hover:text-cbm-gray-200">Todos os jobs</Link>}>
             Atividade recente
           </SectionTitle>
           {o.recentJobs.length === 0 ? (
-            <p className="text-[13px] text-zinc-500">Nenhum job ainda.</p>
+            <p className="text-[13px] text-cbm-gray-400">Nenhum job ainda.</p>
           ) : (
             <Panel>
               <ul className="divide-y divide-line">
                 {o.recentJobs.map((job) => (
                   <li key={job.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
                     <div className="min-w-0">
-                      <p className="text-[13px] text-zinc-200">{JOB_TYPE_LABEL[job.type] ?? job.type}</p>
-                      <p className="text-[11px] text-zinc-500 truncate">{job.error?.message ?? job.message ?? new Date(job.createdAt).toLocaleString("pt-BR")}</p>
+                      <p className="text-[13px] text-cbm-gray-200">{JOB_TYPE_LABEL[job.type] ?? job.type}</p>
+                      <p className="text-[11px] text-cbm-gray-400 truncate">{job.error?.message ?? job.message ?? new Date(job.createdAt).toLocaleString("pt-BR")}</p>
                     </div>
                     <JobStatusBadge status={job.status} />
                   </li>

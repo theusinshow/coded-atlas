@@ -51,7 +51,7 @@ export function SourcesPanel({ projectId, sources }: { projectId: string; source
   return (
     <div className="space-y-4">
       {sources.length === 0 ? (
-        <p className="text-[13px] text-zinc-500">Nenhuma origem ainda.</p>
+        <p className="text-[13px] text-cbm-gray-400">Nenhuma origem ainda.</p>
       ) : (
         <Panel>
           <ul className="divide-y divide-line">
@@ -59,8 +59,8 @@ export function SourcesPanel({ projectId, sources }: { projectId: string; source
               <li key={s.id} className="px-4 py-3 space-y-2">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">{TYPE_LABEL[s.type]}</p>
-                    <p className="text-[13px] text-zinc-200 truncate font-mono">{s.label ? `${s.label} · ` : ""}{s.locator}</p>
+                    <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400">{TYPE_LABEL[s.type]}</p>
+                    <p className="text-[13px] text-cbm-gray-200 truncate font-mono">{s.label ? `${s.label} · ` : ""}{s.locator}</p>
                   </div>
                   <div className="flex shrink-0 gap-1">
                     {(s.type === "url" || s.type === "local") && (

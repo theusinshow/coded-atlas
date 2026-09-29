@@ -28,12 +28,13 @@ export function ProjectNav({ slug }: { slug: string }) {
             href={href}
             aria-current={active ? "page" : undefined}
             className={[
-              "relative px-3 py-2.5 text-[13px] font-medium whitespace-nowrap transition-colors",
-              active ? "text-accent-bright" : "text-zinc-400 hover:text-zinc-100",
+              "relative px-3 py-3 text-[11px] uppercase tracking-[0.15em] whitespace-nowrap transition-colors",
+              active ? "text-cbm-white" : "text-cbm-gray-400 hover:text-cbm-white",
             ].join(" ")}
           >
             {tab.label}
-            {active && <span className="absolute left-3 right-3 -bottom-px h-0.5 bg-accent" />}
+            {/* Estrutura, não sinal: o vermelho já marca a seção ativa na navegação global. */}
+            {active && <span className="absolute left-3 right-3 -bottom-px h-0.5 bg-cbm-white" />}
           </Link>
         );
       })}

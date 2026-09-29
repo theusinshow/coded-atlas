@@ -16,7 +16,7 @@ const AUDIO_EXT: Record<string, string> = { "audio/mpeg": "mp3", "audio/wav": "w
  * Determinístico (sem relógio real) e sem rede.
  */
 export class ChromiumFfmpegMotionRenderer implements MotionRenderer {
-  constructor(private readonly options: { nodeModules?: string; ffmpeg?: string; frameTimeoutMs?: number } = {}) {}
+  constructor(private readonly options: { projectRoot?: string; ffmpeg?: string; frameTimeoutMs?: number } = {}) {}
 
   async render(input: VideoRenderInput, options: { loadAsset: AssetLoader; signal: AbortSignal; onProgress?: (ratio: number) => Promise<void> | void }): Promise<RenderedVideo> {
     options.signal.throwIfAborted();
@@ -45,7 +45,7 @@ export class ChromiumFfmpegMotionRenderer implements MotionRenderer {
       browser = await chromium.launch({ headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage", "--autoplay-policy=no-user-gesture-required"] });
       const page = await browser.newPage({ viewport: { width: outW, height: outH }, deviceScaleFactor: 1 });
       page.setDefaultTimeout(this.options.frameTimeoutMs ?? 30_000);
-      await installRenderRoutes(page, { loadAsset: options.loadAsset, nodeModules: this.options.nodeModules });
+      await installRenderRoutes(page, { loadAsset: options.loadAsset, projectRoot: this.options.projectRoot });
       const payload = JSON.stringify({ content: input.content, tokens: input.tokens, origin: RENDER_ORIGIN, videos: input.videoAssetIds, scale: plan.scale }).replace(/</g, "\\u003c");
       await page.setContent(
         `<!doctype html><html><head><meta charset="utf-8"><style>${renderFontCss()}

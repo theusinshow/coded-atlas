@@ -36,8 +36,8 @@ function ImageField({ label, assetId, assets, onChange }: { label: string; asset
       <span className={FIELD_LABEL}>{label}</span>
       <div className="flex items-center gap-2">
         <AssetThumb id={current?.id} alt={current?.label ?? label} width={320} className="w-16 aspect-[16/10] border border-line shrink-0" />
-        <p className="flex-1 min-w-0 text-[11px] text-zinc-500 truncate">{current ? (current.label ?? current.kind) : "sem imagem"}</p>
-        <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 hover:text-accent">
+        <p className="flex-1 min-w-0 text-[11px] text-cbm-gray-400 truncate">{current ? (current.label ?? current.kind) : "sem imagem"}</p>
+        <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="text-[10px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400 hover:text-accent">
           {open ? "Fechar" : "Trocar"}
         </button>
       </div>
@@ -64,7 +64,7 @@ function LayerActions({ layer, canUngroup }: { layer: Layer; canUngroup: boolean
   const api = useStudioApi();
   const run = (change: (layers: Layer[]) => Layer[]) => api.getState().apply((c) => ({ ...c, artboard: { ...c.artboard, layers: change(c.artboard.layers) } }));
   const reorder = (move: Reorder) => run((ls) => reorderLayer(ls, layer.id, move));
-  const btn = "h-7 px-2 border border-line text-[11px] text-zinc-300 hover:border-zinc-500 hover:text-zinc-50 disabled:opacity-30";
+  const btn = "h-7 px-2 border border-line text-[11px] text-cbm-gray-200 hover:border-cbm-gray-400 hover:text-cbm-white disabled:opacity-30";
   return (
     <div className="flex flex-wrap gap-1">
       <button type="button" className={btn} onClick={() => reorder("front")} title="Trazer para frente (Ctrl+Shift+])">
@@ -122,7 +122,7 @@ function LayerInspector({ layer, tokens, assets }: { layer: Layer; tokens: Style
 
   return (
     <>
-      <Section title={LAYER_TYPE_LABEL[layer.type]} aside={<span className="text-[10px] font-mono text-zinc-600">{layer.id.slice(0, 8)}</span>}>
+      <Section title={LAYER_TYPE_LABEL[layer.type]} aside={<span className="text-[10px] font-mono text-cbm-gray-400">{layer.id.slice(0, 8)}</span>}>
         <LayerActions layer={layer} canUngroup={layer.rotation === 0} />
         <TextField label="Nome" value={layer.name ?? ""} maxLength={80} onChange={(v) => edit({ name: v || undefined }, "name")} />
       </Section>
@@ -156,7 +156,7 @@ function LayerInspector({ layer, tokens, assets }: { layer: Layer; tokens: Style
               maxLength={2000}
               value={layer.text}
               onChange={(e) => edit({ text: e.target.value }, "text")}
-              className="w-full bg-surface-2 border border-line text-zinc-100 text-[12px] p-2 focus:outline-none focus:border-accent"
+              className="w-full bg-surface-2 border border-line text-cbm-gray-100 text-[12px] p-2 focus:outline-none focus:border-accent"
             />
           </div>
           <Segmented label="Fonte" value={layer.font} options={[{ id: "display", label: "Título" }, { id: "body", label: "Texto" }, { id: "mono", label: "Mono" }]} onChange={(v) => edit({ font: v }, "font")} />
@@ -218,7 +218,7 @@ function DocumentInspector({ tokens, profiles, latestRevision, audioAssets }: { 
       <SlideNotesSection />
       <SoundtrackSection audioAssets={audioAssets} />
       <Section title="Documento">
-        <p className="text-[12px] text-zinc-400 font-mono tabular-nums">
+        <p className="text-[12px] text-cbm-gray-400 font-mono tabular-nums">
           {artboard.width}×{artboard.height}px · {artboard.layers.length} camada(s)
         </p>
         <ColorField label="Fundo" value={artboard.background.fill} tokens={tokens} onChange={(v) => v && set((c) => ({ ...c, artboard: { ...c.artboard, background: { ...c.artboard.background, fill: v } } }), "bg")} />
@@ -241,11 +241,11 @@ function DocumentInspector({ tokens, profiles, latestRevision, audioAssets }: { 
               onChange={(e) => set((c) => ({ ...c, style: { ...c.style, primary: e.target.value.toLowerCase() } }), "primary")}
               className="h-7 w-10 bg-transparent border border-line cursor-pointer"
             />
-            <span className="text-[11px] font-mono text-zinc-400">{style.primary ?? `${tokens.colors.primary} (auto)`}</span>
+            <span className="text-[11px] font-mono text-cbm-gray-400">{style.primary ?? `${tokens.colors.primary} (auto)`}</span>
             {style.primary && (
               <button
                 type="button"
-                className="ml-auto text-[11px] text-zinc-500 hover:text-zinc-200"
+                className="ml-auto text-[11px] text-cbm-gray-400 hover:text-cbm-gray-200"
                 onClick={() => set((c) => ({ ...c, style: { mode: c.style.mode, profileRevision: c.style.profileRevision } }), "primary")}
               >
                 Automática
@@ -253,7 +253,7 @@ function DocumentInspector({ tokens, profiles, latestRevision, audioAssets }: { 
             )}
           </div>
         </div>
-        <div className="text-[11px] text-zinc-500 space-y-1.5">
+        <div className="text-[11px] text-cbm-gray-400 space-y-1.5">
           <p>{profile ? `Identidade visual rev ${profile.revision} · ${profile.palette.length} cores · ${profile.fonts.slice(0, 2).join(", ") || "sem fontes"}` : "Sem identidade visual — usa a linguagem Coded by M."}</p>
           {latestRevision && latestRevision !== style.profileRevision && (
             <button type="button" className="text-accent hover:text-accent-bright" onClick={() => set((c) => ({ ...c, style: { ...c.style, profileRevision: latestRevision } }), "profile")}>
@@ -266,7 +266,7 @@ function DocumentInspector({ tokens, profiles, latestRevision, audioAssets }: { 
         <CreativeIssues issues={lintArtboard(artboard, tokens)} onSelect={select} />
       </Section>
       <Section title="Atalhos">
-        <ul className="text-[11px] text-zinc-500 space-y-1 font-mono">
+        <ul className="text-[11px] text-cbm-gray-400 space-y-1 font-mono">
           <li>Ctrl+Z / Ctrl+Shift+Z — desfazer / refazer</li>
           <li>Setas — mover 1px (Shift: 10px)</li>
           <li>Ctrl+D — duplicar · Delete — excluir</li>

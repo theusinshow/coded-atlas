@@ -52,8 +52,8 @@ export default async function SettingsPage() {
           <dl className="divide-y divide-line">
             {rows.map(([k, v]) => (
               <div key={k} className="grid gap-1 px-4 py-3 sm:grid-cols-[12rem_1fr]">
-                <dt className="text-[12px] text-zinc-500">{k}</dt>
-                <dd className="text-[13px] text-zinc-200 font-mono break-all">{v}</dd>
+                <dt className="text-[12px] text-cbm-gray-400">{k}</dt>
+                <dd className="text-[13px] text-cbm-gray-200 font-mono break-all">{v}</dd>
               </div>
             ))}
           </dl>
@@ -63,7 +63,7 @@ export default async function SettingsPage() {
       <section aria-labelledby="brain">
         <SectionTitle id="brain">Atlas Brain (IA)</SectionTitle>
         <Panel className="p-4 space-y-4">
-          <p className="text-[13px] text-zinc-300">
+          <p className="text-[13px] text-cbm-gray-200">
             {brain.enabled ? (
               <>
                 Ligado · <span className="font-mono text-accent">{brain.provider}/{brain.model}</span>. Planos criativos usam o modelo; a resposta é sempre validada e,
@@ -75,29 +75,29 @@ export default async function SettingsPage() {
           </p>
           <dl className="grid gap-3 sm:grid-cols-4 text-[12px]">
             <div>
-              <dt className="text-zinc-500">Chamadas no mês</dt>
-              <dd className="text-zinc-100 font-mono tabular-nums">{month.calls}</dd>
+              <dt className="text-cbm-gray-400">Chamadas no mês</dt>
+              <dd className="text-cbm-gray-100 font-mono tabular-nums">{month.calls}</dd>
             </div>
             <div>
-              <dt className="text-zinc-500">Tokens (entrada / cache / saída)</dt>
-              <dd className="text-zinc-100 font-mono tabular-nums">
+              <dt className="text-cbm-gray-400">Tokens (entrada / cache / saída)</dt>
+              <dd className="text-cbm-gray-100 font-mono tabular-nums">
                 {month.inputTokens.toLocaleString("pt-BR")} / {month.cachedTokens.toLocaleString("pt-BR")} / {month.outputTokens.toLocaleString("pt-BR")}
               </dd>
             </div>
             <div>
-              <dt className="text-zinc-500">Custo estimado</dt>
-              <dd className="text-zinc-100 font-mono tabular-nums">{pricing ? usd(month.estimatedCostUsd) : "preços não configurados"}</dd>
+              <dt className="text-cbm-gray-400">Custo estimado</dt>
+              <dd className="text-cbm-gray-100 font-mono tabular-nums">{pricing ? usd(month.estimatedCostUsd) : "preços não configurados"}</dd>
             </div>
             <div>
-              <dt className="text-zinc-500">Orçamento mensal</dt>
-              <dd className={`font-mono ${brain.budgetState === "exceeded" ? "text-bad" : brain.budgetState === "warning" ? "text-warn" : "text-zinc-100"}`}>
+              <dt className="text-cbm-gray-400">Orçamento mensal</dt>
+              <dd className={`font-mono ${brain.budgetState === "exceeded" ? "text-bad" : brain.budgetState === "warning" ? "text-warn" : "text-cbm-gray-100"}`}>
                 {brain.budget.monthlyLimitUsd === null ? "sem limite" : `${usd(brain.budget.monthlyLimitUsd)} (${brain.budget.mode === "block" ? "bloqueia" : "avisa"})`}
               </dd>
             </div>
           </dl>
           {recentAi.length > 0 && (
             <table className="w-full text-[11px] font-mono">
-              <thead className="text-zinc-500 text-left">
+              <thead className="text-cbm-gray-400 text-left">
                 <tr>
                   <th className="font-normal py-1">Quando</th>
                   <th className="font-normal">Tarefa</th>
@@ -107,7 +107,7 @@ export default async function SettingsPage() {
                   <th className="font-normal text-right">Status</th>
                 </tr>
               </thead>
-              <tbody className="text-zinc-300">
+              <tbody className="text-cbm-gray-200">
                 {recentAi.map((u) => (
                   <tr key={u.id} className="border-t border-line">
                     <td className="py-1">{new Date(u.createdAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</td>
@@ -121,7 +121,7 @@ export default async function SettingsPage() {
               </tbody>
             </table>
           )}
-          <p className="text-[11px] text-zinc-500">
+          <p className="text-[11px] text-cbm-gray-400">
             Variáveis: OPENAI_API_KEY, ATLAS_AI_MODEL, ATLAS_AI_PRICE_INPUT / _CACHED_INPUT / _OUTPUT (USD por 1M tokens), ATLAS_AI_BUDGET_USD, ATLAS_AI_BUDGET_MODE (warn|block), ATLAS_AI_IMAGES, ATLAS_AI=off.
           </p>
         </Panel>
@@ -129,14 +129,14 @@ export default async function SettingsPage() {
 
       <section aria-labelledby="memoria">
         <SectionTitle id="memoria">Memória criativa da Coded by M</SectionTitle>
-        <p className="text-[13px] text-zinc-400 mb-3">Preferências que valem para todos os projetos. A memória de cada projeto (aba Planos) vence estas, e o pedido do momento vence as duas.</p>
+        <p className="text-[13px] text-cbm-gray-400 mb-3">Preferências que valem para todos os projetos. A memória de cada projeto (aba Planos) vence estas, e o pedido do momento vence as duas.</p>
         <MemoryPanel memories={workspaceMemory} projectId={null} />
       </section>
 
       <section aria-labelledby="v1">
         <SectionTitle id="v1">Biblioteca v1</SectionTitle>
         <Panel className="p-4 space-y-4">
-          <p className="text-[13px] text-zinc-300">
+          <p className="text-[13px] text-cbm-gray-200">
             Os catálogos do Atlas v1 são importados para o banco novo automaticamente, sem alterar os arquivos originais.
             {" "}{counts.imported} importado(s){counts.dismissed ? ` · ${counts.dismissed} dispensado(s)` : ""}
             {counts.failed.length ? ` · ${counts.failed.length} com falha` : ""}.
@@ -152,7 +152,7 @@ export default async function SettingsPage() {
           )}
           <div className="flex flex-wrap items-start justify-between gap-4">
             <SyncLegacyButton />
-            <p className="text-[12px] text-zinc-500 max-w-sm text-right">
+            <p className="text-[12px] text-cbm-gray-400 max-w-sm text-right">
               As telas do v1 foram aposentadas (3.1). A biblioteca v1 em public/generated só é lida — nunca alterada.
             </p>
           </div>

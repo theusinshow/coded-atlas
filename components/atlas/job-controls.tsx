@@ -36,7 +36,7 @@ export function SyncLegacyButton() {
       <Button disabled={pending} onClick={() => start(async () => setState(await syncLegacyAction()))}>
         {pending ? "Verificando…" : "Sincronizar biblioteca v1"}
       </Button>
-      {state?.message && <p className="text-[12px] text-zinc-400">{state.message}</p>}
+      {state?.message && <p className="text-[12px] text-cbm-gray-400">{state.message}</p>}
       {state?.error && <p className="text-[12px] text-bad">{state.error}</p>}
     </div>
   );

@@ -16,11 +16,11 @@ interface Props {
 }
 
 const STATUS: Record<string, { label: string; className: string }> = {
-  pending: { label: "pendente", className: "text-zinc-400" },
+  pending: { label: "pendente", className: "text-cbm-gray-400" },
   running: { label: "em andamento", className: "text-accent" },
   completed: { label: "concluída", className: "text-ok" },
   failed: { label: "falhou", className: "text-bad" },
-  cancelled: { label: "cancelada", className: "text-zinc-500" },
+  cancelled: { label: "cancelada", className: "text-cbm-gray-400" },
 };
 
 function summarizePlan(params: {
@@ -78,7 +78,7 @@ export default async function ProjectCapturePage({ params }: Props) {
     <div className="grid gap-10 lg:grid-cols-[24rem_1fr]">
       <section aria-labelledby="capturar">
         <SectionTitle id="capturar">Nova captura</SectionTitle>
-        <p className="text-[13px] text-zinc-400 mb-4">
+        <p className="text-[13px] text-cbm-gray-400 mb-4">
           Roda no worker, em segundo plano — pode sair desta página. Cancelar interrompe o navegador de verdade.
         </p>
         <CaptureForm projectId={project.id} sources={capturable.map((s) => ({ id: s.id, locator: s.locator, type: s.type }))} />
@@ -96,7 +96,7 @@ export default async function ProjectCapturePage({ params }: Props) {
       <section aria-labelledby="diff">
         <SectionTitle id="diff">Comparar capturas</SectionTitle>
         <Panel className="p-4 space-y-5">
-          <p className="text-[12px] text-zinc-400">Diff visual pixel a pixel — bom para vigiar um site já entregue: recapture e compare com a captura anterior.</p>
+          <p className="text-[12px] text-cbm-gray-400">Diff visual pixel a pixel — bom para vigiar um site já entregue: recapture e compare com a captura anterior.</p>
           <VisualDiffForm candidates={candidates} />
           {diffs.length > 0 && (
             <ul className="space-y-5" data-diff-results>
@@ -108,7 +108,7 @@ export default async function ProjectCapturePage({ params }: Props) {
                   <li key={d.id} className="space-y-2" data-diff={d.id}>
                     <p className="flex flex-wrap items-baseline gap-2">
                       <span className={`text-xl font-semibold tabular-nums ${percent < 0.1 ? "text-ok" : "text-warn"}`}>{percent.toLocaleString("pt-BR")}%</span>
-                      <span className="text-[12px] text-zinc-400">{percent < 0.1 ? "praticamente sem mudanças" : "da página mudou"} · {d.label}</span>
+                      <span className="text-[12px] text-cbm-gray-400">{percent < 0.1 ? "praticamente sem mudanças" : "da página mudou"} · {d.label}</span>
                     </p>
                     <div className="grid grid-cols-3 gap-2">
                       {[
@@ -117,16 +117,16 @@ export default async function ProjectCapturePage({ params }: Props) {
                         { label: "Diferença", asset: d },
                       ].map((col) => (
                         <div key={col.label} className="space-y-1">
-                          <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">
+                          <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400">
                             {col.label}
                             {col.asset && col.label !== "Diferença" ? ` · ${new Date(col.asset.createdAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}` : ""}
                           </p>
                           {col.asset ? (
-                            <Link href={`/projects/${project.slug}/assets/${col.asset.id}`} className="block aspect-[16/10] border border-line overflow-hidden hover:border-zinc-500">
+                            <Link href={`/projects/${project.slug}/assets/${col.asset.id}`} className="block aspect-[16/10] border border-line overflow-hidden hover:border-cbm-gray-400">
                               <AssetThumb id={col.asset.id} alt={col.label} width={640} className="w-full h-full" />
                             </Link>
                           ) : (
-                            <div className="aspect-[16/10] border border-line grid place-items-center text-[11px] text-zinc-600">removida</div>
+                            <div className="aspect-[16/10] border border-line grid place-items-center text-[11px] text-cbm-gray-400">removida</div>
                           )}
                         </div>
                       ))}
@@ -150,19 +150,19 @@ export default async function ProjectCapturePage({ params }: Props) {
                 <Panel className="p-4 space-y-3">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <div>
-                      <p className="text-[13px] text-zinc-200">
+                      <p className="text-[13px] text-cbm-gray-200">
                         {new Date(capture.createdAt).toLocaleString("pt-BR")}
-                        <span className="text-zinc-500"> · {source?.locator ?? capture.params.url ?? "origem removida"}</span>
+                        <span className="text-cbm-gray-400"> · {source?.locator ?? capture.params.url ?? "origem removida"}</span>
                       </p>
-                      <p className="text-[11px] text-zinc-500">{summarizePlan(capture.params)} · {assets.length} asset(s)</p>
+                      <p className="text-[11px] text-cbm-gray-400">{summarizePlan(capture.params)} · {assets.length} asset(s)</p>
                     </div>
-                    <span className={`text-[11px] font-mono uppercase tracking-wider ${STATUS[capture.status].className}`}>{STATUS[capture.status].label}</span>
+                    <span className={`text-[11px] font-medium uppercase tracking-[0.22em] ${STATUS[capture.status].className}`}>{STATUS[capture.status].label}</span>
                   </div>
                   {capture.error && <p className="text-[12px] text-bad">{capture.error.message}</p>}
                   {warnings.length > 0 && (
                     <ul className="border border-warn/40 bg-warn/5 px-3 py-2 space-y-1">
                       {warnings.map((w, i) => (
-                        <li key={`${w.code}-${i}`} className="text-[12px] text-zinc-300">
+                        <li key={`${w.code}-${i}`} className="text-[12px] text-cbm-gray-200">
                           <span className="text-warn">⚠</span> {w.message}
                         </li>
                       ))}

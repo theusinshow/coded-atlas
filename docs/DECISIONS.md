@@ -291,3 +291,13 @@ Accepted (2026-09-28).
 - The v1 library on disk stays readable forever through the importer. Its catalog schema is now a frozen definition in `src/modules/import/legacy`, and no code writes `catalog.json` anymore.
 - Capture parameters keep the v1 environment variable names, so existing installations behave the same.
 - Interrupted v1 generations are no longer recovered at boot. Leftover `.trash` folders are dot folders, which the importer ignores.
+
+## ADR-045 — Atlas aligned to the Coded by M design system
+
+Accepted (2026-09-28). This ADR implements ADR-013, which until now had only been declared.
+
+- **The source is the owner's cbm-port@0.1.0 bundle.** Its README and DESIGN-LANGUAGE are copied into `docs/design-system/coded-by-m/`. Brand values are taken from it verbatim, never invented. The earlier cool-neutral and copper palette was Atlas-only and is gone.
+- **The Atlas semantic layer keeps its class names.** `base`, `surface`, `line`, `accent`, `signal`, `ok`, `warn` and `bad` now map to the foundation in `app/globals.css`, so components did not need a rewrite. Grays use `cbm-gray-*` directly.
+- **Red rarity is enforced by roles, not by hue.** `accent` became off-white emphasis that reveals the signal on hover. Solid red is reserved for the single primary action, focus, the active global-nav marker and errors. Project tabs and play buttons use structure (off-white), not the signal.
+- **Accessibility over literal copying.** Readable text never uses gray-600 (2.3:1), and gray-400 is the floor. On brand color, onPrimary uses the warm poles (`#F5F2ED`/`#000F08`) only when they pass AA.
+- **Generated pieces:** style tokens gain `radiusScale` and `frame`, and fonts gain `widthFactor`, all resolved at render time. Tokens are never persisted in documents, so existing documents are unaffected. Fonts are self-hosted (`public/fonts/cbm`, from the design system bundle), so renders stay offline and deterministic.

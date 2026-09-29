@@ -203,7 +203,7 @@ export function CanvasStage({ tokens, zoom, onFit, videos }: { tokens: StyleToke
             {selected && selected.layer.visible && (
               <div
                 data-selection={selected.layer.id}
-                className={`absolute outline outline-1 ${selected.layer.locked ? "outline-zinc-500 outline-dashed" : "outline-accent cursor-move"}`}
+                className={`absolute outline outline-1 ${selected.layer.locked ? "outline-cbm-gray-400 outline-dashed" : "outline-accent cursor-move"}`}
                 style={box(selected.layer, selected.offset)}
                 onPointerDown={(e) => begin(e, selected.layer.id, "move")}
                 onDoubleClick={() => selected.layer.type === "text" && api.getState().requestTextFocus()}
@@ -213,7 +213,7 @@ export function CanvasStage({ tokens, zoom, onFit, videos }: { tokens: StyleToke
                     <span
                       key={h}
                       data-handle={h}
-                      className="absolute w-2.5 h-2.5 -ml-[5px] -mt-[5px] bg-zinc-50 border border-accent"
+                      className="absolute w-2.5 h-2.5 -ml-[5px] -mt-[5px] bg-cbm-white border border-accent"
                       style={{ left: HANDLE_POS[h].left, top: HANDLE_POS[h].top, cursor: HANDLE_POS[h].cursor }}
                       onPointerDown={(e) => begin(e, selected.layer.id, h)}
                     />
@@ -222,16 +222,16 @@ export function CanvasStage({ tokens, zoom, onFit, videos }: { tokens: StyleToke
             )}
 
             {guides.x.map((x) => (
-              <div key={`gx${x}`} className="absolute top-0 bottom-0 w-px bg-accent pointer-events-none" style={{ left: x * scale }} />
+              <div key={`gx${x}`} className="absolute top-0 bottom-0 w-px bg-signal pointer-events-none" style={{ left: x * scale }} />
             ))}
             {guides.y.map((y) => (
-              <div key={`gy${y}`} className="absolute left-0 right-0 h-px bg-accent pointer-events-none" style={{ top: y * scale }} />
+              <div key={`gy${y}`} className="absolute left-0 right-0 h-px bg-signal pointer-events-none" style={{ top: y * scale }} />
             ))}
           </div>
         </div>
       </div>
       {selected && (
-        <p className="pointer-events-none absolute bottom-3 left-3 text-[10px] font-mono text-zinc-500 tabular-nums">
+        <p className="pointer-events-none absolute bottom-3 left-3 text-[10px] font-mono text-cbm-gray-400 tabular-nums">
           {(() => {
             const b = absoluteBox(selected);
             return `x ${Math.round(b.x)} · y ${Math.round(b.y)} · ${Math.round(b.width)}×${Math.round(b.height)}`;

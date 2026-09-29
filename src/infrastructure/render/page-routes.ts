@@ -17,8 +17,8 @@ export function renderFontCss(): string {
  * sem rede) e bloqueia qualquer outra origem. Suporta Range (206) para que
  * <video> consiga posicionar `currentTime` quadro a quadro.
  */
-export async function installRenderRoutes(page: Page, options: { loadAsset: AssetLoader; loadOutput?: AssetLoader; nodeModules?: string }): Promise<void> {
-  const nodeModules = options.nodeModules ?? path.join(process.cwd(), "node_modules");
+export async function installRenderRoutes(page: Page, options: { loadAsset: AssetLoader; loadOutput?: AssetLoader; projectRoot?: string }): Promise<void> {
+  const projectRoot = options.projectRoot ?? process.cwd();
   const allowedFonts = new Set(fontFiles().map((f) => f.file));
   await page.route(`${RENDER_ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
@@ -44,7 +44,7 @@ export async function installRenderRoutes(page: Page, options: { loadAsset: Asse
     if (url.pathname.startsWith("/font/")) {
       const file = decodeURIComponent(url.pathname.slice("/font/".length));
       if (!allowedFonts.has(file)) return route.fulfill({ status: 404 });
-      return route.fulfill({ status: 200, contentType: "font/woff2", body: await readFile(path.join(nodeModules, file)) });
+      return route.fulfill({ status: 200, contentType: "font/woff2", body: await readFile(path.join(projectRoot, file)) });
     }
     return route.fulfill({ status: 404 });
   });

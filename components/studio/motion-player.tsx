@@ -117,7 +117,7 @@ export function MotionPlayer({
       </div>
       {audioSrc && <audio ref={audioRef} src={audioSrc} preload="auto" />}
       <div className="shrink-0 flex items-center gap-3 border-t border-line px-3 py-2">
-        <button type="button" onClick={() => setPlaying((p) => !p)} className="h-8 w-16 bg-accent text-zinc-950 text-[12px] font-medium" aria-label={playing ? "Pausar" : "Tocar"}>
+        <button type="button" onClick={() => setPlaying((p) => !p)} className="h-8 w-16 border border-line text-cbm-white text-[12px] font-medium hover:border-cbm-gray-400" aria-label={playing ? "Pausar" : "Tocar"}>
           {playing ? "❚❚" : "▶"}
         </button>
         <input
@@ -133,20 +133,20 @@ export function MotionPlayer({
           }}
           className="flex-1 accent-[var(--color-accent)]"
         />
-        <span className="text-[11px] font-mono tabular-nums text-zinc-400 w-32 text-right">
+        <span className="text-[11px] font-mono tabular-nums text-cbm-gray-400 w-32 text-right">
           {clock(time)} / {clock(total)}
         </span>
-        <span className="text-[11px] font-mono text-zinc-500">
+        <span className="text-[11px] font-mono text-cbm-gray-400">
           cena {current.index + 1}/{content.scenes.length}
         </span>
-        <label className="flex items-center gap-1.5 text-[11px] text-zinc-400">
+        <label className="flex items-center gap-1.5 text-[11px] text-cbm-gray-400">
           <input type="checkbox" checked={loop} onChange={(e) => setLoop(e.target.checked)} /> repetir
         </label>
-        <button type="button" onClick={() => onClose(current.index)} className="h-8 px-3 border border-line text-[12px] text-zinc-300 hover:text-zinc-50">
+        <button type="button" onClick={() => onClose(current.index)} className="h-8 px-3 border border-line text-[12px] text-cbm-gray-200 hover:text-cbm-white">
           Editar cena
         </button>
       </div>
-      <p className="px-3 pb-2 text-[10px] text-zinc-600">Preview no navegador — o arquivo de vídeo final sai do render (Espaço pausa, Esc volta a editar).</p>
+      <p className="px-3 pb-2 text-[10px] text-cbm-gray-400">Preview no navegador — o arquivo de vídeo final sai do render (Espaço pausa, Esc volta a editar).</p>
     </div>
   );
 }
