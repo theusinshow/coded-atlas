@@ -56,7 +56,12 @@ export default async function ProjectsPage({ searchParams }: Props) {
         eyebrow="Projetos"
         title="Biblioteca de projetos"
         description={`${projects.length} projeto${projects.length === 1 ? "" : "s"}${filtered ? " encontrado(s)" : ""}.`}
-        actions={<LinkButton href="/projects/new" variant="primary">Novo projeto</LinkButton>}
+        actions={
+          <>
+            <LinkButton href="/library">Biblioteca de assets</LinkButton>
+            <LinkButton href="/projects/new" variant="primary">Novo projeto</LinkButton>
+          </>
+        }
       />
 
       {importJob[0] && (

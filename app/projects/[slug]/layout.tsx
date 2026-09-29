@@ -33,8 +33,12 @@ export default async function ProjectLayout({ children, params }: { children: Re
             {project.client && <span> · {project.client}</span>}
           </p>
         </div>
-        <Link href={`/projects/${project.slug}/settings`} className="text-[12px] text-cbm-gray-400 hover:text-cbm-gray-100 border border-line px-3 py-1.5">
-          Ajustes do projeto
+        <Link
+          href={`/projects/${project.slug}/settings`}
+          aria-label="Ajustes do projeto"
+          className="flex items-center gap-2 h-8 px-3 border border-line text-[12px] text-cbm-gray-400 hover:text-cbm-white hover:border-cbm-gray-400"
+        >
+          <span aria-hidden>⚙</span> Ajustes do projeto
         </Link>
       </div>
       <ProjectNav slug={project.slug} />

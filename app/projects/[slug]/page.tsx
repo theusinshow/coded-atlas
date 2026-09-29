@@ -7,10 +7,11 @@ import { AssetThumb } from "@/components/atlas/asset-image";
 import { SourcesPanel } from "@/components/atlas/sources-panel";
 import { VisualIdentity } from "@/components/atlas/visual-identity";
 import { IdentityEditor } from "@/components/creative/identity-editor";
-import { Panel, SectionTitle, Stat } from "@/components/ui/primitives";
+import { Panel, SectionTitle } from "@/components/ui/primitives";
 import { JOB_TYPE_LABEL, JobStatusBadge } from "@/components/ui/status";
 import { getAtlasRuntime } from "@/src/infrastructure/runtime";
 import { getProjectOverview } from "@/src/modules/projects/overview";
+import { nextStep, stepStatuses } from "@/src/modules/projects/next-step";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -23,23 +24,32 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: `${project?.name ?? "Projeto"} — Coded Atlas` };
 }
 
-const KIND_LABEL: Record<string, string> = {
-  screenshot: "screenshots",
-  section: "seções",
-  video: "vídeos",
-  image: "imagens",
-  logo: "logos",
-  icon: "ícones",
-  background: "fundos",
-  illustration: "ilustrações",
-};
-
 export default async function ProjectOverviewPage({ params }: Props) {
   const { slug } = await params;
   const runtime = await getAtlasRuntime();
   const o = await getProjectOverview(runtime.repos, slug);
   const profile = await runtime.repos.visualProfiles.latest(o.project.id);
   const url = o.sources.find((s) => s.type === "url" || s.type === "local");
+  const [kits, documents, exports] = await Promise.all([
+    runtime.repos.kits.listByProject(o.project.id),
+    runtime.repos.documents.listByProject(o.project.id),
+    runtime.repos.exports.listByProject(o.project.id),
+  ]);
+  const progress = {
+    hasSiteSource: Boolean(url),
+    assets: o.totalAssets,
+    kits: kits.length,
+    renderedKits: kits.filter((k) => k.status === "rendered").length,
+    pendingKitId: kits.find((k) => k.status !== "rendered")?.id ?? null,
+    cases: documents.filter((d) => d.kind === "case").length,
+    documents: documents.filter((d) => d.kind !== "case").length,
+    outputs: o.outputs,
+    exports: exports.length,
+  };
+  const next = nextStep(progress);
+  const steps = stepStatuses(progress);
+  const base = `/projects/${o.project.slug}`;
+  const hrefOf = (h: string) => (h.startsWith("#") ? h : h ? `${base}/${h}` : base);
 
   return (
     <div className="space-y-10">
@@ -54,49 +64,36 @@ export default async function ProjectOverviewPage({ params }: Props) {
               {url.locator} ↗
             </a>
           )}
-          <div className="grid grid-cols-2 gap-3">
-            <Stat label="Assets" value={o.totalAssets} hint={Object.entries(o.assetCounts).map(([k, n]) => `${n} ${KIND_LABEL[k] ?? k}`).join(" · ") || "nenhum ainda"} />
-            <Stat label="Peças finais" value={o.outputs} />
-            <Stat label="Prontidão" value={`${o.readiness.score}%`} hint={o.readiness.missing.length ? `falta: ${o.readiness.missing.join(", ")}` : "material completo"} />
-            <Stat label="Origens" value={o.sources.length} />
+          <div className="border border-line bg-surface p-5 space-y-3" data-next-step={next.step}>
+            <p className="text-[10px] font-medium uppercase tracking-[0.35em] text-signal/70">Próximo passo</p>
+            <p className="font-display text-lg font-bold text-cbm-white tracking-[-0.01em]">{next.title}</p>
+            <p className="text-[13px] text-cbm-gray-400 leading-relaxed">{next.detail}</p>
+            <Link
+              href={hrefOf(next.href)}
+              className="inline-flex h-10 items-center bg-signal px-5 text-[11px] font-display font-semibold uppercase tracking-[0.12em] text-cbm-black hover:bg-signal-dark"
+            >
+              {next.cta}
+            </Link>
           </div>
-          {o.totalAssets > 0 && (
-            <div className="flex flex-wrap gap-2">
-              <Link href={`/projects/${o.project.slug}/kits`} className="inline-flex h-10 items-center bg-signal px-5 text-[11px] font-display font-semibold uppercase tracking-[0.12em] text-cbm-black hover:bg-signal-dark">
-                Gerar Media Kit
-              </Link>
-              <Link href={`/projects/${o.project.slug}/create`} className="inline-flex h-10 items-center border border-line px-4 text-sm text-cbm-gray-200 hover:border-cbm-gray-400">
-                Criar
-              </Link>
-            </div>
-          )}
+          <ol className="grid grid-cols-3 gap-2" aria-label="Passos do projeto">
+            {steps.map((st) => (
+              <li key={st.key}>
+                <Link href={hrefOf(st.href)} className="block h-full border border-line px-3 py-3 hover:border-cbm-gray-400 transition-colors" data-step={st.key} data-step-done={st.done}>
+                  <p className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400">
+                    <span className={`font-display text-[11px] font-semibold ${st.done ? "text-ok" : next.step === st.key ? "text-signal" : "text-cbm-gray-600"}`} aria-hidden>
+                      {st.done ? "✓" : st.number}
+                    </span>
+                    {st.label}
+                  </p>
+                  <p className="mt-1.5 text-[12px] text-cbm-gray-200 leading-snug">{st.summary}</p>
+                </Link>
+              </li>
+            ))}
+          </ol>
           {o.project.origin === "legacy" && (
             <p className="text-[12px] text-cbm-gray-400">Importado da biblioteca v1 (arquivos originais preservados em public/generated).</p>
           )}
         </div>
-      </section>
-
-      <section aria-labelledby="recomendacoes">
-        <SectionTitle
-          id="recomendacoes"
-          aside={
-            o.totalAssets > 0 ? (
-              <Link href={`/projects/${o.project.slug}/plans`} className="text-[12px] text-accent hover:text-accent-bright">
-                Pedir um plano criativo ao Atlas →
-              </Link>
-            ) : undefined
-          }
-        >
-          O que fazer agora
-        </SectionTitle>
-        <ul className="space-y-2">
-          {o.recommendations.map((r) => (
-            <li key={r} className="flex gap-3 text-sm text-cbm-gray-200">
-              <span className="tri text-accent mt-1.5" aria-hidden />
-              {r}
-            </li>
-          ))}
-        </ul>
       </section>
 
       <section aria-labelledby="identidade">

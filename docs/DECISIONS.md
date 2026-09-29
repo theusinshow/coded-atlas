@@ -301,3 +301,11 @@ Accepted (2026-09-28). This ADR implements ADR-013, which until now had only bee
 - **Red rarity is enforced by roles, not by hue.** `accent` became off-white emphasis that reveals the signal on hover. Solid red is reserved for the single primary action, focus, the active global-nav marker and errors. Project tabs and play buttons use structure (off-white), not the signal.
 - **Accessibility over literal copying.** Readable text never uses gray-600 (2.3:1), and gray-400 is the floor. On brand color, onPrimary uses the warm poles (`#F5F2ED`/`#000F08`) only when they pass AA.
 - **Generated pieces:** style tokens gain `radiusScale` and `frame`, and fonts gain `widthFactor`, all resolved at render time. Tokens are never persisted in documents, so existing documents are unaffected. Fonts are self-hosted (`public/fonts/cbm`, from the design system bundle), so renders stay offline and deterministic.
+
+## ADR-046 — Three-step navigation
+
+Accepted (2026-09-29, owner request: "muitas páginas, quero uma navegação mais óbvia e simples").
+
+- **Global nav keeps two destinations** (Projetos, Portfólio). Jobs becomes an activity indicator, Ajustes becomes a gear, and Biblioteca is reached from Projetos and ⌘K.
+- **The eight project tabs become Visão geral · 1 Material · 2 Criar · 3 Entregar.** They follow the product loop (capture → create → deliver). Screens are grouped, not rewritten, and URLs stay stable, so links, bookmarks and e2e keep working.
+- **One recommended action.** The overview computes a single next step from the project state (a pure, tested function) instead of listing stats and generic recommendations.

@@ -55,8 +55,34 @@ export default async function ProjectCreatePage({ params }: Props) {
   const latest = profiles.reduce<VisualProfile | null>((best, p) => (!best || p.revision > best.revision ? p : best), null);
   const profilesByRevision = Object.fromEntries(profiles.map((p) => [p.revision, p]));
 
+  const kits = await repos.kits.listByProject(project.id);
+  const cases = documentList.filter((d) => d.kind === "case").length;
+  const base = `/projects/${project.slug}`;
+  const starts = [
+    { href: `${base}/kits`, title: "Media Kit", detail: "Um conjunto completo de peças com a mesma direção — o jeito mais rápido.", meta: kits.length ? `${kits.length} ${kits.length === 1 ? "kit" : "kits"}` : "comece por aqui" },
+    { href: `${base}/cases`, title: "Case", detail: "Página editorial do projeto: web, PDF e módulos para Behance.", meta: cases ? `${cases} ${cases === 1 ? "case" : "cases"}` : "nenhum ainda" },
+    { href: `${base}/plans`, title: "Plano com IA", detail: "O Atlas sugere peças a partir de um objetivo (funciona sem IA também).", meta: "opcional" },
+  ];
+
   return (
-    <CompositionGallery
+    <div className="space-y-10">
+      <section aria-labelledby="comecar">
+        <h2 id="comecar" className="text-[11px] font-medium text-cbm-gray-400 uppercase tracking-[0.22em] mb-4">Começar</h2>
+        <ul className="grid gap-3 sm:grid-cols-3">
+          {starts.map((st, i) => (
+            <li key={st.title}>
+              <Link href={st.href} className={`block h-full border p-4 transition-colors hover:border-cbm-gray-400 ${i === 0 ? "border-cbm-gray-400 bg-surface" : "border-line"}`}>
+                <p className="flex items-baseline justify-between gap-2">
+                  <span className="font-display text-[15px] font-bold text-cbm-white">{st.title}</span>
+                  <span className="text-[10px] uppercase tracking-[0.22em] text-cbm-gray-400">{st.meta}</span>
+                </p>
+                <p className="mt-2 text-[12px] text-cbm-gray-400 leading-relaxed">{st.detail}</p>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+      <CompositionGallery
       projectId={project.id}
       slug={project.slug}
       assets={images}
@@ -66,5 +92,6 @@ export default async function ProjectCreatePage({ params }: Props) {
       instances={[...instances].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))}
       documents={documents}
     />
+    </div>
   );
 }

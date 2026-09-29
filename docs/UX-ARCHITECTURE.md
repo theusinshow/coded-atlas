@@ -3,24 +3,23 @@
 ## Global navigation
 
 ```text
-Projects
-Library
-Jobs
-Presets
-Settings
+Projetos · Portfólio                      ⌕ ⌘K · Atividade (jobs) · ⚙ Ajustes
 ```
 
-Do not promote every creation type to global navigation.
+Only the two places where work happens are primary links. Search, activity (a live count of queued/running jobs, linking to `/jobs`) and settings are utilities on the right. The asset library (`/library`) opens from Projetos and ⌘K. Do not promote every creation type to global navigation.
 
 ## Project navigation
 
+The project is a three-step flow (owner decision 2026-09-29, ADR-046). Existing URLs are kept, and each step groups screens under a light sub-navigation:
+
 ```text
-Overview
-Capture
-Assets
-Create
-Publish
+Visão geral · 1 Material · 2 Criar · 3 Entregar                 ⚙ Ajustes do projeto
+                 │            │           └ publish
+                 │            └ create (Início) · kits · cases · plans
+                 └ assets · capture
 ```
+
+Visão geral answers "what should I do now?" with a single **Próximo passo** (`src/modules/projects/next-step.ts`: capture → Media Kit → render → case → deliver) and the status of the three steps.
 
 ## Main journey
 
