@@ -89,3 +89,23 @@ export function encoderArgs(o: EncodeOptions): string[] {
   args.push("-t", seconds, o.output);
   return args;
 }
+
+/**
+ * Um quadro de um vídeo como PNG (pôster de miniatura). Lê o arquivo do disco
+ * (MP4 com índice no fim não aceita stdin) e devolve os bytes pelo stdout.
+ */
+export async function extractFrame(videoFile: string, atSeconds = 1, bin = ffmpegPath()): Promise<Uint8Array> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(bin, ["-hide_banner", "-loglevel", "error", "-ss", String(atSeconds), "-i", videoFile, "-frames:v", "1", "-f", "image2pipe", "-vcodec", "png", "pipe:1"], { windowsHide: true });
+    const chunks: Buffer[] = [];
+    let stderr = "";
+    child.stdout.on("data", (d: Buffer) => chunks.push(d));
+    child.stderr.on("data", (d: Buffer) => (stderr = (stderr + d.toString()).slice(-2000)));
+    child.on("error", (err) => reject(new Error(`FFmpeg não iniciou (${err.message}).`)));
+    child.on("close", (code) => {
+      const bytes = Buffer.concat(chunks);
+      if (code === 0 && bytes.byteLength > 0) resolve(new Uint8Array(bytes));
+      else reject(new Error(`FFmpeg não extraiu o quadro (código ${code}): ${stderr.trim().split("\n").at(-1) ?? ""}`));
+    });
+  });
+}

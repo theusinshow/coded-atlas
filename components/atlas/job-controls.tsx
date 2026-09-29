@@ -20,7 +20,7 @@ export function CancelJobButton({ jobId }: { jobId: string }) {
   const [state, setState] = useState<ActionState>(null);
   return (
     <span className="inline-flex items-center gap-2">
-      <Button size="sm" variant="ghost" disabled={pending || Boolean(state?.message)} onClick={() => start(async () => setState(await cancelJobAction(jobId)))}>
+      <Button size="sm" variant="ghost" className="max-sm:h-10" disabled={pending || Boolean(state?.message)} onClick={() => start(async () => setState(await cancelJobAction(jobId)))}>
         {state?.message ? "Cancelando…" : "Cancelar"}
       </Button>
       {state?.error && <span className="text-[11px] text-bad">{state.error}</span>}
@@ -34,9 +34,14 @@ export function SyncLegacyButton() {
   return (
     <div className="space-y-2">
       <Button disabled={pending} onClick={() => start(async () => setState(await syncLegacyAction()))}>
-        {pending ? "Verificando…" : "Sincronizar biblioteca v1"}
+        {pending ? "Verificando…" : "Sincronizar biblioteca antiga"}
       </Button>
-      {state?.message && <p className="text-[12px] text-cbm-gray-400">{state.message}</p>}
+      {state?.message && (
+        <p role="status" className="text-[12px] text-cbm-gray-400">
+          {/* A mensagem do servidor ainda fala em "v1" (app/actions/projects.ts). */}
+          {state.message.replace("biblioteca v1", "biblioteca antiga")}
+        </p>
+      )}
       {state?.error && <p className="text-[12px] text-bad">{state.error}</p>}
     </div>
   );

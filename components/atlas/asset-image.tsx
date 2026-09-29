@@ -17,10 +17,10 @@ export function AssetThumb({
 }) {
   if (!id) {
     return (
-      <div className={`grid place-items-center bg-surface-2 text-[11px] font-mono text-cbm-gray-400 ${className}`}>
-        sem imagem
+      <div className={`grid place-items-center bg-surface-2 text-[11px] text-cbm-gray-400 ${className}`}>
+        Sem imagem
       </div>
     );
   }
-  return <img src={assetThumbUrl(id, width)} alt={alt} loading="lazy" className={`object-cover object-top bg-surface-2 ${className}`} />;
+  return <img src={assetThumbUrl(id, width)} alt={alt} loading="lazy" decoding="async" className={`object-cover object-top bg-surface-2 ${className}`} />;
 }

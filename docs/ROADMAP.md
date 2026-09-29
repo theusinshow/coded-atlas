@@ -138,3 +138,7 @@ Export
 ## Atlas 3.1 — v1 retirement (authorized 2026-09-28)
 
 Port the last v1-only capabilities (authenticated capture, visual diff) to 2.x, then remove the v1 screens, routes and generation pipeline. The read-only importer of the v1 library stays.
+
+## Atlas 3.2 — UI/UX pass and Social (authorized 2026-09-29)
+
+A senior UI/UX pass on every screen: coherent, objective, with restrained motion (Motion, free React Bits, useAnimations) and every trace of AI slop removed. Plus a global **Social** planner for the Coded by M Instagram (feed grid preview, posts/carousels/reels, stories with safe zones, captions and hashtags, draft → ready → posted). Nothing is ever published automatically.

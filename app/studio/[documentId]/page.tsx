@@ -13,7 +13,7 @@ interface Props {
   params: Promise<{ documentId: string }>;
 }
 
-export const metadata: Metadata = { title: "Studio · Coded Atlas" };
+export const metadata: Metadata = { title: "Studio — Coded Atlas" };
 
 /** Studio Canvas em tela cheia: edição livre de um CanvasDocument revisionado. */
 export default async function StudioPage({ params }: Props) {
@@ -40,7 +40,7 @@ export default async function StudioPage({ params }: Props) {
       <Studio
         documentId={document.id}
         name={document.name}
-        project={{ slug: project.slug, name: project.name }}
+        project={{ id: project.id, slug: project.slug, name: project.name }}
         initialContent={head.content}
         initialRevision={head.revision}
         assets={media.visual}

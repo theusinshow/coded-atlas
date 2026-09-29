@@ -88,13 +88,14 @@ body {
   border-radius: 0;
 }
 
-/* Grid técnico de fundo — utilitário reusável */
-.bg-grid {
-  background-image:
-    linear-gradient(rgba(245, 242, 237, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(245, 242, 237, 0.02) 1px, transparent 1px);
-  background-size: 32px 32px;
+/* Controles nativos no palette (sem o azul padrão do navegador) */
+input[type="checkbox"], input[type="radio"] {
+  accent-color: var(--color-cbm-white);
+  width: 16px;
+  height: 16px;
 }
+input[type="date"] { color-scheme: dark; }
+::placeholder { color: var(--color-cbm-gray-400); }
 
 /* Marcador triangular da marca (detalhe técnico) */
 .tri {

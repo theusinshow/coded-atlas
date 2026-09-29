@@ -45,7 +45,7 @@ describe("fluxo de composição: instância → render job → Outputs", () => {
   it("cria com auto-binding, edita, renderiza PNG+JPG+WebP e grava Outputs rastreáveis", async () => {
     const { project, upload } = await setup();
     const instance = await createInstance(repos, project.id, { compositionId: "desktop-hero", formatId: "post-1x1" });
-    expect(instance).toMatchObject({ name: "Desktop Hero", compositionVersion: 1, variant: "centered", styleMode: "hybrid", visualProfileRevision: 1 });
+    expect(instance).toMatchObject({ name: "Destaque desktop", compositionVersion: 1, variant: "centered", styleMode: "hybrid", visualProfileRevision: 1 });
     expect(instance.bindings.desktop).toEqual({ assetId: upload.id });
     expect(instance.bindings.title).toEqual({ text: "Estúdio Norte" });
     expect(instance.bindings.url).toEqual({ text: "norte.example" });

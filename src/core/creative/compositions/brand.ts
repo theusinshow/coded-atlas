@@ -8,7 +8,7 @@ import { creditSlot, heroImageSlot, labelSlot, subtitleSlot, titleSlot, urlSlot 
 export const typographyColors: CompositionDefinition = {
   id: "typography-colors",
   version: 1,
-  name: "Typography + Colors",
+  name: "Identidade visual",
   family: "typography",
   description: "Ficha de identidade: paleta e tipografia do projeto, lidas da captura.",
   formats: FORMAT_IDS,
@@ -66,7 +66,7 @@ export const typographyColors: CompositionDefinition = {
 export const projectReveal: CompositionDefinition = {
   id: "project-reveal",
   version: 1,
-  name: "Project Reveal",
+  name: "Abertura",
   family: "intro",
   description: "Abertura: o nome do projeto em grande, com contexto. Primeira peça de um carrossel ou vídeo.",
   formats: FORMAT_IDS,
@@ -115,7 +115,7 @@ export const projectReveal: CompositionDefinition = {
 export const projectClosing: CompositionDefinition = {
   id: "project-closing",
   version: 1,
-  name: "Project Closing",
+  name: "Encerramento",
   family: "outro",
   description: "Fechamento: nome, endereço e assinatura. Última peça de um carrossel ou vídeo.",
   formats: FORMAT_IDS,
@@ -165,7 +165,7 @@ function fitTitle(value: string, width: number, start: number, min: number, maxL
 export const statement: CompositionDefinition = {
   id: "statement",
   version: 1,
-  name: "Statement",
+  name: "Manifesto",
   family: "editorial",
   description: "Slide de texto: título forte e um parágrafo. Contexto, desafio, solução — sem imagem.",
   formats: FORMAT_IDS,

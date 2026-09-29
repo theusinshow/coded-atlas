@@ -1,12 +1,14 @@
 "use client";
+import { Play } from "lucide-react";
 import { useState } from "react";
 import { AssetThumb } from "@/components/atlas/asset-image";
+import { assetTitle } from "@/components/ui/format";
 import type { StudioAsset } from "./types";
 
 const FILTERS = [
   { id: "all", label: "Todos" },
   { id: "desktop", label: "Desktop" },
-  { id: "mobile", label: "Mobile" },
+  { id: "mobile", label: "Celular" },
   { id: "section", label: "Seções" },
 ] as const;
 type Filter = (typeof FILTERS)[number]["id"];
@@ -17,7 +19,7 @@ function matches(asset: StudioAsset, filter: Filter): boolean {
   return asset.metadata.device === filter;
 }
 
-/** Grade de imagens do projeto com filtros rápidos (Criar e Studio). */
+/** Grade de imagens do projeto com filtros rápidos (Criar, Studio e Case). */
 export function AssetPicker({
   assets,
   value,
@@ -37,44 +39,53 @@ export function AssetPicker({
   const visible = assets.filter((a) => matches(a, filter));
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap gap-1">
+      <div className="flex flex-wrap items-center gap-1" role="radiogroup" aria-label="Filtrar imagens">
         {FILTERS.map((f) => (
           <button
             key={f.id}
             type="button"
+            role="radio"
+            aria-checked={filter === f.id}
             onClick={() => setFilter(f.id)}
-            className={`px-2 py-1 text-[11px] border ${filter === f.id ? "border-accent text-cbm-white" : "border-line text-cbm-gray-400 hover:text-cbm-gray-200"}`}
+            className={`h-10 sm:h-7 px-2.5 text-[12px] border transition-colors ${filter === f.id ? "border-cbm-white text-cbm-white" : "border-line text-cbm-gray-400 hover:text-cbm-white"}`}
           >
             {f.label}
           </button>
         ))}
         {onClear && (
-          <button type="button" onClick={onClear} className="ml-auto px-2 py-1 text-[11px] text-cbm-gray-400 hover:text-bad">
+          <button type="button" onClick={onClear} className="ml-auto h-10 sm:h-7 px-2 text-[12px] text-cbm-gray-400 hover:text-cbm-white">
             Deixar vazio
           </button>
         )}
       </div>
       {visible.length === 0 ? (
-        <p className="text-[12px] text-cbm-gray-400 px-1 py-3">Nenhum asset neste filtro.</p>
+        <p className="text-[12px] text-cbm-gray-400 px-1 py-3">Nenhuma imagem neste filtro.</p>
       ) : (
         <ul className={`grid gap-1.5 overflow-y-auto ${columns === 2 ? "grid-cols-2" : "grid-cols-3"}`} style={{ maxHeight }}>
-          {visible.map((a) => (
-            <li key={a.id}>
-              <button
-                type="button"
-                onClick={() => onPick(a)}
-                title={a.label ?? a.kind}
-                data-asset={a.id}
-                className={`block w-full aspect-[16/10] border overflow-hidden ${a.id === value ? "border-accent" : "border-line hover:border-cbm-gray-400"}`}
-              >
-                {a.mimeType.startsWith("video/") ? (
-                  <span className="grid w-full h-full place-items-center bg-surface-2 text-[10px] font-medium uppercase tracking-[0.22em] text-accent">▶ vídeo</span>
-                ) : (
-                  <AssetThumb id={a.id} alt={a.label ?? a.kind} width={320} className="w-full h-full" />
-                )}
-              </button>
-            </li>
-          ))}
+          {visible.map((a) => {
+            const title = assetTitle(a);
+            const selected = a.id === value;
+            return (
+              <li key={a.id}>
+                <button
+                  type="button"
+                  onClick={() => onPick(a)}
+                  title={title}
+                  aria-label={title}
+                  aria-pressed={selected}
+                  data-asset={a.id}
+                  className={`relative block w-full aspect-[16/10] border overflow-hidden transition-colors ${selected ? "border-cbm-white" : "border-line hover:border-cbm-gray-400"}`}
+                >
+                  <AssetThumb id={a.id} alt="" width={320} className="w-full h-full" />
+                  {a.mimeType.startsWith("video/") && (
+                    <span className="absolute left-1 bottom-1 grid h-5 w-5 place-items-center bg-base/85 text-cbm-white" aria-hidden>
+                      <Play size={11} />
+                    </span>
+                  )}
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

@@ -185,7 +185,7 @@ export function validatePlanOutput(raw: unknown, ctx: PlanValidationContext): Pl
     else assetRanking.push({ assetId: AssetIdSchema.parse(r.assetId), score: r.score, reason: r.reason });
   }
 
-  if (out.items.length > limit) errors.push(`items: no máximo ${limit} peça(s) para este pedido (veio ${out.items.length}).`);
+  if (out.items.length > limit) errors.push(`items: no máximo ${limit} ${limit === 1 ? "peça" : "peças"} para este pedido (veio ${out.items.length}).`);
 
   const validItems: PlanItem[] = [];
   out.items.slice(0, limit).forEach((item, index) => {
@@ -225,7 +225,7 @@ export function validatePlanOutput(raw: unknown, ctx: PlanValidationContext): Pl
     const auto = autoBind(definition, ctx.bindingContext);
     const omitted = definition.slots.filter((s) => !(s.id in bindings)).map((s) => s.id);
     for (const id of omitted) bindings[id] = auto[id];
-    if (omitted.length > 0) notes.push(`${definition.name}: ${omitted.join(", ")} preenchido(s) automaticamente.`);
+    if (omitted.length > 0) notes.push(`${definition.name}: ${omitted.join(", ")} ${omitted.length === 1 ? "preenchido" : "preenchidos"} automaticamente.`);
     const missing = missingSlots(definition, bindings);
     if (missing.length > 0) {
       errors.push(`${at}: faltam slots obrigatórios em ${definition.id}: ${missing.join(", ")}.`);

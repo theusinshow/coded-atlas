@@ -2,32 +2,49 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { Download } from "lucide-react";
 import { OutputCard } from "@/components/create/output-card";
-import { ExportForm } from "@/components/publish/export-forms";
-import { ExportHistory, PickOutput } from "@/components/publish/export-history";
-import { EmptyState, Panel, SectionTitle } from "@/components/ui/primitives";
+import { cleanOutputLabel, commonLabelPrefix, withoutPrefix } from "@/components/media/labels";
+import { ExportForm, SelectAllButton } from "@/components/publish/export-forms";
+import { ExportHistory } from "@/components/publish/export-history";
+import { plural } from "@/components/ui/format";
+import { EmptyState, LinkButton, SectionTitle } from "@/components/ui/primitives";
+import type { Output } from "@/src/core/assets/output";
 import { getAtlasRuntime } from "@/src/infrastructure/runtime";
 import { requireProjectBySlug } from "@/src/modules/projects/project-service";
 import { JobIdSchema } from "@/src/shared/id";
 import { destinationStatus } from "@/src/modules/publish/export-service";
 
 const FORM_ID = "package-form";
+/** Renders mais novos que isto entram com o destaque de "novo". */
+const FRESH_MS = 60_000;
 
 interface Props {
   params: Promise<{ slug: string }>;
 }
 
-/** Peças finais do projeto (Outputs imutáveis): renders do Atlas e peças importadas do v1. */
+const LINK = "inline-flex h-10 items-center gap-1.5 text-[12px] text-accent transition-colors hover:text-accent-bright sm:h-8";
+const shortDate = (iso: string) => new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/** Onde reabrir a origem de uma peça: o documento no Studio ou a composição. */
+function sourceLink(slug: string, o: Output): { href: string; label: string } | null {
+  if (o.metadata.documentId) return { href: `/studio/${o.metadata.documentId}`, label: "Abrir no Studio" };
+  if (o.metadata.instanceId) return { href: `/projects/${slug}/create/${o.metadata.instanceId}`, label: "Abrir composição" };
+  return null;
+}
+
+/** Entregar: peças finais do projeto (Outputs imutáveis) — marcar, empacotar e baixar. */
 export default async function ProjectPublishPage({ params }: Props) {
   const { slug } = await params;
   const { repos, exportDeps } = await getAtlasRuntime();
   const project = await requireProjectBySlug(repos.projects, slug);
   const outputs = [...(await repos.outputs.listByProject(project.id))].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  // Só o que saiu do render do Atlas 2 é "render"; o resto veio da biblioteca v1.
+  // Só o que saiu do render do Atlas é "render"; o resto veio da biblioteca antiga.
   const rendered = outputs.filter((o) => o.metadata.origin === "render");
   const legacy = outputs.filter((o) => o.metadata.origin !== "render");
-  // Um grupo por render (job): carrossel e múltiplos formatos saem juntos, na ordem.
-  const groups: { jobId: string | null; items: typeof rendered }[] = [];
+  // Um grupo por render (job): carrossel, kit e múltiplos formatos saem juntos, na ordem.
+  const groups: { jobId: string | null; items: Output[] }[] = [];
   for (const o of rendered) {
     const group = groups.find((g) => g.jobId !== null && g.jobId === o.jobId);
     if (group) group.items.push(o);
@@ -38,80 +55,95 @@ export default async function ProjectPublishPage({ params }: Props) {
   const exports = await repos.exports.listByProject(project.id);
   const jobStatus: Record<string, string> = {};
   for (const e of exports) if (e.jobId && (e.status === "queued" || e.status === "running")) jobStatus[e.jobId] = (await repos.jobs.getById(JobIdSchema.parse(e.jobId)))?.status ?? "failed";
+  const now = Date.now();
+  const isFresh = (o: Output) => now - new Date(o.createdAt).getTime() < FRESH_MS;
 
   if (outputs.length === 0) {
     return (
       <EmptyState
         title="Nenhuma peça final ainda"
         action={
-          <Link href={`/projects/${project.slug}/create`} className="text-[13px] text-accent">
-            Criar uma composição →
-          </Link>
+          <LinkButton href={`/projects/${project.slug}/create`} size="sm">
+            Ir para Criar
+          </LinkButton>
         }
-      >
-        Renderize uma composição em Criar — os arquivos aparecem aqui prontos para baixar.
-      </EmptyState>
+      />
     );
   }
 
   return (
     <div className="space-y-10">
-      <section aria-labelledby="pacote">
-        <SectionTitle id="pacote">Criar pacote</SectionTitle>
-        <Panel className="p-4 space-y-3">
-          <p className="text-[12px] text-cbm-gray-400">
-            Marque as peças abaixo (<span className="text-cbm-gray-200">Incluir</span>) — o pacote sai organizado por tipo (imagens, vídeos, documentos, web) com um{" "}
-            <span className="font-mono">manifest.json</span>.
-          </p>
-          <ExportForm formId={FORM_ID} mode="package" projectId={project.id} destinations={destinationStatus(exportDeps)} defaultName={`${project.name} · pacote`} />
-        </Panel>
-      </section>
       {rendered.length > 0 && (
         <section aria-labelledby="renders" className="space-y-8">
-          <SectionTitle id="renders">Renders ({rendered.length})</SectionTitle>
-          {groups.map((group) => (
-            <div key={group.jobId ?? group.items[0].id} className="space-y-3" data-render-group={group.jobId ?? ""}>
-              {group.items.length > 1 && group.jobId && (
-                <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line pb-2">
-                  <p className="text-[12px] text-cbm-gray-200">
-                    {group.items.some((o) => o.metadata.page !== undefined) ? `Carrossel · ${new Set(group.items.map((o) => o.metadata.page)).size} páginas` : "Render"} · {group.items.length} arquivos ·{" "}
-                    <span className="text-cbm-gray-400">{new Date(group.items[0].createdAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</span>
-                  </p>
-                  <a href={`/api/atlas/jobs/${group.jobId}/outputs`} className="text-[11px] font-medium uppercase tracking-[0.22em] text-accent hover:text-accent-bright">
-                    Baixar tudo (.zip)
-                  </a>
-                </div>
-              )}
-              <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 items-start">
-                {group.items.map((o) => (
-                  <li key={o.id}>
-                    <OutputCard output={o} />
-                    <PickOutput formId={FORM_ID} outputId={o.id} />
-                    {o.metadata.documentId && (
-                      <Link href={`/studio/${o.metadata.documentId}`} className="text-[11px] text-cbm-gray-400 hover:text-cbm-gray-200">
-                        Abrir no canvas (rev {o.metadata.documentRevision}) →
-                      </Link>
-                    )}
-                    {o.metadata.instanceId && (
-                      <Link href={`/projects/${project.slug}/create/${o.metadata.instanceId}`} className="text-[11px] text-cbm-gray-400 hover:text-cbm-gray-200">
-                        Abrir composição →
-                      </Link>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          <SectionTitle id="renders" aside={<SelectAllButton formId={FORM_ID} />}>
+            Peças ({rendered.length})
+          </SectionTitle>
+          {groups.map((group) => {
+            const labels = group.items.map((o) => cleanOutputLabel(o.label));
+            const prefix = commonLabelPrefix(labels);
+            const multi = group.items.length > 1 && group.jobId !== null;
+            const pages = new Set(group.items.filter((o) => o.metadata.page !== undefined).map((o) => o.metadata.page)).size;
+            const sources = group.items.map((o) => sourceLink(project.slug, o));
+            const shared = multi && sources.every((s) => s && s.href === sources[0]?.href) ? sources[0] : null;
+            return (
+              <div key={group.jobId ?? group.items[0].id} className="space-y-3" data-render-group={group.jobId ?? ""}>
+                {multi && (
+                  <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-line pb-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-[13px] text-cbm-gray-100">{prefix || (pages > 0 ? "Carrossel" : "Render")}</p>
+                      <p className="text-[12px] text-cbm-gray-400">
+                        {pages > 0 ? `Carrossel · ${pages} páginas` : plural(group.items.length, "arquivo", "arquivos")} · {shortDate(group.items[0].createdAt)}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      {shared && (
+                        <Link href={shared.href} className={LINK}>
+                          {shared.label}
+                        </Link>
+                      )}
+                      <a href={`/api/atlas/jobs/${group.jobId}/outputs`} className={LINK}>
+                        <Download size={14} aria-hidden />
+                        Baixar tudo (.zip)
+                      </a>
+                    </div>
+                  </div>
+                )}
+                <ul className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
+                  {group.items.map((o, i) => {
+                    const source = shared ? null : sources[i];
+                    return (
+                      <li key={o.id}>
+                        <OutputCard
+                          output={o}
+                          selectFor={FORM_ID}
+                          title={capitalize(withoutPrefix(labels[i], prefix))}
+                          fresh={isFresh(o)}
+                          footer={
+                            source && (
+                              <Link href={source.href} className={LINK}>
+                                {source.label}
+                              </Link>
+                            )
+                          }
+                        />
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            );
+          })}
         </section>
       )}
       {legacy.length > 0 && (
         <section aria-labelledby="legado">
-          <SectionTitle id="legado">Peças do Atlas v1 ({legacy.length})</SectionTitle>
-          <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 items-start">
+          <SectionTitle id="legado" aside={rendered.length === 0 ? <SelectAllButton formId={FORM_ID} /> : undefined}>
+            Peças anteriores ({legacy.length})
+          </SectionTitle>
+          <ul className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
             {legacy.map((o) => (
               <li key={o.id}>
-                <OutputCard output={o} />
-                <PickOutput formId={FORM_ID} outputId={o.id} />
+                <OutputCard output={o} selectFor={FORM_ID} />
               </li>
             ))}
           </ul>
@@ -123,6 +155,7 @@ export default async function ProjectPublishPage({ params }: Props) {
           <ExportHistory records={exports} jobStatus={jobStatus} />
         </section>
       )}
+      <ExportForm formId={FORM_ID} mode="package" projectId={project.id} destinations={destinationStatus(exportDeps)} defaultName={`${project.name} · pacote`} />
     </div>
   );
 }

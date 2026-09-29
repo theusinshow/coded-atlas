@@ -1,20 +1,20 @@
+import { Download, ExternalLink } from "lucide-react";
+import { formatBytes, plural, relativeTime } from "@/components/ui/format";
 import type { ExportRecord } from "@/src/core/publish/export";
 
-const DESTINATION_LABEL = { download: "ZIP", folder: "Pasta local", github: "GitHub" } as const;
+const DESTINATION_LABEL = { download: "ZIP para baixar", folder: "Pasta de entregas", github: "GitHub" } as const;
 
 type ViewStatus = ExportRecord["status"] | "cancelled";
 
 const STATUS: Record<ViewStatus, { label: string; className: string }> = {
   queued: { label: "Na fila", className: "text-cbm-gray-200 border-line" },
-  running: { label: "Entregando", className: "text-accent border-accent/50" },
+  running: { label: "Entregando", className: "text-cbm-white border-cbm-gray-400" },
   delivered: { label: "Entregue", className: "text-ok border-ok/40" },
   failed: { label: "Falhou", className: "text-bad border-bad/50" },
   cancelled: { label: "Cancelado", className: "text-cbm-gray-400 border-line" },
 };
 
-function bytes(n: number): string {
-  return n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`;
-}
+const LINK = "inline-flex h-10 items-center gap-1.5 text-[12px] text-accent transition-colors hover:text-accent-bright sm:h-8";
 
 /**
  * Histórico de entregas. `jobStatus` corrige registros cujo job morreu antes de
@@ -27,28 +27,39 @@ export function ExportHistory({ records, jobStatus }: { records: ExportRecord[];
         const job = r.jobId ? jobStatus[r.jobId] : undefined;
         const status: ViewStatus = (r.status === "queued" || r.status === "running") && (job === "failed" || job === "cancelled") ? (job === "failed" ? "failed" : "cancelled") : r.status;
         const s = STATUS[status];
+        const detail = [
+          DESTINATION_LABEL[r.destination],
+          plural(r.outputIds.length, "peça", "peças"),
+          r.result.files ? plural(r.result.files, "arquivo", "arquivos") : null,
+          r.result.archive ? formatBytes(r.result.archive.byteSize) : null,
+        ]
+          .filter(Boolean)
+          .join(" · ");
         return (
-          <li key={r.id} className="grid gap-2 px-4 py-3 sm:grid-cols-[1fr_auto] sm:items-center" data-export={r.id} data-export-status={status}>
+          <li key={r.id} className="grid gap-2 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center" data-export={r.id} data-export-status={status}>
             <div className="min-w-0">
-              <p className="text-[13px] text-cbm-gray-100 truncate">{r.name}</p>
-              <p className="text-[11px] font-mono text-cbm-gray-400">
-                {DESTINATION_LABEL[r.destination]} · {r.outputIds.length} {r.outputIds.length === 1 ? "peça" : "peças"}
-                {r.result.files ? ` · ${r.result.files} arquivos` : ""}
-                {r.result.archive ? ` · ${bytes(r.result.archive.byteSize)}` : ""} · {new Date(r.createdAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
+              <p className="truncate text-[13px] text-cbm-gray-100">{r.name}</p>
+              <p className="text-[12px] text-cbm-gray-400">
+                {detail} ·{" "}
+                <time dateTime={r.createdAt} title={new Date(r.createdAt).toLocaleString("pt-BR")}>
+                  {relativeTime(r.createdAt)}
+                </time>
               </p>
-              {r.result.folder && <p className="text-[11px] font-mono text-cbm-gray-400 break-all">pasta: {r.result.folder}/</p>}
-              {r.result.error && <p className="text-[11px] text-bad">{r.result.error}</p>}
+              {r.result.folder && <p className="break-words text-[12px] text-cbm-gray-400">Salvo na pasta: {r.result.folder}/</p>}
+              {r.result.error && <p className="text-[12px] text-bad">{r.result.error}</p>}
             </div>
-            <div className="flex items-center gap-3 justify-self-start sm:justify-self-end">
+            <div className="flex items-center gap-4 justify-self-start sm:justify-self-end">
               <span className={`inline-flex border px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.22em] ${s.className}`}>{s.label}</span>
               {status === "delivered" && r.result.archive && (
-                <a href={`/api/atlas/exports/${r.id}/file`} className="text-[11px] font-medium uppercase tracking-[0.22em] text-accent hover:text-accent-bright">
+                <a href={`/api/atlas/exports/${r.id}/file`} className={LINK}>
+                  <Download size={14} aria-hidden />
                   Baixar (.zip)
                 </a>
               )}
               {status === "delivered" && r.result.commitUrl && (
-                <a href={r.result.commitUrl} target="_blank" rel="noreferrer" className="text-[11px] font-medium uppercase tracking-[0.22em] text-accent hover:text-accent-bright">
-                  Ver commit →
+                <a href={r.result.commitUrl} target="_blank" rel="noreferrer" className={LINK}>
+                  Ver commit
+                  <ExternalLink size={14} aria-hidden />
                 </a>
               )}
             </div>
@@ -56,15 +67,5 @@ export function ExportHistory({ records, jobStatus }: { records: ExportRecord[];
         );
       })}
     </ul>
-  );
-}
-
-/** Checkbox de seleção de uma peça, ligado ao formulário de entrega pelo atributo `form`. */
-export function PickOutput({ formId, outputId }: { formId: string; outputId: string }) {
-  return (
-    <label className="flex items-center gap-1.5 text-[11px] text-cbm-gray-400 hover:text-cbm-gray-100 cursor-pointer">
-      <input type="checkbox" name="outputId" value={outputId} form={formId} className="accent-[var(--color-accent)]" />
-      Incluir
-    </label>
   );
 }

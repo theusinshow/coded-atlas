@@ -16,7 +16,7 @@ describe("próximo passo do projeto", () => {
 
   it("estado dos 3 passos com resumo legível", () => {
     const [material, create, deliver] = stepStatuses({ ...base, assets: 40, kits: 1, renderedKits: 1, cases: 1, outputs: 12 });
-    expect(material).toMatchObject({ done: true, summary: "40 assets", href: "assets" });
+    expect(material).toMatchObject({ done: true, summary: "40 imagens", href: "assets" });
     expect(create).toMatchObject({ done: true, summary: "1 kit · 1 case" });
     expect(deliver).toMatchObject({ done: false, summary: "12 peças" });
     expect(stepStatuses(base).map((s) => s.done)).toEqual([false, false, false]);

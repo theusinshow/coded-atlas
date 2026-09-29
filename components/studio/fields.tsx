@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, type ReactNode } from "react";
+import { Ban, Pipette } from "lucide-react";
 import { COLOR_TOKENS, type ColorRef, type ColorToken } from "@/src/core/documents/layer";
 import type { StyleTokens } from "@/src/core/creative/tokens";
 
@@ -12,7 +13,7 @@ export function Section({ title, children, aside }: { title: string; children: R
   return (
     <section className="border-b border-line px-4 py-4 space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="text-[10px] font-medium uppercase tracking-[0.14em] text-cbm-gray-400">{title}</h3>
+        <h3 className="text-[11px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400">{title}</h3>
         {aside}
       </div>
       {children}
@@ -182,8 +183,10 @@ export function ColorField({
             aria-label="Nenhuma"
             aria-pressed={value === null}
             onClick={() => onChange(null)}
-            className={`w-6 h-6 border ${value === null ? "border-accent" : "border-line"} bg-[linear-gradient(135deg,transparent_45%,#71717a_45%,#71717a_55%,transparent_55%)]`}
-          />
+            className={`grid w-6 h-6 place-items-center border text-cbm-gray-400 ${value === null ? "border-cbm-white" : "border-line hover:border-cbm-gray-400"}`}
+          >
+            <Ban size={12} aria-hidden />
+          </button>
         )}
         {COLOR_TOKENS.map((token) => (
           <button
@@ -193,21 +196,21 @@ export function ColorField({
             aria-label={TOKEN_LABEL[token]}
             aria-pressed={value === token}
             onClick={() => onChange(token)}
-            className={`w-6 h-6 border ${value === token ? "border-accent ring-1 ring-accent" : "border-line"}`}
+            className={`w-6 h-6 border ${value === token ? "border-cbm-white ring-1 ring-cbm-white" : "border-line hover:border-cbm-gray-400"}`}
             style={{ background: tokens.colors[token] }}
           />
         ))}
-        <label title="Cor fixa" className={`relative w-6 h-6 border cursor-pointer overflow-hidden ${isHex ? "border-accent ring-1 ring-accent" : "border-line"}`}>
-          <span className="absolute inset-0 bg-[conic-gradient(#ef4444,#eab308,#22c55e,#06b6d4,#6366f1,#ec4899,#ef4444)]" style={isHex ? { background: value } : undefined} />
+        <label title="Cor fixa" className={`relative grid w-6 h-6 place-items-center border cursor-pointer overflow-hidden text-cbm-gray-400 ${isHex ? "border-cbm-white ring-1 ring-cbm-white" : "border-line hover:border-cbm-gray-400"}`}>
+          {isHex ? <span className="absolute inset-0" style={{ background: value }} /> : <Pipette size={12} aria-hidden />}
           <input
             type="color"
             aria-label={`${label}: cor fixa`}
             className="absolute inset-0 opacity-0 cursor-pointer"
-            value={(resolved ?? "#000000").slice(0, 7)}
+            value={(resolved ?? "#000f08").slice(0, 7)}
             onChange={(e) => onChange(e.target.value.toLowerCase())}
           />
         </label>
-        <span className="ml-1 text-[10px] font-mono text-cbm-gray-400">{value === null ? "nenhuma" : isHex ? value : TOKEN_LABEL[value as ColorToken]}</span>
+        <span className={`ml-1 text-[11px] text-cbm-gray-400 ${isHex ? "font-mono" : ""}`}>{value === null ? "Nenhuma" : isHex ? value : TOKEN_LABEL[value as ColorToken]}</span>
       </div>
     </div>
   );

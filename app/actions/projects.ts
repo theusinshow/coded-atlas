@@ -262,9 +262,10 @@ export async function uploadAssetsAction(projectId: string, _prev: ActionState, 
     const result = await importUploads(uploadDeps, id, files, kind);
     const project = await projectDeps.projects.getById(id);
     revalidatePath(`/projects/${project?.slug}`, "layout");
-    const parts = [`${result.created.length} enviado(s)`];
-    if (result.duplicates.length) parts.push(`${result.duplicates.length} já existia(m)`);
-    if (result.rejected.length) parts.push(`recusado(s): ${result.rejected.map((r) => `${r.name} (${r.reason})`).join("; ")}`);
+    const n = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
+    const parts = [n(result.created.length, "arquivo enviado", "arquivos enviados")];
+    if (result.duplicates.length) parts.push(`${n(result.duplicates.length, "já existia", "já existiam")}`);
+    if (result.rejected.length) parts.push(`${result.rejected.length === 1 ? "recusado" : "recusados"}: ${result.rejected.map((r) => `${r.name} (${r.reason})`).join("; ")}`);
     return result.created.length === 0 && result.rejected.length > 0 ? { error: parts.join(" · ") } : { message: parts.join(" · ") };
   } catch (err) {
     return failure(err);
@@ -288,7 +289,7 @@ export async function syncLegacyAction(): Promise<ActionState> {
     const job = await ensureLegacyImportQueued(legacyImportDeps);
     revalidatePath("/settings");
     revalidatePath("/jobs");
-    return { message: job ? "Sincronização enfileirada." : "A biblioteca v1 já está sincronizada." };
+    return { message: job ? "Sincronização enfileirada." : "A biblioteca antiga já está sincronizada." };
   } catch (err) {
     return failure(err);
   }

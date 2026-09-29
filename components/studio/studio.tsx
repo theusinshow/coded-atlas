@@ -1,27 +1,34 @@
 "use client";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { ArrowRight, ChevronLeft, MoreHorizontal, Redo2, Trash2, Undo2, X } from "lucide-react";
 import { animateDocumentAction, deleteDocumentAction, listRevisionsAction, renameDocumentAction, renderCanvasAction, restoreRevisionAction, saveCanvasAction } from "@/app/actions/studio";
 import { resolveTokens } from "@/src/core/creative/tokens";
 import type { VisualProfile } from "@/src/core/creative/visual-profile";
 import { isMotion, isSequence, kindOf, type CanvasContent, type DocumentContent, type DocumentKind, type RevisionSummary } from "@/src/core/documents/creative-document";
 import { duplicateLayer, findLayer, removeLayer, reorderLayer, updateLayer } from "@/src/core/documents/layer-tree";
 import { JobFollower } from "@/components/atlas/job-follower";
+import { ArtboardPreview } from "@/components/create/artboard-preview";
 import type { StudioAsset } from "@/components/create/types";
+import { buttonClass } from "@/components/ui/primitives";
+import { DURATION, EASE_OUT } from "@/components/ui/motion";
 import { CanvasStage, type Zoom } from "./canvas-stage";
+import { DesktopOnlyNotice, useDismiss, useIsDesktop } from "./desktop-only";
 import { Inspector } from "./inspector";
 import { newLayerId } from "./layer-factory";
 import { AddPanel, LayersPanel } from "./layers-panel";
 import { MotionPlayer } from "./motion-player";
 import { PageStrip } from "./page-strip";
-import { createStudioStore, StudioContext, useStudio, useStudioApi, type SaveState } from "./store";
+import { SaveIndicator } from "./save-indicator";
+import { createStudioStore, StudioContext, useStudio, useStudioApi } from "./store";
 
 const AUTOSAVE_MS = 1200;
 
 interface StudioProps {
   documentId: string;
   name: string;
-  project: { slug: string; name: string };
+  project: { id: string; slug: string; name: string };
   initialContent: DocumentContent;
   initialRevision: number;
   /** Imagens e vídeos do projeto (vídeos só entram em documentos de motion). */
@@ -33,20 +40,36 @@ interface StudioProps {
 
 export function Studio(props: StudioProps) {
   const [store] = useState(() => createStudioStore({ doc: props.initialContent, revision: props.initialRevision }));
+  const desktop = useIsDesktop();
   return (
     <StudioContext.Provider value={store}>
-      <StudioShell {...props} />
+      {/* Abaixo de 1024 px não há canvas utilizável: aviso + prévia só de leitura. */}
+      <DesktopOnlyNotice title="Studio" backHref={`/projects/${props.project.slug}/create`} className="lg:hidden" preview={<StudioReadOnlyPreview profiles={props.profiles} />} />
+      {desktop && <StudioShell {...props} />}
     </StudioContext.Provider>
   );
 }
 
-const SAVE_LABEL: Record<SaveState, { text: string; className: string }> = {
-  saved: { text: "Salvo", className: "text-cbm-gray-400" },
-  dirty: { text: "Alterado", className: "text-cbm-gray-400" },
-  saving: { text: "Salvando…", className: "text-accent" },
-  error: { text: "Falha ao salvar", className: "text-bad" },
-  conflict: { text: "Conflito", className: "text-bad" },
+/** Tokens do estilo do documento (identidade congelada + modo + cor de destaque). */
+function useDocumentTokens(profiles: Record<number, VisualProfile>) {
+  const style = useStudio((s) => s.content.style);
+  const profile = style.profileRevision ? (profiles[style.profileRevision] ?? null) : null;
+  return useMemo(() => resolveTokens(profile, style.mode, style.primary ? { primary: style.primary } : {}), [profile, style.mode, style.primary]);
+}
+
+function StudioReadOnlyPreview({ profiles }: { profiles: Record<number, VisualProfile> }) {
+  const artboard = useStudio((s) => s.content.artboard);
+  const tokens = useDocumentTokens(profiles);
+  return <ArtboardPreview artboard={artboard} tokens={tokens} mode="render" />;
+}
+
+/** Entrada/saída dos menus do cabeçalho: presença curta, sem deslocamento grande. */
+const MENU_MOTION = {
+  initial: { opacity: 0, y: -4 },
+  animate: { opacity: 1, y: 0, transition: { duration: DURATION.instant, ease: EASE_OUT } },
+  exit: { opacity: 0, y: -2, transition: { duration: 0.1, ease: "easeIn" as const } },
 };
+const MENU_PANEL = "absolute right-0 top-full mt-1 border border-line bg-surface z-20";
 
 /** Autosave com debounce: grava a revisão; conflito congela a edição até recarregar. */
 function useAutosave(documentId: string) {
@@ -153,13 +176,13 @@ function RevisionsMenu({ documentId, onClose }: { documentId: string; onClose: (
   useEffect(() => {
     void listRevisionsAction(documentId).then((r) => (r.ok ? setRevisions(r.revisions) : setError(r.error)));
   }, [documentId]);
-  const ORIGIN: Record<RevisionSummary["origin"], string> = { create: "criação", edit: "edição", restore: "restauração" };
+  const ORIGIN: Record<RevisionSummary["origin"], string> = { create: "Criação", edit: "Edição", restore: "Restauração" };
   return (
-    <div className="absolute right-0 top-full mt-1 w-80 max-h-96 overflow-y-auto border border-line bg-surface shadow-2xl z-20" role="dialog" aria-label="Revisões">
+    <motion.div {...MENU_MOTION} className={`${MENU_PANEL} w-80 max-h-96 overflow-y-auto`} role="dialog" aria-label="Revisões">
       <div className="flex items-center justify-between px-3 py-2 border-b border-line">
-        <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400">Revisões</p>
-        <button type="button" onClick={onClose} className="text-[11px] text-cbm-gray-400 hover:text-cbm-gray-200">
-          Fechar
+        <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400">Revisões</p>
+        <button type="button" onClick={onClose} aria-label="Fechar revisões" className="grid h-7 w-7 place-items-center text-cbm-gray-400 hover:text-cbm-white">
+          <X size={14} aria-hidden />
         </button>
       </div>
       {error && <p className="px-3 py-2 text-[12px] text-bad">{error}</p>}
@@ -167,22 +190,22 @@ function RevisionsMenu({ documentId, onClose }: { documentId: string; onClose: (
       <ul>
         {revisions?.map((r) => (
           <li key={r.revision} className="flex items-center gap-2 px-3 py-2 border-b border-line/60 text-[12px]">
-            <span className="font-mono text-cbm-gray-200 w-12">rev {r.revision}</span>
+            <span className="w-8 text-cbm-gray-200 tabular-nums">{r.revision}</span>
             <span className="flex-1 text-cbm-gray-400">
               {ORIGIN[r.origin]} · {new Date(r.updatedAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
-              {r.pinned && <span className="text-accent"> · renderizada</span>}
+              {r.pinned && <span className="text-cbm-gray-200"> · renderizada</span>}
             </span>
             {r.revision === current ? (
-              <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400">atual</span>
+              <span className="text-[12px] text-cbm-gray-400">Atual</span>
             ) : (
               <button
                 type="button"
                 disabled={pending}
-                className="text-[11px] text-accent hover:text-accent-bright disabled:opacity-40"
+                className="text-[12px] text-accent hover:text-accent-bright disabled:opacity-40"
                 onClick={() =>
                   start(async () => {
                     const result = await restoreRevisionAction(documentId, r.revision);
-                    if (!result.ok || !result.content) return setError(result.ok ? "Revisão sem conteúdo." : result.error);
+                    if (!result.ok || !result.content) return setError(result.ok ? "Essa versão está vazia." : result.error);
                     api.getState().reset(result.content, result.revision);
                     onClose();
                   })
@@ -194,48 +217,48 @@ function RevisionsMenu({ documentId, onClose }: { documentId: string; onClose: (
           </li>
         ))}
       </ul>
-    </div>
+    </motion.div>
   );
 }
 
 type OutFormat = "png" | "jpg" | "webp" | "mp4" | "webm" | "pdf" | "pptx";
 
 const RENDER_OPTIONS: Record<DocumentKind, { options: OutFormat[]; initial: OutFormat[]; hint: string }> = {
-  canvas: { options: ["png", "jpg", "webp", "pdf"], initial: ["png"], hint: "Salva e renderiza exatamente esta revisão." },
-  carousel: { options: ["png", "jpg", "webp", "pdf"], initial: ["png"], hint: "Uma imagem por página; PDF junta tudo (carrossel de LinkedIn)." },
-  motion: { options: ["mp4", "webm", "png"], initial: ["mp4"], hint: "Salva e gera o vídeo desta revisão quadro a quadro (PNG = um pôster por cena)." },
-  presentation: { options: ["pdf", "pptx", "png"], initial: ["pdf"], hint: "PDF e PPTX com um slide por página (PPTX leva as notas do apresentador)." },
-  case: { options: ["pdf", "png"], initial: ["pdf"], hint: "Case: página web, PDF e módulos." },
+  canvas: { options: ["png", "jpg", "webp", "pdf"], initial: ["png"], hint: "Salva e renderiza a versão atual." },
+  carousel: { options: ["png", "jpg", "webp", "pdf"], initial: ["png"], hint: "Uma imagem por página; o PDF junta todas (carrossel do LinkedIn)." },
+  motion: { options: ["mp4", "webm", "png"], initial: ["mp4"], hint: "Salva e gera o vídeo. PNG sai como uma capa por cena." },
+  presentation: { options: ["pdf", "pptx", "png"], initial: ["pdf"], hint: "Um slide por página. O PPTX leva as notas do apresentador." },
+  case: { options: ["pdf", "png"], initial: ["pdf"], hint: "Página web, PDF e módulos." },
 };
 
 function RenderMenu({ documentId, onJob, kind }: { documentId: string; onJob: (id: string) => void; kind: DocumentKind }) {
   const api = useStudioApi();
-  const motion = kind === "motion";
+  const motionDoc = kind === "motion";
   const [formats, setFormats] = useState<OutFormat[]>(RENDER_OPTIONS[kind].initial);
   const [quality, setQuality] = useState<"preview" | "final">("final");
   const options = RENDER_OPTIONS[kind].options;
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   return (
-    <div className="absolute right-0 top-full mt-1 w-64 border border-line bg-surface shadow-2xl z-20 p-3 space-y-3" role="dialog" aria-label="Renderizar">
-      <p className="text-[11px] text-cbm-gray-400">{RENDER_OPTIONS[kind].hint} A peça aparece em Publicar.</p>
-      <div className="flex gap-3">
+    <motion.div {...MENU_MOTION} className={`${MENU_PANEL} w-72 p-3 space-y-3`} role="dialog" aria-label="Renderizar">
+      <p className="text-[12px] text-cbm-gray-400">{RENDER_OPTIONS[kind].hint} A peça aparece em Entregar.</p>
+      <div className="flex flex-wrap gap-x-4 gap-y-2">
         {options.map((f) => (
-          <label key={f} className="flex items-center gap-1.5 text-[12px] font-medium uppercase tracking-[0.22em] text-cbm-gray-200">
+          <label key={f} className="flex h-7 items-center gap-1.5 text-[12px] font-medium uppercase tracking-[0.12em] text-cbm-gray-200 cursor-pointer">
             <input type="checkbox" checked={formats.includes(f)} onChange={(e) => setFormats((cur) => (e.target.checked ? [...cur, f] : cur.filter((x) => x !== f)))} />
             {f}
           </label>
         ))}
       </div>
-      {motion && (
+      {motionDoc && (
         <div role="radiogroup" aria-label="Qualidade do vídeo" className="flex border border-line">
           {(
             [
-              ["preview", "Preview rápido"],
+              ["preview", "Prévia rápida"],
               ["final", "Final"],
             ] as const
           ).map(([id, label]) => (
-            <button key={id} type="button" role="radio" aria-checked={quality === id} onClick={() => setQuality(id)} className={`flex-1 h-7 text-[11px] ${quality === id ? "bg-surface-2 text-cbm-white" : "text-cbm-gray-400"}`}>
+            <button key={id} type="button" role="radio" aria-checked={quality === id} onClick={() => setQuality(id)} className={`flex-1 h-8 text-[12px] transition-colors ${quality === id ? "bg-surface-2 text-cbm-white" : "text-cbm-gray-400 hover:text-cbm-gray-100"}`}>
               {label}
             </button>
           ))}
@@ -244,7 +267,7 @@ function RenderMenu({ documentId, onJob, kind }: { documentId: string; onJob: (i
       <button
         type="button"
         disabled={pending || formats.length === 0}
-        className="w-full h-8 bg-signal text-cbm-black text-[10px] font-display font-semibold uppercase tracking-[0.12em] hover:bg-signal-dark disabled:opacity-40"
+        className={`${buttonClass("primary", "sm")} w-full`}
         onClick={() =>
           start(async () => {
             setError(null);
@@ -262,14 +285,45 @@ function RenderMenu({ documentId, onJob, kind }: { documentId: string; onJob: (i
       >
         Renderizar agora
       </button>
-      {error && <p className="text-[12px] text-bad">{error}</p>}
-    </div>
+      {error && (
+        <p role="alert" className="text-[12px] text-bad">
+          {error}
+        </p>
+      )}
+    </motion.div>
   );
 }
 
+/** Ações raras (e a destrutiva) longe do Renderizar. */
+function MoreMenu({ projectSlug, onDelete, onClose }: { projectSlug: string; onDelete: () => void; onClose: () => void }) {
+  const item = "flex h-9 w-full items-center gap-2 px-3 text-left text-[13px] transition-colors";
+  return (
+    <motion.div {...MENU_MOTION} className={`${MENU_PANEL} w-56 py-1`} role="menu" aria-label="Mais ações">
+      <Link href={`/projects/${projectSlug}/publish`} role="menuitem" onClick={onClose} className={`${item} text-cbm-gray-200 hover:bg-surface-2 hover:text-cbm-white`}>
+        <ArrowRight size={14} aria-hidden />
+        Ver peças em Entregar
+      </Link>
+      <div className="my-1 border-t border-line" role="separator" />
+      <button
+        type="button"
+        role="menuitem"
+        className={`${item} text-cbm-gray-200 hover:bg-surface-2 hover:text-bad`}
+        onClick={() => {
+          onClose();
+          onDelete();
+        }}
+      >
+        <Trash2 size={14} aria-hidden />
+        Excluir documento
+      </button>
+    </motion.div>
+  );
+}
+
+type Menu = "revisions" | "render" | "more";
+
 function StudioShell({ documentId, name: initialName, project, assets: allAssets, audioAssets, profiles, latestProfileRevision }: StudioProps) {
   const api = useStudioApi();
-  const style = useStudio((s) => s.content.style);
   const saveState = useStudio((s) => s.saveState);
   const saveError = useStudio((s) => s.saveError);
   const revision = useStudio((s) => s.revision);
@@ -277,9 +331,9 @@ function StudioShell({ documentId, name: initialName, project, assets: allAssets
   const canRedo = useStudio((s) => s.future.length > 0);
   const sequence = useStudio((s) => isSequence(s.doc));
   const doc = useStudio((s) => s.doc);
-  const motion = isMotion(doc) ? doc : null;
+  const motionDoc = isMotion(doc) ? doc : null;
   // Vídeo (movimento capturado) só entra em documentos de motion.
-  const assets = useMemo(() => (motion ? allAssets : allAssets.filter((a) => a.mimeType.startsWith("image/"))), [allAssets, motion]);
+  const assets = useMemo(() => (motionDoc ? allAssets : allAssets.filter((a) => a.mimeType.startsWith("image/"))), [allAssets, motionDoc]);
   const videos = useMemo(() => new Set(allAssets.filter((a) => a.mimeType.startsWith("video/")).map((a) => a.id as string)), [allAssets]);
   const activePage = useStudio((s) => s.activePage);
   const [playing, setPlaying] = useState(false);
@@ -287,27 +341,32 @@ function StudioShell({ documentId, name: initialName, project, assets: allAssets
   const [tab, setTab] = useState<"layers" | "add">("layers");
   const [zoom, setZoom] = useState<Zoom>("fit");
   const [fitScale, setFitScale] = useState(0.3);
-  const [menu, setMenu] = useState<"revisions" | "render" | null>(null);
+  const [menu, setMenu] = useState<Menu | null>(null);
+  const menusRef = useRef<HTMLDivElement>(null);
   const [jobId, setJobId] = useState<string | null>(null);
   const [name, setName] = useState(initialName);
   const [, startDelete] = useTransition();
   useAutosave(documentId);
   useShortcuts();
+  useDismiss(menusRef, menu !== null, () => setMenu(null));
   const onFit = useCallback((s: number) => setFitScale(s), []);
+  const toggleMenu = (id: Menu) => setMenu((m) => (m === id ? null : id));
 
-  const profile = style.profileRevision ? (profiles[style.profileRevision] ?? null) : null;
-  const tokens = useMemo(() => resolveTokens(profile, style.mode, style.primary ? { primary: style.primary } : {}), [profile, style.mode, style.primary]);
-  const scale = zoom === "fit" ? fitScale : zoom;
-  const label = SAVE_LABEL[saveState];
-  const btn = "h-8 px-3 border border-line text-[12px] text-cbm-gray-200 hover:border-cbm-gray-400 hover:text-cbm-white disabled:opacity-30 disabled:hover:border-line";
+  const tokens = useDocumentTokens(profiles);
+  const btn =
+    "inline-flex h-8 items-center justify-center gap-1.5 px-3 border border-line text-[12px] text-cbm-gray-200 transition-colors hover:border-cbm-gray-400 hover:text-cbm-white disabled:opacity-30 disabled:hover:border-line";
+  const iconBtn = `${btn} w-8 !px-0`;
 
   return (
-    <div className="fixed inset-0 z-40 flex flex-col bg-base text-cbm-gray-100" data-studio>
+    <div className="fixed inset-0 z-40 flex flex-col bg-base text-cbm-gray-100 max-lg:hidden" data-studio>
       <header className="h-12 shrink-0 flex items-center gap-3 border-b border-line px-3">
-        <Link href={`/projects/${project.slug}/create`} className="text-[12px] text-cbm-gray-400 hover:text-cbm-gray-100 whitespace-nowrap">
-          ← {project.name}
+        <Link href={`/projects/${project.slug}/create`} className="flex min-w-0 max-w-[12rem] items-center gap-1 text-[12px] text-cbm-gray-400 hover:text-cbm-white" title={`Voltar a ${project.name}`}>
+          <ChevronLeft size={14} className="shrink-0" aria-hidden />
+          <span className="truncate">{project.name}</span>
         </Link>
-        <span className="text-cbm-gray-600">/</span>
+        <span className="text-cbm-gray-600" aria-hidden>
+          /
+        </span>
         <input
           aria-label="Nome do documento"
           value={name}
@@ -318,84 +377,87 @@ function StudioShell({ documentId, name: initialName, project, assets: allAssets
             if (!trimmed) return setName(initialName);
             if (trimmed !== initialName) void renameDocumentAction(documentId, trimmed);
           }}
-          className="min-w-0 w-64 bg-transparent text-[13px] text-cbm-gray-100 px-1.5 h-8 border border-transparent hover:border-line focus:border-accent focus:outline-none"
+          className="min-w-0 w-40 xl:w-80 bg-transparent text-[13px] text-cbm-gray-100 px-1.5 h-8 border border-transparent hover:border-line focus:border-accent focus:outline-none"
         />
-        <span className={`text-[11px] font-mono whitespace-nowrap ${label.className}`} title={saveError ?? undefined} data-save-state={saveState}>
-          {label.text} · rev {revision}
-        </span>
+        <SaveIndicator state={saveState} revision={revision} error={saveError} />
         {saveState === "conflict" && (
-          <button type="button" className="text-[11px] text-accent" onClick={() => window.location.reload()}>
+          <button type="button" className="text-[12px] text-accent hover:text-accent-bright" onClick={() => window.location.reload()}>
             Recarregar
           </button>
         )}
-        {saveState === "error" && saveError && <span className="text-[11px] text-bad truncate max-w-64">{saveError}</span>}
+        {saveState === "error" && saveError && <span className="text-[12px] text-bad truncate max-w-64">{saveError}</span>}
 
-        <div className="ml-auto flex items-center gap-1.5">
-          <button type="button" className={btn} disabled={!canUndo} onClick={() => api.getState().undo()} title="Desfazer (Ctrl+Z)" aria-label="Desfazer">
-            ↶
+        <div className="ml-auto flex items-center gap-1.5" ref={menusRef}>
+          <button type="button" className={iconBtn} disabled={!canUndo} onClick={() => api.getState().undo()} title="Desfazer (Ctrl+Z)" aria-label="Desfazer">
+            <Undo2 size={14} aria-hidden />
           </button>
-          <button type="button" className={btn} disabled={!canRedo} onClick={() => api.getState().redo()} title="Refazer (Ctrl+Shift+Z)" aria-label="Refazer">
-            ↷
+          <button type="button" className={iconBtn} disabled={!canRedo} onClick={() => api.getState().redo()} title="Refazer (Ctrl+Shift+Z)" aria-label="Refazer">
+            <Redo2 size={14} aria-hidden />
           </button>
+          {/* A única leitura de zoom da tela. */}
           <select
             aria-label="Zoom"
             value={zoom === "fit" ? "fit" : String(zoom)}
             onChange={(e) => setZoom(e.target.value === "fit" ? "fit" : Number(e.target.value))}
-            className="h-8 bg-surface border border-line text-[12px] text-cbm-gray-200 px-2"
+            className="h-8 bg-surface border border-line text-[12px] text-cbm-gray-200 px-2 tabular-nums"
           >
-            <option value="fit">Ajustar ({Math.round(fitScale * 100)}%)</option>
+            <option value="fit">Ajustar · {Math.round(fitScale * 100)}%</option>
             {[0.25, 0.5, 0.75, 1].map((z) => (
               <option key={z} value={z}>
                 {Math.round(z * 100)}%
               </option>
             ))}
           </select>
-          {!motion && (
+          {!motionDoc && (
             <button
               type="button"
               className={btn}
               disabled={animating}
-              title="Cria um vídeo a partir deste documento (cada página vira uma cena animada)"
+              title="Cria um vídeo a partir deste documento: cada página vira uma cena animada"
               onClick={() => startAnimate(async () => void (await animateDocumentAction(documentId)))}
             >
               Animar
             </button>
           )}
           <div className="relative">
-            <button type="button" className={btn} onClick={() => setMenu((m) => (m === "revisions" ? null : "revisions"))} aria-expanded={menu === "revisions"}>
+            <button type="button" className={btn} onClick={() => toggleMenu("revisions")} aria-expanded={menu === "revisions"}>
               Revisões
             </button>
-            {menu === "revisions" && <RevisionsMenu documentId={documentId} onClose={() => setMenu(null)} />}
+            <AnimatePresence>{menu === "revisions" && <RevisionsMenu documentId={documentId} onClose={() => setMenu(null)} />}</AnimatePresence>
           </div>
-          <button
-            type="button"
-            className={`${btn} hover:!border-bad hover:!text-bad`}
-            onClick={() => {
-              if (!window.confirm("Excluir este documento e todas as revisões? As peças já renderizadas continuam em Publicar.")) return;
-              startDelete(async () => void (await deleteDocumentAction(documentId)));
-            }}
-          >
-            Excluir
-          </button>
           <div className="relative">
-            <button
-              type="button"
-              className="h-8 px-4 bg-signal text-cbm-black text-[10px] font-display font-semibold uppercase tracking-[0.12em] hover:bg-signal-dark"
-              onClick={() => setMenu((m) => (m === "render" ? null : "render"))}
-              aria-expanded={menu === "render"}
-            >
+            <button type="button" className={iconBtn} onClick={() => toggleMenu("more")} aria-expanded={menu === "more"} aria-haspopup="menu" aria-label="Mais ações" title="Mais ações">
+              <MoreHorizontal size={16} aria-hidden />
+            </button>
+            <AnimatePresence>
+              {menu === "more" && (
+                <MoreMenu
+                  projectSlug={project.slug}
+                  onClose={() => setMenu(null)}
+                  onDelete={() => {
+                    if (!window.confirm("Excluir este documento e todas as versões dele? As peças já renderizadas continuam em Entregar.")) return;
+                    startDelete(async () => void (await deleteDocumentAction(documentId)));
+                  }}
+                />
+              )}
+            </AnimatePresence>
+          </div>
+          <div className="relative ml-2">
+            <button type="button" className={buttonClass("primary", "sm")} onClick={() => toggleMenu("render")} aria-expanded={menu === "render"}>
               Renderizar
             </button>
-            {menu === "render" && (
-              <RenderMenu
-                kind={kindOf(doc)}
-                documentId={documentId}
-                onJob={(id) => {
-                  setJobId(id);
-                  setMenu(null);
-                }}
-              />
-            )}
+            <AnimatePresence>
+              {menu === "render" && (
+                <RenderMenu
+                  kind={kindOf(doc)}
+                  documentId={documentId}
+                  onJob={(id) => {
+                    setJobId(id);
+                    setMenu(null);
+                  }}
+                />
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </header>
@@ -415,9 +477,10 @@ function StudioShell({ documentId, name: initialName, project, assets: allAssets
                 type="button"
                 aria-selected={tab === id}
                 onClick={() => setTab(id)}
-                className={`flex-1 h-10 text-[12px] ${tab === id ? "text-cbm-white border-b-2 border-accent -mb-px" : "text-cbm-gray-400 hover:text-cbm-gray-100"}`}
+                className={`relative flex-1 h-10 text-[12px] transition-colors ${tab === id ? "text-cbm-white" : "text-cbm-gray-400 hover:text-cbm-gray-100"}`}
               >
                 {text}
+                {tab === id && <motion.span layoutId="studio-left-tab" className="absolute inset-x-0 -bottom-px h-0.5 bg-cbm-white" transition={{ duration: DURATION.quick, ease: EASE_OUT }} />}
               </button>
             ))}
           </div>
@@ -428,13 +491,13 @@ function StudioShell({ documentId, name: initialName, project, assets: allAssets
           <div className="flex-1 min-h-0 relative">
             <CanvasStage tokens={tokens} zoom={zoom} onFit={onFit} videos={videos} />
           </div>
-          {motion && playing && (
+          {motionDoc && playing && (
             <MotionPlayer
-              content={motion}
+              content={motionDoc}
               tokens={tokens}
               videos={videos}
-              audioSrc={motion.audio ? `/api/atlas/assets/${motion.audio.assetId}/file` : null}
-              audioVolume={motion.audio?.volume ?? 1}
+              audioSrc={motionDoc.audio ? `/api/atlas/assets/${motionDoc.audio.assetId}/file` : null}
+              audioVolume={motionDoc.audio?.volume ?? 1}
               startScene={activePage}
               onClose={(scene) => {
                 setPlaying(false);
@@ -442,25 +505,33 @@ function StudioShell({ documentId, name: initialName, project, assets: allAssets
               }}
             />
           )}
-          {sequence && <PageStrip tokens={tokens} onPlay={motion ? () => setPlaying(true) : undefined} />}
-          {jobId && (
-            <div className="absolute right-4 bottom-4 w-80 space-y-2">
-              <JobFollower key={jobId} jobId={jobId} />
-              <div className="flex justify-between text-[11px]">
-                <Link href={`/projects/${project.slug}/publish`} className="text-accent hover:text-accent-bright">
-                  Ver em Publicar →
-                </Link>
-                <button type="button" className="text-cbm-gray-400 hover:text-cbm-gray-200" onClick={() => setJobId(null)}>
-                  Fechar
-                </button>
-              </div>
-            </div>
-          )}
-          <p className="pointer-events-none absolute right-3 top-3 text-[10px] font-mono text-cbm-gray-400">{Math.round(scale * 100)}%</p>
+          {sequence && <PageStrip tokens={tokens} onPlay={motionDoc ? () => setPlaying(true) : undefined} />}
+          <AnimatePresence>
+            {jobId && (
+              <motion.div
+                key={jobId}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0, transition: { duration: DURATION.quick, ease: EASE_OUT } }}
+                exit={{ opacity: 0, transition: { duration: DURATION.instant, ease: "easeIn" } }}
+                className="absolute right-4 bottom-4 z-10 w-80 space-y-2 border border-line bg-base p-2"
+              >
+                <JobFollower jobId={jobId} />
+                <div className="flex items-center justify-between text-[12px]">
+                  <Link href={`/projects/${project.slug}/publish`} className="inline-flex items-center gap-1 text-accent hover:text-accent-bright">
+                    Ver em Entregar
+                    <ArrowRight size={14} aria-hidden />
+                  </Link>
+                  <button type="button" className="h-7 px-2 text-cbm-gray-400 hover:text-cbm-white" onClick={() => setJobId(null)}>
+                    Fechar
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </main>
 
         <aside className="w-80 shrink-0 border-l border-line overflow-y-auto" aria-label="Inspetor">
-          <Inspector tokens={tokens} assets={assets} audioAssets={audioAssets} profiles={profiles} latestRevision={latestProfileRevision} />
+          <Inspector tokens={tokens} assets={assets} audioAssets={audioAssets} profiles={profiles} latestRevision={latestProfileRevision} projectId={project.id} />
         </aside>
       </div>
     </div>

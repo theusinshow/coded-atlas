@@ -24,12 +24,12 @@ export function JobStatusBadge({ status }: { status: JobStatusValue }) {
 
 export const JOB_TYPE_LABEL: Record<string, string> = {
   capture: "Captura",
-  import: "Importação v1",
+  import: "Importação",
   render: "Render",
   plan: "Plano criativo",
   copy: "Redação do case",
   export: "Exportação",
-  diff: "Diff visual",
+  diff: "Comparação visual",
 };
 
 export function ProjectStatusBadge({ status }: { status: "active" | "archived" }) {
@@ -39,4 +39,46 @@ export function ProjectStatusBadge({ status }: { status: "active" | "archived" }
       Arquivado
     </span>
   );
+}
+
+const count = (v: unknown): number | null => (Array.isArray(v) ? v.length : typeof v === "number" ? v : null);
+const n = (value: number, one: string, many: string) => `${value.toLocaleString("pt-BR")} ${value === 1 ? one : many}`;
+
+/**
+ * Linha de resultado de um job: terminado mostra o RESULTADO (nunca a mensagem de
+ * progresso que sobrou, tipo "Salvando…" ao lado de Concluído); em andamento mostra
+ * o progresso; falha mostra o motivo.
+ */
+export function jobOutcome(job: { type: string; status: JobStatusValue; message: string | null; error: { message: string } | null; result: Record<string, unknown> | null }): string {
+  if (job.status === "failed") return `Falhou: ${job.error?.message ?? "erro desconhecido"}`;
+  if (job.status === "cancelled") return "Cancelado";
+  if (job.status !== "completed") return job.message ?? (job.status === "queued" ? "Na fila" : "Em execução");
+  const r = job.result ?? {};
+  switch (job.type) {
+    case "capture": {
+      const c = count(r.assetIds);
+      return c !== null ? `${n(c, "imagem capturada", "imagens capturadas")}${r.authenticated ? " · com login" : ""}` : "Captura concluída";
+    }
+    case "import": {
+      const created = count(r.created) ?? 0;
+      const refreshed = count(r.refreshed) ?? 0;
+      return created + refreshed > 0 ? `${n(created + refreshed, "projeto importado", "projetos importados")}` : "Biblioteca já estava em dia";
+    }
+    case "render": {
+      const c = count(r.count) ?? count(r.outputIds);
+      return c !== null ? n(c, "arquivo gerado", "arquivos gerados") : "Render concluído";
+    }
+    case "plan":
+      return "Plano pronto";
+    case "copy":
+      return "Textos do case escritos";
+    case "export": {
+      const c = count(r.files);
+      return c !== null ? `Entrega pronta · ${n(c, "arquivo", "arquivos")}` : "Entrega pronta";
+    }
+    case "diff":
+      return typeof r.percent === "number" ? `${r.percent.toLocaleString("pt-BR")}% diferente` : "Comparação pronta";
+    default:
+      return "Concluído";
+  }
 }

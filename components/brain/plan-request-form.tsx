@@ -12,15 +12,15 @@ export interface BrainBadgeInfo {
   model: string | null;
 }
 
-/** Quem vai pensar o plano — sempre explícito (IA ou regras determinísticas). */
+/** Quem vai pensar o plano — sempre explícito (IA ou regras do Atlas). */
 export function BrainBadge({ info }: { info: BrainBadgeInfo }) {
   return info.enabled ? (
-    <span className="inline-flex items-center gap-1.5 border border-accent/50 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.22em] text-accent">
-      Atlas Brain · {info.model}
+    <span className="text-[12px] text-cbm-gray-200" title={info.model ? `Modelo: ${info.model}` : undefined}>
+      Com Atlas Brain (IA)
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1.5 border border-line px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400" title="Defina OPENAI_API_KEY para ligar a IA">
-      Regras do Atlas · IA desligada
+    <span className="text-[12px] text-cbm-gray-400" title="A IA liga em Ajustes">
+      IA desligada: regras do Atlas
     </span>
   );
 }
@@ -43,24 +43,28 @@ export function PlanRequestForm({ projectId, slug, brain, directions = [] }: { p
         <legend className={LABEL_CLASS}>Objetivo</legend>
         <div className="grid grid-cols-2 gap-2">
           {(Object.keys(CREATIVE_GOALS) as CreativeGoal[]).map((id) => (
-            <label key={id} className={`cursor-pointer border px-3 py-2.5 transition-colors ${goal === id ? "border-accent bg-accent/5" : "border-line hover:border-cbm-gray-400"}`}>
+            <label
+              key={id}
+              className={`block cursor-pointer border px-3 py-2.5 transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-signal ${goal === id ? "border-cbm-white" : "border-line hover:border-cbm-gray-400"}`}
+            >
               <input type="radio" name="goal" value={id} checked={goal === id} onChange={() => setGoal(id)} className="sr-only" />
               <span className={`block text-[13px] ${goal === id ? "text-cbm-white" : "text-cbm-gray-100"}`}>{CREATIVE_GOALS[id].label}</span>
-              <span className="block text-[11px] text-cbm-gray-400 leading-snug">{CREATIVE_GOALS[id].hint}</span>
+              <span className="block text-[12px] text-cbm-gray-400 leading-snug mt-0.5">{CREATIVE_GOALS[id].hint}</span>
             </label>
           ))}
         </div>
       </fieldset>
       <fieldset>
-        <legend className={LABEL_CLASS}>Formatos (opcional — padrão do objetivo)</legend>
-        <div className="flex flex-wrap gap-x-4 gap-y-2">
+        <legend className={LABEL_CLASS}>Formatos</legend>
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
           {FORMAT_IDS.map((f) => (
-            <label key={f} className="flex items-center gap-1.5 text-[12px] text-cbm-gray-200">
+            <label key={f} className="flex items-center gap-2 min-h-10 sm:min-h-8 text-[13px] text-cbm-gray-200">
               <input type="checkbox" name="formats" value={f} />
               {FORMATS[f].label}
             </label>
           ))}
         </div>
+        <p className="text-[12px] text-cbm-gray-400 mt-1">Opcional: sem escolha, vale o padrão do objetivo.</p>
       </fieldset>
       {directions.length > 0 && (
         <div>
@@ -68,7 +72,7 @@ export function PlanRequestForm({ projectId, slug, brain, directions = [] }: { p
             Seguir uma direção salva
           </label>
           <select id="plan-direction" name="directionId" defaultValue="" className={INPUT_CLASS}>
-            <option value="">Nenhuma — o Atlas decide</option>
+            <option value="">Nenhuma (o Atlas decide)</option>
             {directions.map((d) => (
               <option key={d.id} value={d.id}>
                 {d.name}
@@ -77,7 +81,7 @@ export function PlanRequestForm({ projectId, slug, brain, directions = [] }: { p
           </select>
         </div>
       )}
-      <div className="grid grid-cols-[1fr_7rem] gap-3">
+      <div className="grid grid-cols-[minmax(0,1fr)_6rem] gap-3">
         <div>
           <label htmlFor="plan-notes" className={LABEL_CLASS}>
             Observações
@@ -89,7 +93,7 @@ export function PlanRequestForm({ projectId, slug, brain, directions = [] }: { p
             Peças
           </label>
           <select id="plan-max" name="maxItems" defaultValue="" className={INPUT_CLASS}>
-            <option value="">Padrão</option>
+            <option value="">Auto</option>
             {[1, 2, 3, 4, 5, 6].map((n) => (
               <option key={n} value={n}>
                 {n}
@@ -98,7 +102,7 @@ export function PlanRequestForm({ projectId, slug, brain, directions = [] }: { p
           </select>
         </div>
       </div>
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <Button variant="primary" type="submit" disabled={pending}>
           Pedir plano
         </Button>

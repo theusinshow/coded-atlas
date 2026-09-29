@@ -9,7 +9,7 @@ const MOBILE_ASPECT = 390 / 844;
 export const editorialSplit: CompositionDefinition = {
   id: "editorial-split",
   version: 1,
-  name: "Editorial Split",
+  name: "Editorial dividido",
   family: "editorial",
   description: "Texto e imagem lado a lado, como uma página de revista. Bom para apresentar o projeto.",
   formats: FORMAT_IDS,
@@ -70,7 +70,7 @@ export const editorialSplit: CompositionDefinition = {
 export const singleFeature: CompositionDefinition = {
   id: "single-feature",
   version: 1,
-  name: "Single Feature",
+  name: "Recurso em destaque",
   family: "feature",
   description: "Uma seção do site em destaque, com legenda. Para contar um recurso por vez.",
   formats: FORMAT_IDS,
@@ -117,7 +117,7 @@ export const singleFeature: CompositionDefinition = {
 export const uiDetailsGrid: CompositionDefinition = {
   id: "ui-details-grid",
   version: 1,
-  name: "UI Details Grid",
+  name: "Grade de detalhes",
   family: "detail",
   description: "Grade de recortes da interface: mostra o cuidado nos detalhes.",
   formats: FORMAT_IDS,
@@ -174,7 +174,7 @@ export const uiDetailsGrid: CompositionDefinition = {
 export const mobileStack: CompositionDefinition = {
   id: "mobile-stack",
   version: 1,
-  name: "Mobile Stack",
+  name: "Celulares em escada",
   family: "mobile",
   description: "Telas do celular lado a lado, em escada. A versão mobile em primeiro plano.",
   formats: FORMAT_IDS,

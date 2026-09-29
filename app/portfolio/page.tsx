@@ -4,9 +4,11 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { OutputCard } from "@/components/create/output-card";
-import { ExportForm } from "@/components/publish/export-forms";
-import { ExportHistory, PickOutput } from "@/components/publish/export-history";
-import { EmptyState, PageHeader, Panel, SectionTitle } from "@/components/ui/primitives";
+import { cleanOutputLabel, commonLabelPrefix, withoutPrefix, withoutSegment } from "@/components/media/labels";
+import type { Output } from "@/src/core/assets/output";
+import { ExportForm, SelectAllButton } from "@/components/publish/export-forms";
+import { ExportHistory } from "@/components/publish/export-history";
+import { EmptyState, LinkButton, PageHeader, SectionTitle } from "@/components/ui/primitives";
 import { getAtlasRuntime } from "@/src/infrastructure/runtime";
 import { destinationStatus } from "@/src/modules/publish/export-service";
 import { JobIdSchema } from "@/src/shared/id";
@@ -16,9 +18,27 @@ export const metadata: Metadata = { title: "Portfólio — Coded Atlas" };
 const FORM_ID = "portfolio-form";
 
 /**
- * Portfólio (2.14): escolher peças de vários projetos e exportar tudo de uma vez —
- * uma pasta por projeto + `portfolio.json` com os mesmos campos do manifesto do v1
- * (consumido pelo site), agora com as peças escolhidas e o case web.
+ * Título de cada peça na seção do projeto: sem o nome do projeto (já está no
+ * cabeçalho) nem o prefixo repetido de um mesmo render ("Kit de portfólio · …").
+ */
+function titles(outputs: Output[], projectName: string): Map<string, string> {
+  const byJob = new Map<string, Output[]>();
+  for (const o of outputs) if (o.jobId) byJob.set(o.jobId, [...(byJob.get(o.jobId) ?? []), o]);
+  const result = new Map<string, string>();
+  for (const o of outputs) {
+    const label = withoutSegment(cleanOutputLabel(o.label), projectName);
+    const siblings = o.jobId ? (byJob.get(o.jobId) ?? []) : [];
+    const prefix = commonLabelPrefix(siblings.map((s) => withoutSegment(cleanOutputLabel(s.label), projectName)));
+    const rest = withoutPrefix(label, prefix);
+    result.set(o.id, rest.charAt(0).toUpperCase() + rest.slice(1));
+  }
+  return result;
+}
+
+/**
+ * Portfólio (2.14): marcar peças de vários projetos e exportar tudo de uma vez —
+ * uma pasta por projeto + `portfolio.json` com os campos do manifesto que o site
+ * consome. A seleção é por cartão; a barra de exportar aparece com a primeira marca.
  */
 export default async function PortfolioPage() {
   const { repos, exportDeps } = await getAtlasRuntime();
@@ -30,55 +50,54 @@ export default async function PortfolioPage() {
   }
   const history = await repos.exports.listByProject(null);
   const jobStatus: Record<string, string> = {};
-  for (const e of history) if (e.jobId && (e.status === "queued" || e.status === "running")) jobStatus[e.jobId] = (await repos.jobs.getById(JobIdSchema.parse(e.jobId)))?.status ?? "failed";
+  for (const e of history)
+    if (e.jobId && (e.status === "queued" || e.status === "running")) jobStatus[e.jobId] = (await repos.jobs.getById(JobIdSchema.parse(e.jobId)))?.status ?? "failed";
 
   return (
-    <main className="max-w-6xl mx-auto px-6 py-12 space-y-10">
+    <main className="mx-auto max-w-6xl space-y-10 px-4 py-10 sm:px-6 sm:py-12">
       <PageHeader
-        eyebrow="Portfólio"
-        title="Exportar portfólio"
-        description="Escolha as peças de cada projeto. A exportação monta uma pasta por projeto e um portfolio.json pronto para o site — nada sai sem o seu clique."
+        title="Portfólio"
+        description="Marque as peças de cada projeto e exporte tudo de uma vez."
+        actions={groups.length > 0 ? <SelectAllButton formId={FORM_ID} /> : undefined}
       />
 
       {groups.length === 0 ? (
         <EmptyState
           title="Nenhuma peça final ainda"
           action={
-            <Link href="/projects" className="text-[13px] text-accent">
-              Ir para os projetos →
-            </Link>
+            <LinkButton href="/projects" size="sm">
+              Ir para os projetos
+            </LinkButton>
           }
-        >
-          Renderize peças, kits ou cases nos projetos — elas aparecem aqui para compor o portfólio.
-        </EmptyState>
+        />
       ) : (
-        <>
-          <Panel className="p-4">
-            <ExportForm formId={FORM_ID} mode="portfolio" destinations={destinationStatus(exportDeps)} defaultName="Portfólio Coded by M" />
-          </Panel>
-          {groups.map(({ project, outputs }) => (
-            <section key={project.id} aria-labelledby={`p-${project.id}`} className="space-y-3" data-portfolio-project={project.slug}>
+        groups.map(({ project, outputs }) => {
+          const names = titles(outputs, project.name);
+          return (
+            <section key={project.id} aria-labelledby={`p-${project.id}`} data-portfolio-project={project.slug}>
               <SectionTitle
                 id={`p-${project.id}`}
                 aside={
-                  <Link href={`/projects/${project.slug}/publish`} className="text-[11px] text-cbm-gray-400 hover:text-cbm-gray-200">
-                    Abrir em Publicar →
+                  <Link
+                    href={`/projects/${project.slug}/publish`}
+                    className="inline-flex h-10 items-center text-[12px] text-cbm-gray-400 transition-colors hover:text-cbm-white sm:h-8"
+                  >
+                    Abrir em Entregar
                   </Link>
                 }
               >
                 {project.name} ({outputs.length})
               </SectionTitle>
-              <ul className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-4 items-start">
+              <ul className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-4 lg:grid-cols-6">
                 {outputs.map((o) => (
-                  <li key={o.id} className="space-y-1">
-                    <OutputCard output={o} compact />
-                    <PickOutput formId={FORM_ID} outputId={o.id} />
+                  <li key={o.id}>
+                    <OutputCard output={o} compact selectFor={FORM_ID} title={names.get(o.id)} />
                   </li>
                 ))}
               </ul>
             </section>
-          ))}
-        </>
+          );
+        })
       )}
 
       {history.length > 0 && (
@@ -87,6 +106,8 @@ export default async function PortfolioPage() {
           <ExportHistory records={history} jobStatus={jobStatus} />
         </section>
       )}
+
+      {groups.length > 0 && <ExportForm formId={FORM_ID} mode="portfolio" destinations={destinationStatus(exportDeps)} defaultName="Portfólio Coded by M" />}
     </main>
   );
 }

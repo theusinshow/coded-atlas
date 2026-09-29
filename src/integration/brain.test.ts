@@ -155,7 +155,7 @@ describe("Atlas Brain: plano criativo", () => {
     const plan = await generatePlan(brainDeps({ gateway }), project.id, { request: { goal: "launch-post", notes: "foco em mobile", formats: [], maxItems: 2 }, parentId: null }, run);
     expect(plan).toMatchObject({ source: "brain", model: "fake-luna", direction: { accent: "#e63946", styleMode: "hybrid" } });
     expect(plan.items[0]).toMatchObject({ compositionId: "desktop-mobile", variant: "right", bindings: { desktop: { assetId: desktop.id }, mobile: { assetId: mobile.id }, title: { text: "Novo site no ar" } } });
-    expect(plan.warnings.some((w) => w.includes("preenchido(s) automaticamente"))).toBe(true);
+    expect(plan.warnings.some((w) => /preenchidos? automaticamente/.test(w))).toBe(true);
     // Prompt: regras estáveis primeiro, imagens da lista curta, pedido com as observações.
     const request = gateway.calls[0];
     expect(request.messages[0].role).toBe("developer");

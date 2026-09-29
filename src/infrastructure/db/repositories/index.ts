@@ -6,6 +6,7 @@ import { SqliteCompositionInstanceRepository } from "./composition-instance-repo
 import { SqliteCreativeDirectionRepository, SqliteCreativeMemoryRepository } from "./creative-repositories";
 import { SqliteCreativeDocumentRepository } from "./creative-document-repository";
 import { SqliteExportRepository } from "./export-repository";
+import { SqliteSocialPostRepository } from "./social-post-repository";
 import { SqliteJobRepository } from "./job-repository";
 import { SqliteLegacyImportLedger } from "./legacy-ledger-repository";
 import { SqliteMediaKitRepository } from "./media-kit-repository";
@@ -32,6 +33,7 @@ export function createRepositories(db: AtlasDb) {
     directions: new SqliteCreativeDirectionRepository(db),
     kits: new SqliteMediaKitRepository(db),
     exports: new SqliteExportRepository(db),
+    socialPosts: new SqliteSocialPostRepository(db),
   };
 }
 

@@ -3,12 +3,14 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import type { Metadata } from "next";
+import { ArrowRight, ArrowUpRight, Check } from "lucide-react";
 import { AssetThumb } from "@/components/atlas/asset-image";
 import { SourcesPanel } from "@/components/atlas/sources-panel";
 import { VisualIdentity } from "@/components/atlas/visual-identity";
 import { IdentityEditor } from "@/components/creative/identity-editor";
-import { Panel, SectionTitle } from "@/components/ui/primitives";
-import { JOB_TYPE_LABEL, JobStatusBadge } from "@/components/ui/status";
+import { LABEL_CLASS, LinkButton, Panel, SectionTitle } from "@/components/ui/primitives";
+import { JOB_TYPE_LABEL, JobStatusBadge, jobOutcome } from "@/components/ui/status";
+import { relativeTime } from "@/components/ui/format";
 import { getAtlasRuntime } from "@/src/infrastructure/runtime";
 import { getProjectOverview } from "@/src/modules/projects/overview";
 import { nextStep, stepStatuses } from "@/src/modules/projects/next-step";
@@ -57,42 +59,44 @@ export default async function ProjectOverviewPage({ params }: Props) {
         <div className="aspect-video border border-line overflow-hidden">
           <AssetThumb id={o.cover?.id} alt={`Capa de ${o.project.name}`} width={1280} className="w-full h-full" />
         </div>
-        <div className="space-y-5">
+        <div className="min-w-0 space-y-5">
           {o.project.description && <p className="text-sm text-cbm-gray-200 leading-relaxed">{o.project.description}</p>}
           {url && (
-            <a href={url.locator} target="_blank" rel="noreferrer" className="block text-[13px] font-mono text-accent hover:text-accent-bright truncate">
-              {url.locator} ↗
+            <a href={url.locator} target="_blank" rel="noreferrer" className="flex min-h-10 min-w-0 items-center gap-1.5 text-[13px] text-accent hover:text-accent-bright sm:min-h-0">
+              <span className="truncate">{url.locator.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
+              <ArrowUpRight size={14} className="shrink-0" aria-hidden />
+              <span className="sr-only">(abre em nova aba)</span>
             </a>
           )}
           <div className="border border-line bg-surface p-5 space-y-3" data-next-step={next.step}>
-            <p className="text-[10px] font-medium uppercase tracking-[0.35em] text-signal/70">Próximo passo</p>
-            <p className="font-display text-lg font-bold text-cbm-white tracking-[-0.01em]">{next.title}</p>
+            <p className={`${LABEL_CLASS} !mb-0`}>Próximo passo</p>
+            <h2 className="text-[18px] font-semibold leading-snug text-cbm-white">{next.title}</h2>
             <p className="text-[13px] text-cbm-gray-400 leading-relaxed">{next.detail}</p>
-            <Link
-              href={hrefOf(next.href)}
-              className="inline-flex h-10 items-center bg-signal px-5 text-[11px] font-display font-semibold uppercase tracking-[0.12em] text-cbm-black hover:bg-signal-dark"
-            >
+            <LinkButton href={hrefOf(next.href)} variant="primary" className="max-sm:w-full">
               {next.cta}
-            </Link>
+            </LinkButton>
           </div>
           <ol className="grid grid-cols-3 gap-2" aria-label="Passos do projeto">
             {steps.map((st) => (
-              <li key={st.key}>
-                <Link href={hrefOf(st.href)} className="block h-full border border-line px-3 py-3 hover:border-cbm-gray-400 transition-colors" data-step={st.key} data-step-done={st.done}>
-                  <p className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400">
-                    <span className={`font-display text-[11px] font-semibold ${st.done ? "text-ok" : next.step === st.key ? "text-signal" : "text-cbm-gray-600"}`} aria-hidden>
-                      {st.done ? "✓" : st.number}
+              <li key={st.key} className="min-w-0">
+                <Link
+                  href={hrefOf(st.href)}
+                  className={`block h-full border px-3 py-3 transition-colors hover:border-cbm-gray-400 ${next.step === st.key ? "border-cbm-gray-600" : "border-line"}`}
+                  data-step={st.key}
+                  data-step-done={st.done}
+                >
+                  <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] font-medium uppercase tracking-[0.14em] text-cbm-gray-400 sm:tracking-[0.22em]">
+                    <span className={`grid h-4 w-4 shrink-0 place-items-center text-[11px] font-semibold tabular-nums ${st.done ? "text-ok" : next.step === st.key ? "text-cbm-white" : "text-cbm-gray-400"}`} aria-hidden>
+                      {st.done ? <Check size={14} /> : st.number}
                     </span>
-                    {st.label}
+                    <span>{st.label}</span>
+                    {st.done && <span className="sr-only">(feito)</span>}
                   </p>
                   <p className="mt-1.5 text-[12px] text-cbm-gray-200 leading-snug">{st.summary}</p>
                 </Link>
               </li>
             ))}
           </ol>
-          {o.project.origin === "legacy" && (
-            <p className="text-[12px] text-cbm-gray-400">Importado da biblioteca v1 (arquivos originais preservados em public/generated).</p>
-          )}
         </div>
       </section>
 
@@ -105,17 +109,25 @@ export default async function ProjectOverviewPage({ params }: Props) {
       </section>
 
       <div className="grid gap-10 lg:grid-cols-2">
-        <section aria-labelledby="origens">
+        <section aria-labelledby="origens" className="min-w-0">
           <SectionTitle id="origens">Origens</SectionTitle>
           <SourcesPanel projectId={o.project.id} sources={o.sources} />
         </section>
 
-        <section aria-labelledby="atividade">
-          <SectionTitle id="atividade" aside={<Link href="/jobs" className="text-[12px] text-cbm-gray-400 hover:text-cbm-gray-200">Todos os jobs</Link>}>
+        <section aria-labelledby="atividade" className="min-w-0">
+          <SectionTitle
+            id="atividade"
+            aside={
+              <Link href="/jobs" className="-my-2 inline-flex h-10 items-center gap-1 text-[12px] text-cbm-gray-400 hover:text-cbm-white sm:my-0 sm:h-8">
+                Ver atividade
+                <ArrowRight size={14} aria-hidden />
+              </Link>
+            }
+          >
             Atividade recente
           </SectionTitle>
           {o.recentJobs.length === 0 ? (
-            <p className="text-[13px] text-cbm-gray-400">Nenhum job ainda.</p>
+            <p className="text-[13px] text-cbm-gray-400">Nenhuma atividade ainda.</p>
           ) : (
             <Panel>
               <ul className="divide-y divide-line">
@@ -123,9 +135,13 @@ export default async function ProjectOverviewPage({ params }: Props) {
                   <li key={job.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
                     <div className="min-w-0">
                       <p className="text-[13px] text-cbm-gray-200">{JOB_TYPE_LABEL[job.type] ?? job.type}</p>
-                      <p className="text-[11px] text-cbm-gray-400 truncate">{job.error?.message ?? job.message ?? new Date(job.createdAt).toLocaleString("pt-BR")}</p>
+                      <p className={`text-[12px] truncate ${job.status === "failed" ? "text-bad" : "text-cbm-gray-400"}`}>
+                        {jobOutcome(job)} · {relativeTime(job.updatedAt)}
+                      </p>
                     </div>
-                    <JobStatusBadge status={job.status} />
+                    <div className="shrink-0">
+                      <JobStatusBadge status={job.status} />
+                    </div>
                   </li>
                 ))}
               </ul>

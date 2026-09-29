@@ -13,7 +13,7 @@ interface Props {
   params: Promise<{ documentId: string }>;
 }
 
-export const metadata: Metadata = { title: "Case · Coded Atlas" };
+export const metadata: Metadata = { title: "Case — Coded Atlas" };
 
 /** Editor do case em tela cheia (seções editoriais, página ao vivo). */
 export default async function CasePage({ params }: Props) {

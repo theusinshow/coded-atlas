@@ -309,3 +309,22 @@ Accepted (2026-09-29, owner request: "muitas páginas, quero uma navegação mai
 - **Global nav keeps two destinations** (Projetos, Portfólio). Jobs becomes an activity indicator, Ajustes becomes a gear, and Biblioteca is reached from Projetos and ⌘K.
 - **The eight project tabs become Visão geral · 1 Material · 2 Criar · 3 Entregar.** They follow the product loop (capture → create → deliver). Screens are grouped, not rewritten, and URLs stay stable, so links, bookmarks and e2e keep working.
 - **One recommended action.** The overview computes a single next step from the project state (a pure, tested function) instead of listing stats and generic recommendations.
+
+## ADR-047 — Social: a planner, never a publisher (3.2.D)
+
+Accepted (2026-09-29; owner chose the global planner).
+
+- A `SocialPost` (post, carousel, reel, story) references rendered Outputs from any project in slide order. It stores caption, hashtags, a planned day, a feed position and a status (draft → ready → posted). Migration `0010_social_posts`.
+- Instagram rules are pure, tested functions in `src/core/social/social-post.ts`: 2,200 characters, 30 hashtags, carousels of 2–10 items with one aspect ratio, 4:5–1.91:1 feed images, vertical reels and stories, story safe zones. Rule violations block "ready"; limits that Instagram tolerates are only warnings.
+- **Nothing is published or scheduled by the Atlas.** The owner downloads the pack (numbered pieces + `legenda.txt`), posts, and marks the post as posted. Missing pieces (project deleted) surface as a blocking error instead of breaking the planner.
+
+## ADR-048 — UI/UX pass: motion with meaning, no AI slop (3.2.A–C)
+
+Accepted (2026-09-29; owner: "fácil de usar, objetivo, mas muito bem feito, sem IA slop").
+
+- **Motion:** Motion (`motion/react`) behind `MotionConfig reducedMotion="user"`. It is used only for feedback, state and continuity: sliding nav/tab underlines (layoutId), panel and preview crossfades, list reorder, new render cards, selection bar, job status changes. Durations are 150–340 ms with an exponential ease-out and no bounce. useAnimations (Lottie) is used for rare feedback icons (copy → check, delete). Only free libraries are used: React Bits Pro is paid, and the free React Bits effects (aurora, glitch, particles) contradict the design system.
+- **Icons:** lucide-react. Unicode glyphs no longer stand in for icons.
+- **Copy:** Portuguese labels from one module (`components/ui/format.ts`: `plural`, `relativeTime`, `formatDuration`, asset titles). There is no jargon in the UI (v1, rev, job, worker, paths, env var names, `.json`). Composition and recipe names are Portuguese in their definitions. Finished jobs show their outcome (`jobOutcome`).
+- **Structure:** one red primary per screen, content before forms, secondary sections collapsed (`Collapsible`), a single `Breadcrumb` on detail pages, auto-applied filters, and a shared media card with whole-card selection plus a sticky action bar. The Studio and case editor show a "use a larger screen" state below 1024 px. The app has no horizontal scroll on mobile.
+- **Media performance:** video Outputs and Assets get cached poster thumbnails (FFmpeg frame → WebP), so grids never mount `<video>`.
+- **Process:** an independent audit (desktop and mobile screenshots of every page, with a style scan), followed by three parallel implementation passes with disjoint file ownership, one integration pass, e2e and a final screenshot round.

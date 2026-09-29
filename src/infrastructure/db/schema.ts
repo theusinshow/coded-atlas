@@ -394,3 +394,23 @@ export const exportsTable = sqliteTable(
   },
   (t) => [index("exports_project_idx").on(t.projectId)]
 );
+
+/** Social (3.2.D): posts planejados do Instagram — referenciam Outputs de qualquer projeto. */
+export const socialPosts = sqliteTable(
+  "social_posts",
+  {
+    id: text("id").primaryKey(),
+    kind: text("kind").notNull(),
+    status: text("status").notNull(),
+    title: text("title").notNull(),
+    outputIds: text("output_ids", { mode: "json" }).$type<string[]>().notNull(),
+    caption: text("caption").notNull(),
+    hashtags: text("hashtags", { mode: "json" }).$type<string[]>().notNull(),
+    plannedFor: text("planned_for"),
+    feedOrder: integer("feed_order").notNull(),
+    postedAt: text("posted_at"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => [index("social_posts_feed_idx").on(t.feedOrder)]
+);

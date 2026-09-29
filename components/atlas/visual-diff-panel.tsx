@@ -8,14 +8,13 @@ import { Button, FormError, INPUT_CLASS, LABEL_CLASS } from "@/components/ui/pri
 export interface DiffCandidate {
   id: string;
   label: string;
-  /** device + papel (viewport/fullpage/…): só pares do mesmo grupo fazem sentido. */
+  /** dispositivo + papel (tela/página inteira/…): só pares do mesmo grupo fazem sentido. */
   group: string;
 }
 
 /**
- * Diff visual: escolher "antes" e "depois" entre as capturas do projeto. O padrão
- * é a penúltima × a última captura do mesmo grupo (vigiar um site já entregue:
- * recapture e compare).
+ * Comparar capturas: escolher "antes" e "depois". O padrão é a penúltima × a última
+ * captura do mesmo grupo (vigiar um site já entregue: recapture e compare).
  */
 export function VisualDiffForm({ candidates }: { candidates: DiffCandidate[] }) {
   const router = useRouter();
@@ -28,7 +27,7 @@ export function VisualDiffForm({ candidates }: { candidates: DiffCandidate[] }) 
   const afterGroup = candidates.find((c) => c.id === after)?.group;
 
   if (!firstPair) {
-    return <p className="text-[12px] text-cbm-gray-400">Faça ao menos duas capturas do mesmo device para comparar (recapture o site e volte aqui).</p>;
+    return <p className="text-[13px] text-cbm-gray-400">Faça mais uma captura do mesmo dispositivo para comparar.</p>;
   }
 
   const options = (list: DiffCandidate[]) =>
@@ -44,8 +43,8 @@ export function VisualDiffForm({ candidates }: { candidates: DiffCandidate[] }) 
 
   return (
     <form action={action} className="space-y-3" data-diff-form>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div>
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
+        <div className="min-w-0">
           <label htmlFor="diff-before" className={LABEL_CLASS}>
             Antes
           </label>
@@ -53,7 +52,7 @@ export function VisualDiffForm({ candidates }: { candidates: DiffCandidate[] }) 
             {options(candidates.filter((c) => !afterGroup || c.group === afterGroup))}
           </select>
         </div>
-        <div>
+        <div className="min-w-0">
           <label htmlFor="diff-after" className={LABEL_CLASS}>
             Depois
           </label>
@@ -72,10 +71,10 @@ export function VisualDiffForm({ candidates }: { candidates: DiffCandidate[] }) 
             {options(candidates)}
           </select>
         </div>
+        <Button type="submit" disabled={pending || !before || !after || before === after} className="h-[42px]">
+          {pending ? "Enfileirando…" : "Comparar"}
+        </Button>
       </div>
-      <Button type="submit" disabled={pending || !before || !after || before === after}>
-        {pending ? "Enfileirando…" : "Comparar"}
-      </Button>
       <FormError message={state?.error} />
       {state?.jobId && <JobFollower key={state.jobId} jobId={state.jobId} onDone={() => router.refresh()} />}
     </form>

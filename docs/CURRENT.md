@@ -126,6 +126,11 @@ Delivered in 2.14 (Publish & Portfolio):
 
 - ✅ **Coded by M design system alignment** — done 2026-09-28 (ADR-045) (owner provided the canonical design system on 2026-09-28: `Coded by M — Design System.zip`, cbm-port@0.1.0). Map the Atlas UI and the "Coded by M" style mode of generated pieces to the real foundation tokens (colors, Satoshi/Panchang, radius 0, signal rarity, focus) through the Atlas semantic layer (`docs/DESIGN-SYSTEM.md`);
 - ✅ **Navigation simplification** — done 2026-09-29 (ADR-046) (owner request 2026-09-29, chose "3 passos"): global nav reduced to Projetos · Portfólio, plus search, an activity indicator and a settings gear. Each project becomes Visão geral · 1 Material · 2 Criar · 3 Entregar (grouping the 8 former tabs, same URLs) with a "Próximo passo" on the overview;
+- ✅ **3.2 — UI/UX pass + Social** — done 2026-09-29 (ADR-047, ADR-048) (authorized 2026-09-29; owner chose the global Instagram planner and free libraries only: Motion, React Bits free, useAnimations, no React Bits Pro):
+  - 3.2.A audit of every screen (UX problems + AI slop) by an independent design review;
+  - 3.2.B motion foundation (MotionConfig with reduced motion, feedback/continuity only: tab indicator, list/presence transitions, job status feedback);
+  - 3.2.C fixes on every screen from the audit;
+  - 3.2.D Social: `SocialPost` domain + migration, planner at `/social` (feed grid, stories, queue, caption/hashtags, pack download), global nav item;
 - bug fixes and hardening of what 2.1–2.14 delivered;
 - documentation and test improvements;
 - small polish items the owner reports.

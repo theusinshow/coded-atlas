@@ -170,14 +170,14 @@ export function CanvasStage({ tokens, zoom, onFit, videos }: { tokens: StyleToke
   return (
     <div
       ref={containerRef}
-      className="relative h-full w-full overflow-auto bg-[#08090b]"
+      className="relative h-full w-full overflow-auto bg-surface"
       onPointerDown={() => {
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
         select(null);
       }}
     >
       <div className="grid place-items-center" style={{ minWidth: "100%", minHeight: "100%", width: artboard.width * scale + 96, height: artboard.height * scale + 96 }}>
-        <div className="relative shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)]" style={{ width: artboard.width * scale, height: artboard.height * scale }} data-studio-artboard>
+        <div className="relative outline outline-1 outline-line" style={{ width: artboard.width * scale, height: artboard.height * scale }} data-studio-artboard>
           <div className="absolute left-0 top-0 origin-top-left pointer-events-none" style={{ width: artboard.width, height: artboard.height, transform: `scale(${scale})` }}>
             <ArtboardView artboard={artboard} tokens={tokens} mode="preview" resolveAsset={assetFileUrl} videos={videos} />
           </div>

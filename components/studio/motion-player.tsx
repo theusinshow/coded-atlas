@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { Pause, Play } from "lucide-react";
 import type { StyleTokens } from "@/src/core/creative/tokens";
 import { sceneAt, totalDurationMs, type MotionContent } from "@/src/core/motion/motion";
 import { MotionFrameView } from "@/src/render/motion-view";
@@ -105,10 +106,10 @@ export function MotionPlayer({
   const current = sceneAt(content, time);
 
   return (
-    <div className="absolute inset-0 z-10 flex flex-col bg-[#050507]" role="dialog" aria-label="Preview do vídeo" data-motion-player>
+    <div className="absolute inset-0 z-10 flex flex-col bg-surface" role="dialog" aria-label="Preview do vídeo" data-motion-player>
       <div ref={ref} className="flex-1 min-h-0 grid place-items-center overflow-hidden">
         {scale > 0 && (
-          <div ref={frameRef} style={{ width: width * scale, height: height * scale }} className="relative shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)]">
+          <div ref={frameRef} style={{ width: width * scale, height: height * scale }} className="relative outline outline-1 outline-line">
             <div className="absolute left-0 top-0 origin-top-left" style={{ width, height, transform: `scale(${scale})` }}>
               <MotionFrameView content={content} timeMs={time} tokens={tokens} resolveAsset={assetFileUrl} videos={videos} />
             </div>
@@ -117,8 +118,8 @@ export function MotionPlayer({
       </div>
       {audioSrc && <audio ref={audioRef} src={audioSrc} preload="auto" />}
       <div className="shrink-0 flex items-center gap-3 border-t border-line px-3 py-2">
-        <button type="button" onClick={() => setPlaying((p) => !p)} className="h-8 w-16 border border-line text-cbm-white text-[12px] font-medium hover:border-cbm-gray-400" aria-label={playing ? "Pausar" : "Tocar"}>
-          {playing ? "❚❚" : "▶"}
+        <button type="button" onClick={() => setPlaying((p) => !p)} className="grid h-8 w-10 place-items-center border border-line text-cbm-white transition-colors hover:border-cbm-gray-400" aria-label={playing ? "Pausar" : "Tocar"}>
+          {playing ? <Pause size={14} aria-hidden /> : <Play size={14} aria-hidden />}
         </button>
         <input
           type="range"
@@ -136,17 +137,17 @@ export function MotionPlayer({
         <span className="text-[11px] font-mono tabular-nums text-cbm-gray-400 w-32 text-right">
           {clock(time)} / {clock(total)}
         </span>
-        <span className="text-[11px] font-mono text-cbm-gray-400">
-          cena {current.index + 1}/{content.scenes.length}
+        <span className="text-[12px] text-cbm-gray-400 tabular-nums whitespace-nowrap">
+          Cena {current.index + 1} de {content.scenes.length}
         </span>
-        <label className="flex items-center gap-1.5 text-[11px] text-cbm-gray-400">
-          <input type="checkbox" checked={loop} onChange={(e) => setLoop(e.target.checked)} /> repetir
+        <label className="flex h-8 items-center gap-1.5 text-[12px] text-cbm-gray-400 cursor-pointer">
+          <input type="checkbox" checked={loop} onChange={(e) => setLoop(e.target.checked)} /> Repetir
         </label>
-        <button type="button" onClick={() => onClose(current.index)} className="h-8 px-3 border border-line text-[12px] text-cbm-gray-200 hover:text-cbm-white">
+        <button type="button" onClick={() => onClose(current.index)} className="h-8 px-3 border border-line text-[12px] text-cbm-gray-200 transition-colors hover:border-cbm-gray-400 hover:text-cbm-white">
           Editar cena
         </button>
       </div>
-      <p className="px-3 pb-2 text-[10px] text-cbm-gray-400">Preview no navegador — o arquivo de vídeo final sai do render (Espaço pausa, Esc volta a editar).</p>
+      <p className="px-3 pb-2 text-[11px] text-cbm-gray-400">Prévia no navegador — o vídeo final sai do render. Espaço pausa, Esc volta a editar.</p>
     </div>
   );
 }

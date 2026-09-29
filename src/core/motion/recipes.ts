@@ -32,7 +32,7 @@ export interface VideoRecipe {
 export const VIDEO_RECIPES: readonly VideoRecipe[] = [
   {
     id: "website-reveal-reel",
-    name: "Website Reveal Reel",
+    name: "Revelação do site",
     description: "Abertura com o nome, o site no navegador, desktop + mobile, a página rolando e a assinatura.",
     formats: ["story-9x16", "post-4x5", "post-1x1", "landscape-16x9"],
     durationRange: [14, 22],
@@ -58,7 +58,7 @@ export const VIDEO_RECIPES: readonly VideoRecipe[] = [
   },
   {
     id: "mobile-first",
-    name: "Mobile first",
+    name: "Celular primeiro",
     description: "Para sites em que o celular é a estrela: telas em escada, devices flutuando e o scroll no mobile.",
     formats: ["story-9x16", "post-4x5"],
     durationRange: [11, 18],

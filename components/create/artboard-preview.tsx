@@ -36,13 +36,38 @@ export function ArtboardPreview({
   return (
     <div ref={ref} className={`relative overflow-hidden bg-surface-2 ${className}`} style={{ aspectRatio: `${artboard.width} / ${artboard.height}` }}>
       {width > 0 && (
-        <div
-          className="absolute left-0 top-0 origin-top-left"
-          style={{ width: artboard.width, height: artboard.height, transform: `scale(${width / artboard.width})` }}
-        >
+        <div className="absolute left-0 top-0 origin-top-left" style={{ width: artboard.width, height: artboard.height, transform: `scale(${width / artboard.width})` }}>
           <ArtboardView artboard={artboard} tokens={tokens} mode={mode} resolveAsset={assetFileUrl} videos={videos} />
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * A mesma prévia dentro de uma moldura de proporção fixa (grades uniformes com
+ * formatos misturados): a peça fica inteira, centrada, sem cortar.
+ */
+export function FramedArtboard({
+  artboard,
+  tokens,
+  ratio = 1,
+  className = "",
+  videos,
+}: {
+  artboard: Artboard;
+  tokens: StyleTokens;
+  /** Largura ÷ altura da moldura. */
+  ratio?: number;
+  className?: string;
+  videos?: ReadonlySet<string>;
+}) {
+  const fit = Math.min(1, artboard.width / artboard.height / ratio);
+  return (
+    <div className={`flex items-center justify-center bg-surface-2 ${className}`} style={{ aspectRatio: ratio }}>
+      <div style={{ width: `${fit * 100}%` }}>
+        <ArtboardPreview artboard={artboard} tokens={tokens} videos={videos} />
+      </div>
     </div>
   );
 }

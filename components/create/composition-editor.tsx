@@ -1,4 +1,6 @@
 "use client";
+import { AnimatePresence, motion } from "motion/react";
+import { Trash2 } from "lucide-react";
 import { useMemo, useState, useTransition } from "react";
 import { deleteInstanceAction, renderInstanceAction, saveInstanceAction, type InstancePatch } from "@/app/actions/create";
 import { animateInstanceAction, materializeInstanceAction } from "@/app/actions/studio";
@@ -9,6 +11,8 @@ import type { VisualProfile } from "@/src/core/creative/visual-profile";
 import { AssetThumb } from "@/components/atlas/asset-image";
 import { JobFollower } from "@/components/atlas/job-follower";
 import { Button, FormError, INPUT_CLASS, LABEL_CLASS } from "@/components/ui/primitives";
+import { assetTitle } from "@/components/ui/format";
+import { DURATION, EASE_OUT } from "@/components/ui/motion";
 import { lintArtboard } from "@/src/core/creative/guardrails";
 import { CreativeIssues } from "@/components/creative/creative-issues";
 import { ArtboardPreview } from "./artboard-preview";
@@ -73,8 +77,8 @@ function Choice<T extends string>({ label, value, options, onChange }: { label: 
             aria-checked={value === o.id}
             title={o.hint}
             onClick={() => onChange(o.id)}
-            className={`h-8 px-2.5 text-[12px] border transition-colors ${
-              value === o.id ? "border-accent text-cbm-white" : "border-line text-cbm-gray-400 hover:text-cbm-gray-100"
+            className={`h-10 sm:h-8 px-3 text-[12px] border transition-colors ${
+              value === o.id ? "border-cbm-white text-cbm-white" : "border-line text-cbm-gray-400 hover:text-cbm-white hover:border-cbm-gray-400"
             }`}
           >
             {o.label}
@@ -91,15 +95,21 @@ function AssetSlotField({ slot, value, assets, onChange }: { slot: SlotDefinitio
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-3">
-        <AssetThumb id={current?.id} alt={current?.label ?? slot.label} width={320} className="w-20 aspect-[16/10] border border-line shrink-0" />
+        <AssetThumb id={current?.id} alt={current ? assetTitle(current) : slot.label} width={320} className="w-20 aspect-[16/10] border border-line shrink-0" />
         <div className="min-w-0 flex-1">
           <p className="text-[12px] text-cbm-gray-200 truncate">
             {slot.label}
-            {slot.required && <span className="text-accent"> *</span>}
+            {slot.required && <span className="text-cbm-gray-400"> (obrigatório)</span>}
           </p>
-          <p className="text-[11px] text-cbm-gray-400 truncate">{current ? (current.label ?? current.kind) : "vazio"}</p>
+          <p className="text-[12px] text-cbm-gray-400 truncate">{current ? assetTitle(current) : "Nenhuma imagem"}</p>
         </div>
-        <button type="button" onClick={() => setOpen((v) => !v)} className="text-[11px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400 hover:text-accent" aria-expanded={open}>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="h-10 sm:h-8 px-3 border border-line text-[12px] text-cbm-gray-200 hover:border-cbm-gray-400 hover:text-cbm-white transition-colors shrink-0"
+          aria-expanded={open}
+          aria-label={open ? `Fechar a escolha de ${slot.label}` : `Trocar ${slot.label}`}
+        >
           {open ? "Fechar" : "Trocar"}
         </button>
       </div>
@@ -123,7 +133,7 @@ function AssetSlotField({ slot, value, assets, onChange }: { slot: SlotDefinitio
   );
 }
 
-/** Editor de uma composição: preview ao vivo + inspetor rápido (sem Canvas). */
+/** Editor de uma composição: prévia ao vivo + ajustes rápidos (sem o Studio). */
 export function CompositionEditor({ instance, assets, profile, latestProfile }: Props) {
   // A receita tem uma função `build`: não atravessa a fronteira servidor→cliente, é resolvida aqui.
   const definition = instanceDefinition(instance);
@@ -138,6 +148,7 @@ function Editor({ instance, definition, assets, profile, latestProfile }: Props 
   const [jobId, setJobId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [typing, setTyping] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const assetMap = useMemo(() => new Map(assets.map((a) => [a.id, a])), [assets]);
@@ -190,7 +201,7 @@ function Editor({ instance, definition, assets, profile, latestProfile }: Props 
   }
 
   function remove() {
-    if (!window.confirm("Excluir esta composição? As peças já renderizadas continuam em Publicar.")) return;
+    if (!window.confirm("Excluir esta peça? Os arquivos já renderizados continuam em Entregar.")) return;
     startTransition(async () => {
       const result = await deleteInstanceAction(instance.id);
       if (result && !result.ok) setError(result.error);
@@ -198,21 +209,33 @@ function Editor({ instance, definition, assets, profile, latestProfile }: Props 
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_22rem] items-start">
-      <section aria-label="Preview" className="space-y-3 lg:sticky lg:top-6">
-        <div className="bg-[#0a0b0e] border border-line p-4 sm:p-8 grid place-items-center">
-          <div className="w-full" style={{ maxWidth: `min(100%, calc(70vh * ${size.width} / ${size.height}))` }}>
-            <ArtboardPreview {...model} className="shadow-2xl shadow-black/50" />
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] items-start">
+      <section aria-label="Prévia" className="space-y-3 lg:sticky lg:top-6 min-w-0">
+        <div className="bg-surface border border-line p-4 sm:p-8 grid place-items-center overflow-hidden">
+          {/* Formato, variante ou estilo trocados: a prévia antiga some enquanto a nova aparece (mesma célula da grade). */}
+          <div className="grid w-full place-items-center [&>*]:[grid-area:1/1]">
+            <AnimatePresence initial={false}>
+              <motion.div
+                key={`${draft.formatId}|${draft.variant}|${draft.styleMode}|${activeProfile?.revision ?? 0}`}
+                className="w-full"
+                style={{ maxWidth: `min(100%, calc(70vh * ${size.width} / ${size.height}))` }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1, transition: { duration: DURATION.instant, ease: EASE_OUT } }}
+                exit={{ opacity: 0, transition: { duration: DURATION.instant, ease: "easeIn" } }}
+              >
+                <ArtboardPreview {...model} />
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
-        <p className="text-[11px] font-mono text-cbm-gray-400">
-          {size.label} · {size.width}×{size.height}px · {definition.name} v{definition.version}
-          {activeProfile ? ` · identidade rev ${activeProfile.revision}` : " · sem identidade capturada"}
+        <p className="text-[12px] text-cbm-gray-400">
+          {size.label} · {size.width}×{size.height}
+          {!activeProfile && " · sem identidade do site (cores da Coded by M)"}
         </p>
         <CreativeIssues issues={lintArtboard(model.artboard, model.tokens)} />
       </section>
 
-      <section aria-label="Inspetor" className="space-y-6">
+      <section aria-label="Ajustes da peça" className="space-y-6 min-w-0">
         <div>
           <label htmlFor="instance-name" className={LABEL_CLASS}>
             Nome
@@ -226,31 +249,33 @@ function Editor({ instance, definition, assets, profile, latestProfile }: Props 
 
         <div>
           <span className={LABEL_CLASS}>Cor de destaque</span>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             <input
               type="color"
               aria-label="Cor de destaque"
               value={draft.primary ?? model.tokens.colors.primary}
               onChange={(e) => update({ primary: e.target.value.toLowerCase() })}
-              className="h-8 w-12 bg-transparent border border-line cursor-pointer"
+              className="h-10 w-12 bg-transparent border border-line cursor-pointer"
             />
-            <span className="text-[12px] font-mono text-cbm-gray-400">{draft.primary ?? `${model.tokens.colors.primary} (automática)`}</span>
-            {draft.primary && (
-              <button type="button" onClick={() => update({ primary: undefined })} className="ml-auto text-[11px] text-cbm-gray-400 hover:text-cbm-gray-200">
-                Automática
-              </button>
+            {draft.primary ? (
+              <>
+                <span className="text-[12px] font-mono text-cbm-gray-200">{draft.primary}</span>
+                <button type="button" onClick={() => update({ primary: undefined })} className="ml-auto h-10 sm:h-8 text-[12px] text-accent hover:text-accent-bright">
+                  Voltar para automática
+                </button>
+              </>
+            ) : (
+              <span className="text-[12px] text-cbm-gray-400">Automática (da identidade)</span>
             )}
           </div>
         </div>
 
         {latestProfile && profile && latestProfile.revision !== profile.revision && (
           <div className="border border-line bg-surface px-3 py-2.5 text-[12px] text-cbm-gray-200 space-y-1.5">
-            <p>
-              Esta peça usa a identidade rev {profile.revision}; a captura mais nova gerou a rev {latestProfile.revision}.
-            </p>
-            <label className="flex items-center gap-2 text-cbm-gray-400">
+            <p>A identidade do site mudou depois que esta peça foi criada.</p>
+            <label className="flex items-center gap-2 min-h-10 sm:min-h-0 text-cbm-gray-400">
               <input type="checkbox" checked={draft.refreshProfile} onChange={(e) => update({ refreshProfile: e.target.checked })} />
-              Usar a identidade mais nova
+              Usar a identidade atual
             </label>
           </div>
         )}
@@ -271,18 +296,20 @@ function Editor({ instance, definition, assets, profile, latestProfile }: Props 
               />
             ) : (
               <div key={slot.id}>
-                <label htmlFor={`slot-${slot.id}`} className="flex justify-between text-[12px] text-cbm-gray-200 mb-1">
+                <label htmlFor={`slot-${slot.id}`} className="flex justify-between gap-3 text-[12px] text-cbm-gray-200 mb-1.5">
                   <span>
                     {slot.label}
-                    {slot.required && <span className="text-accent"> *</span>}
+                    {slot.required && <span className="text-cbm-gray-400"> (obrigatório)</span>}
                   </span>
-                  <span className="text-[11px] font-mono text-cbm-gray-400">
-                    {(() => {
-                      const b = draft.bindings[slot.id];
-                      return b && "text" in b ? b.text.length : 0;
-                    })()}
-                    /{slot.maxLength}
-                  </span>
+                  {typing === slot.id && (
+                    <span className="text-[12px] text-cbm-gray-400 tabular-nums">
+                      {(() => {
+                        const b = draft.bindings[slot.id];
+                        return b && "text" in b ? b.text.length : 0;
+                      })()}
+                      /{slot.maxLength}
+                    </span>
+                  )}
                 </label>
                 {(() => {
                   const b = draft.bindings[slot.id];
@@ -292,6 +319,8 @@ function Editor({ instance, definition, assets, profile, latestProfile }: Props 
                     className: INPUT_CLASS,
                     value,
                     maxLength: slot.maxLength,
+                    onFocus: () => setTyping(slot.id),
+                    onBlur: () => setTyping((t) => (t === slot.id ? null : t)),
                     onChange: (e: { target: { value: string } }) => bind(slot.id, { text: e.target.value }),
                   };
                   return slot.maxLength > 80 ? <textarea {...props} rows={3} /> : <input {...props} />;
@@ -304,15 +333,11 @@ function Editor({ instance, definition, assets, profile, latestProfile }: Props 
         <div className="border-t border-line pt-5 space-y-3">
           <fieldset>
             <legend className={LABEL_CLASS}>Arquivos do render</legend>
-            <div className="flex gap-4">
+            <div className="flex gap-5">
               {(["png", "jpg", "webp"] as const).map((f) => (
-                <label key={f} className="flex items-center gap-1.5 text-[12px] text-cbm-gray-200 uppercase tracking-[0.22em] font-medium">
-                  <input
-                    type="checkbox"
-                    checked={formats.includes(f)}
-                    onChange={(e) => setFormats((cur) => (e.target.checked ? [...cur, f] : cur.filter((x) => x !== f)))}
-                  />
-                  {f}
+                <label key={f} className="flex items-center gap-2 min-h-10 sm:min-h-8 text-[13px] text-cbm-gray-200">
+                  <input type="checkbox" checked={formats.includes(f)} onChange={(e) => setFormats((cur) => (e.target.checked ? [...cur, f] : cur.filter((x) => x !== f)))} />
+                  {f === "webp" ? "WebP" : f.toUpperCase()}
                 </label>
               ))}
             </div>
@@ -324,18 +349,19 @@ function Editor({ instance, definition, assets, profile, latestProfile }: Props 
             <Button onClick={save} disabled={pending || !dirty}>
               Salvar
             </Button>
-            <Button onClick={openInCanvas} disabled={pending} title="Congela esta composição num documento livre (camadas, posição, textos)">
+            <Button onClick={openInCanvas} disabled={pending} title="Abre uma cópia desta peça no Studio, com camadas livres">
               Editar no canvas
             </Button>
-            <Button onClick={animate} disabled={pending} title="Abre esta peça como vídeo animado (presets de movimento)">
+            <Button onClick={animate} disabled={pending} title="Abre esta peça como vídeo no Studio">
               Animar
             </Button>
             <Button variant="ghost" onClick={remove} disabled={pending} className="ml-auto">
+              <Trash2 size={14} aria-hidden />
               Excluir
             </Button>
           </div>
-          <p className="text-[11px] text-cbm-gray-400 min-h-4" aria-live="polite">
-            {dirty ? "Alterações não salvas — Renderizar também salva." : (notice ?? "")}
+          <p className="text-[12px] text-cbm-gray-400 min-h-5" aria-live="polite">
+            {dirty ? "Alterações não salvas. Renderizar também salva." : (notice ?? "")}
           </p>
           <FormError message={error} />
           {jobId && <JobFollower key={jobId} jobId={jobId} />}

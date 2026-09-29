@@ -42,7 +42,7 @@ export function header(ctx: BuildContext, opts: { titleSize: number; maxLines?: 
 export const desktopHero: CompositionDefinition = {
   id: "desktop-hero",
   version: 1,
-  name: "Desktop Hero",
+  name: "Destaque desktop",
   family: "showcase",
   description: "O site em uma janela de navegador, com título opcional. O cartão de visita do projeto.",
   formats: FORMAT_IDS,
@@ -83,7 +83,7 @@ export const desktopHero: CompositionDefinition = {
 export const desktopMobile: CompositionDefinition = {
   id: "desktop-mobile",
   version: 1,
-  name: "Desktop + Mobile",
+  name: "Desktop e celular",
   family: "showcase",
   description: "Navegador e celular juntos: mostra que o projeto funciona nos dois.",
   formats: FORMAT_IDS,
@@ -125,7 +125,7 @@ export const desktopMobile: CompositionDefinition = {
 export const floatingDevices: CompositionDefinition = {
   id: "floating-devices",
   version: 1,
-  name: "Floating Devices",
+  name: "Dispositivos flutuantes",
   family: "showcase",
   description: "Devices levemente inclinados com sombra profunda — dinâmico, sem perder a leitura.",
   formats: FORMAT_IDS,

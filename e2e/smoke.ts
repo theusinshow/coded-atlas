@@ -112,11 +112,12 @@ async function main(): Promise<void> {
         return full.length >= 2 && full.every((j) => j.status === "completed") && ["section", "page-viewport", "state", "cover"].every((r) => roles.has(r));
       }, "assets da captura completa", 180_000);
       await page.reload();
-      await page.getByText("página(s) extra(s)").first().waitFor();
+      await page.getByText(/1 página extra/).first().waitFor();
     });
 
     await step("captura: sessão anônima + diff visual entre as duas capturas", async () => {
       await page.goto(`${BASE}/projects/e2e-${slug}/capture`);
+      await page.getByText("Capturar páginas com login").click();
       await page.locator('[data-session="none"]').getByText(`npm run atlas:login -- e2e-${slug}`).waitFor();
       const form = page.locator("[data-diff-form]");
       await form.getByRole("button", { name: "Comparar" }).click();
@@ -147,10 +148,10 @@ async function main(): Promise<void> {
       const png = await sharp({ create: { width: 640, height: 400, channels: 3, background: "#c4884c" } }).png().toBuffer();
       await page.goto(`${BASE}/projects/e2e-${slug}/assets`);
       await page.getByLabel("Arquivos", { exact: true }).setInputFiles({ name: "logo-e2e.png", mimeType: "image/png", buffer: png });
-      await page.getByLabel("Tipo de asset").selectOption("logo");
+      await page.getByLabel("Tipo de arquivo").selectOption("logo");
       await page.getByRole("button", { name: "Enviar" }).click();
-      await page.getByText("1 enviado(s)").waitFor();
-      await page.getByText("logo-e2e").waitFor();
+      await page.getByText("1 arquivo enviado").waitFor();
+      await page.getByText("logo-e2e").first().waitFor();
     });
 
     await step("editar, arquivar e restaurar", async () => {
@@ -202,7 +203,7 @@ async function main(): Promise<void> {
       await page.getByRole("complementary", { name: "Camadas e material" }).getByRole("button", { name: "Texto", exact: true }).click();
       await page.locator("#layer-text").fill("Texto do canvas E2E");
       await page.locator('[data-save-state="saved"]').waitFor({ timeout: 15_000 });
-      assert((await page.locator("[data-save-state]").textContent())?.includes("rev 2"), "autosave não gerou a revisão 2");
+      assert((await page.locator("[data-save-state]").getAttribute("data-revision")) === "2", "autosave não gerou a revisão 2");
 
       // Arrastar o layer selecionado muda X; Ctrl+Z desfaz o arrasto inteiro.
       const xField = page.getByLabel("X", { exact: true });
@@ -227,7 +228,7 @@ async function main(): Promise<void> {
       await page.getByRole("button", { name: "Renderizar agora" }).click();
       await page.getByText("Concluído").waitFor({ timeout: 120_000 });
       await page.goto(`${BASE}/projects/e2e-${slug}/publish`);
-      await page.getByText(/Abrir no canvas \(rev \d+\)/).first().waitFor();
+      await page.getByText("Abrir no Studio").first().waitFor();
     });
 
     await step("atlas brain: pedir plano, ver peças com preview e criar uma", async () => {
@@ -247,17 +248,18 @@ async function main(): Promise<void> {
     await step("sistema criativo: corrigir identidade, memória do projeto e direção salva", async () => {
       await page.goto(`${BASE}/projects/e2e-${slug}`);
       await page.getByText("Corrigir identidade").click();
-      await page.getByLabel(/Paleta \(hex/).fill("#0b1f33, #f2a900, #ffffff");
+      await page.getByLabel("Cores").fill("#0b1f33, #f2a900, #ffffff");
       await page.getByRole("button", { name: "Salvar nova revisão" }).click();
       await page.getByText(/Identidade atualizada \(revisão \d+\)/).waitFor();
 
       await page.goto(`${BASE}/projects/e2e-${slug}/plans`);
+      await page.getByText(/Memória e direções/).click();
       const memory = page.locator("form", { has: page.getByLabel("Assunto") });
       await memory.getByLabel("Tipo").selectOption("avoid");
       await memory.getByLabel("Assunto").selectOption("composition");
       await memory.getByLabel("Composição").selectOption("mobile-stack");
       await memory.getByRole("button", { name: "Adicionar" }).click();
-      await page.getByRole("list", { name: "Memórias" }).getByText("Mobile Stack").waitFor();
+      await page.getByRole("list", { name: "Memórias" }).getByText("Celulares em escada").waitFor();
 
       await page.locator("a[href*='/plans/']").first().click();
       await page.getByLabel("Salvar como direção criativa").fill("Direção E2E");
@@ -280,7 +282,7 @@ async function main(): Promise<void> {
       assert(count >= 2, `carrossel com ${count} página(s)`);
       await thumbs.nth(1).click();
       await page.getByText(`Página 2/${count}`).waitFor();
-      await page.getByRole("button", { name: "+ Página" }).click();
+      await page.getByRole("button", { name: "Adicionar página" }).click();
       await page.getByText(`Página 3/${count + 1}`).waitFor();
       await page.locator('[data-save-state="saved"]').waitFor({ timeout: 15_000 });
       await page.getByRole("button", { name: "Renderizar", exact: true }).click();
@@ -296,6 +298,7 @@ async function main(): Promise<void> {
 
     await step("motion: Website Scroll e Animar documento, preview e preset", async () => {
       await page.goto(`${BASE}/projects/e2e-${slug}/create`);
+      await page.getByText("Mais formatos").click();
       await page.getByRole("button", { name: "Criar vídeo" }).click();
       await page.waitForURL(/\/studio\/[0-9A-Z]{26}$/);
       await page.getByRole("button", { name: "Tocar vídeo" }).click();
@@ -319,6 +322,7 @@ async function main(): Promise<void> {
 
     await step("vídeo: receita → render MP4 (preview) → Publicar", async () => {
       await page.goto(`${BASE}/projects/e2e-${slug}/create`);
+      await page.getByText("Mais formatos").click();
       await page.getByLabel("Receita de vídeo").selectOption("quick-showcase");
       await page.getByLabel("Formato do vídeo por receita").selectOption("post-1x1");
       await page.getByRole("button", { name: "Montar vídeo" }).click();
@@ -326,12 +330,12 @@ async function main(): Promise<void> {
       const scenes = await page.locator("[data-page-thumb]").count();
       assert(scenes >= 2, `receita com ${scenes} cena(s)`);
       await page.getByRole("button", { name: "Renderizar", exact: true }).click();
-      await page.getByRole("radio", { name: "Preview rápido" }).click();
+      await page.getByRole("radio", { name: "Prévia rápida" }).click();
       await page.getByRole("button", { name: "Renderizar agora" }).click();
       await page.getByText("Concluído").waitFor({ timeout: 240_000 });
       await page.goto(`${BASE}/projects/e2e-${slug}/publish`);
-      const card = page.locator("[data-output]", { has: page.locator("video") }).first();
-      await card.getByText(/MP4 · 540×540 · [\d.]+ s · preview/).waitFor();
+      const card = page.locator('[data-output][data-output-kind="video"]').first();
+      await card.getByText(/MP4 · 540×540 · prévia/).waitFor();
       const id = await card.getAttribute("data-output");
       const res = await fetch(`${BASE}/api/atlas/outputs/${id}/file`);
       assert(res.ok && res.headers.get("content-type") === "video/mp4", `mp4 HTTP ${res.status}`);
@@ -359,6 +363,7 @@ async function main(): Promise<void> {
 
     await step("apresentação: storyboard → notas → PDF + PPTX em Publicar", async () => {
       await page.goto(`${BASE}/projects/e2e-${slug}/create`);
+      await page.getByText("Mais formatos").click();
       await page.getByRole("button", { name: "Montar apresentação" }).click();
       await page.waitForURL(/\/studio\/[0-9A-Z]{26}$/);
       await page.getByRole("region", { name: "Slides da apresentação" }).waitFor();
@@ -418,18 +423,40 @@ async function main(): Promise<void> {
       await page.goto(`${BASE}/portfolio`);
       const mine = page.locator(`[data-portfolio-project="e2e-${slug}"]`);
       await mine.locator('input[name="outputId"]').first().check();
-      await page.getByText("Pasta local", { exact: true }).click();
+      await page.getByText("Pasta de entregas", { exact: true }).click();
       await page.getByRole("button", { name: "Exportar portfólio" }).click();
       await page.getByText("Concluído").waitFor({ timeout: 60_000 });
       await page.locator('[data-export-status="delivered"]', { hasText: /pasta: portfolio-/ }).first().waitFor({ timeout: 15_000 });
+    });
+
+    await step("social: novo post com peça do projeto → legenda → pronto → pacote com legenda.txt", async () => {
+      await page.goto(`${BASE}/social`);
+      await page.getByRole("button", { name: "Novo post" }).click();
+      const panel = page.locator("[data-new-post]");
+      await panel.getByRole("radio", { name: /^Post/ }).click();
+      await panel.locator("button[aria-pressed]").first().click();
+      await panel.getByRole("button", { name: "Criar rascunho" }).click();
+      const editor = page.locator("[data-social-editor]");
+      await editor.waitFor({ timeout: 15_000 });
+      await editor.getByLabel(/Legenda/).fill("Engenharia preventiva que passa na primeira análise.");
+      await editor.getByRole("button", { name: "Salvar" }).click();
+      await editor.getByText("Salvo.").waitFor({ timeout: 15_000 });
+      await editor.getByRole("radio", { name: "Pronto" }).click();
+      await page.locator('[data-social-editor] [role="radio"][aria-checked="true"]', { hasText: "Pronto" }).waitFor({ timeout: 15_000 });
+      const href = await editor.getByRole("link", { name: "Baixar pacote" }).getAttribute("href");
+      const res = await fetch(`${BASE}${href}`);
+      const zip = Buffer.from(await res.arrayBuffer());
+      assert(res.ok && zip.includes(Buffer.from("legenda.txt")), `pacote social HTTP ${res.status} sem legenda`);
+      assert((await page.locator("[data-social-grid] li").count()) >= 1, "grid do feed vazio");
     });
 
     await step("jobs e ajustes mostram o estado real", async () => {
       await page.goto(`${BASE}/jobs`);
       await page.getByText("Captura").first().waitFor();
       await page.goto(`${BASE}/settings`);
-      await page.getByRole("button", { name: "Sincronizar biblioteca v1" }).waitFor();
-      await page.getByText("Entregas — GitHub").waitFor();
+      await page.locator("summary", { hasText: "Biblioteca antiga" }).click();
+      await page.getByRole("button", { name: "Sincronizar biblioteca antiga" }).waitFor();
+      await page.getByRole("heading", { name: "Entregas" }).waitFor();
     });
 
     await step("excluir com confirmação digitada", async () => {

@@ -1,10 +1,11 @@
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CompositionEditor } from "@/components/create/composition-editor";
+import { FreshList } from "@/components/create/fresh";
 import { OutputCard } from "@/components/create/output-card";
+import { Breadcrumb, SectionTitle } from "@/components/ui/primitives";
 import { CompositionInstanceIdSchema } from "@/src/core/creative/composition";
 import { getComposition } from "@/src/core/creative/compositions";
 import { getAtlasRuntime } from "@/src/infrastructure/runtime";
@@ -14,6 +15,9 @@ import { studioAssets } from "../studio-data";
 interface Props {
   params: Promise<{ slug: string; instanceId: string }>;
 }
+
+/** Quantos renders da peça aparecem (os mais novos); o resto fica em Entregar. */
+const RENDERS_SHOWN = 12;
 
 export default async function CompositionEditorPage({ params }: Props) {
   const { slug, instanceId } = await params;
@@ -25,37 +29,19 @@ export default async function CompositionEditorPage({ params }: Props) {
   if (!instance || instance.projectId !== project.id) notFound();
   if (!getComposition(instance.compositionId)) notFound();
 
-  const [assets, latest, outputs] = await Promise.all([
-    repos.assets.listByProject(project.id),
-    repos.visualProfiles.latest(project.id),
-    repos.outputs.listByProject(project.id),
-  ]);
+  const [assets, latest, outputs] = await Promise.all([repos.assets.listByProject(project.id), repos.visualProfiles.latest(project.id), repos.outputs.listByProject(project.id)]);
   const snapshot = (instance.visualProfileRevision ? await repos.visualProfiles.getRevision(project.id, instance.visualProfileRevision) : null) ?? latest;
   const renders = outputs.filter((o) => o.metadata.instanceId === instance.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const base = `/projects/${project.slug}`;
 
   return (
-    <div className="space-y-8">
-      <Link href={`/projects/${project.slug}/create`} className="text-[12px] text-cbm-gray-400 hover:text-cbm-gray-200">
-        ← Composições
-      </Link>
-      <CompositionEditor
-        instance={instance}
-        assets={studioAssets(assets)}
-        profile={snapshot}
-        latestProfile={latest}
-      />
+    <div className="space-y-6">
+      <Breadcrumb items={[{ label: project.name, href: base }, { label: "Criar", href: `${base}/create` }, { label: instance.name }]} />
+      <CompositionEditor instance={instance} assets={studioAssets(assets)} profile={snapshot} latestProfile={latest} />
       {renders.length > 0 && (
-        <section aria-labelledby="renders" className="space-y-3">
-          <h2 id="renders" className="text-[11px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400">
-            Renders desta peça ({renders.length})
-          </h2>
-          <ul className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
-            {renders.slice(0, 12).map((o) => (
-              <li key={o.id}>
-                <OutputCard output={o} compact />
-              </li>
-            ))}
-          </ul>
+        <section aria-labelledby="renders" className="pt-4">
+          <SectionTitle id="renders">Renders desta peça ({renders.length})</SectionTitle>
+          <FreshList className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4" items={renders.slice(0, RENDERS_SHOWN).map((o) => ({ id: o.id, node: <OutputCard output={o} compact /> }))} />
         </section>
       )}
     </div>

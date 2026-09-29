@@ -78,7 +78,7 @@ describe("receitas de vídeo", () => {
   it("serviço cria o documento de motion com o nome da receita e todas as receitas cabem no limite", async () => {
     const project = await setup(true, true);
     const { document } = await createVideoFromRecipe({ ...repos, sources: repos.sources }, project.id, { recipeId: "website-reveal-reel", formatId: "post-4x5" });
-    expect(document).toMatchObject({ kind: "motion", name: "Website Reveal Reel · Estúdio Norte" });
+    expect(document).toMatchObject({ kind: "motion", name: "Revelação do site · Estúdio Norte" });
     const content = (await repos.documents.getRevision(document.id, 1))!.content as MotionContent;
     const total = content.scenes.reduce((s, x) => s + x.durationMs, 0);
     const recipe = getRecipe("website-reveal-reel")!;

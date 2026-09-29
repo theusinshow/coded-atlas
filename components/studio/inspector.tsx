@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { BringToFront, ChevronDown, ChevronUp, Copy, SendToBack, Trash2, Ungroup } from "lucide-react";
+import { assetTitle, plural } from "@/components/ui/format";
 import type { StyleTokens } from "@/src/core/creative/tokens";
 import type { CanvasContent } from "@/src/core/documents/creative-document";
 import type { Layer } from "@/src/core/documents/layer";
@@ -18,7 +20,7 @@ import { useStudio, useStudioApi } from "./store";
 const SHADOWS = [
   { id: "none", label: "Nenhuma" },
   { id: "soft", label: "Suave" },
-  { id: "device", label: "Device" },
+  { id: "device", label: "Aparelho" },
   { id: "deep", label: "Profunda" },
 ] as const;
 
@@ -36,8 +38,8 @@ function ImageField({ label, assetId, assets, onChange }: { label: string; asset
       <span className={FIELD_LABEL}>{label}</span>
       <div className="flex items-center gap-2">
         <AssetThumb id={current?.id} alt={current?.label ?? label} width={320} className="w-16 aspect-[16/10] border border-line shrink-0" />
-        <p className="flex-1 min-w-0 text-[11px] text-cbm-gray-400 truncate">{current ? (current.label ?? current.kind) : "sem imagem"}</p>
-        <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="text-[10px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400 hover:text-accent">
+        <p className="flex-1 min-w-0 text-[12px] text-cbm-gray-400 truncate">{current ? assetTitle(current) : "Sem imagem"}</p>
+        <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="h-7 px-2 text-[12px] text-accent hover:text-accent-bright">
           {open ? "Fechar" : "Trocar"}
         </button>
       </div>
@@ -64,20 +66,21 @@ function LayerActions({ layer, canUngroup }: { layer: Layer; canUngroup: boolean
   const api = useStudioApi();
   const run = (change: (layers: Layer[]) => Layer[]) => api.getState().apply((c) => ({ ...c, artboard: { ...c.artboard, layers: change(c.artboard.layers) } }));
   const reorder = (move: Reorder) => run((ls) => reorderLayer(ls, layer.id, move));
-  const btn = "h-7 px-2 border border-line text-[11px] text-cbm-gray-200 hover:border-cbm-gray-400 hover:text-cbm-white disabled:opacity-30";
+  const btn = "inline-flex h-7 items-center justify-center gap-1.5 px-2 border border-line text-[12px] text-cbm-gray-200 transition-colors hover:border-cbm-gray-400 hover:text-cbm-white disabled:opacity-30 disabled:hover:border-line";
+  const iconBtn = `${btn} w-7 !px-0`;
   return (
     <div className="flex flex-wrap gap-1">
-      <button type="button" className={btn} onClick={() => reorder("front")} title="Trazer para frente (Ctrl+Shift+])">
-        Frente
+      <button type="button" className={iconBtn} onClick={() => reorder("front")} title="Trazer para a frente (Ctrl+Shift+])" aria-label="Trazer para a frente">
+        <BringToFront size={14} aria-hidden />
       </button>
-      <button type="button" className={btn} onClick={() => reorder("forward")} title="Avançar (Ctrl+])">
-        ↑
+      <button type="button" className={iconBtn} onClick={() => reorder("forward")} title="Avançar uma camada (Ctrl+])" aria-label="Avançar uma camada">
+        <ChevronUp size={14} aria-hidden />
       </button>
-      <button type="button" className={btn} onClick={() => reorder("backward")} title="Recuar (Ctrl+[)">
-        ↓
+      <button type="button" className={iconBtn} onClick={() => reorder("backward")} title="Recuar uma camada (Ctrl+[)" aria-label="Recuar uma camada">
+        <ChevronDown size={14} aria-hidden />
       </button>
-      <button type="button" className={btn} onClick={() => reorder("back")} title="Enviar para trás (Ctrl+Shift+[)">
-        Trás
+      <button type="button" className={iconBtn} onClick={() => reorder("back")} title="Enviar para trás (Ctrl+Shift+[)" aria-label="Enviar para trás">
+        <SendToBack size={14} aria-hidden />
       </button>
       <button
         type="button"
@@ -90,22 +93,25 @@ function LayerActions({ layer, canUngroup }: { layer: Layer; canUngroup: boolean
           if (newId) select(newId);
         }}
       >
+        <Copy size={12} aria-hidden />
         Duplicar
       </button>
       {layer.type === "group" && (
         <button type="button" className={btn} disabled={!canUngroup} title={canUngroup ? "Desagrupar" : "Grupo girado não pode ser desagrupado"} onClick={() => run((ls) => ungroupLayer(ls, layer.id))}>
+          <Ungroup size={12} aria-hidden />
           Desagrupar
         </button>
       )}
       <button
         type="button"
-        className={`${btn} hover:!border-bad hover:!text-bad`}
-        title="Excluir (Delete)"
+        className={`${btn} ml-auto hover:!border-bad hover:!text-bad`}
+        title="Excluir camada (Delete)"
         onClick={() => {
           run((ls) => removeLayer(ls, layer.id));
           api.getState().select(null);
         }}
       >
+        <Trash2 size={12} aria-hidden />
         Excluir
       </button>
     </div>
@@ -122,7 +128,7 @@ function LayerInspector({ layer, tokens, assets }: { layer: Layer; tokens: Style
 
   return (
     <>
-      <Section title={LAYER_TYPE_LABEL[layer.type]} aside={<span className="text-[10px] font-mono text-cbm-gray-400">{layer.id.slice(0, 8)}</span>}>
+      <Section title={LAYER_TYPE_LABEL[layer.type]}>
         <LayerActions layer={layer} canUngroup={layer.rotation === 0} />
         <TextField label="Nome" value={layer.name ?? ""} maxLength={80} onChange={(v) => edit({ name: v || undefined }, "name")} />
       </Section>
@@ -205,7 +211,30 @@ function LayerInspector({ layer, tokens, assets }: { layer: Layer; tokens: Style
   );
 }
 
-function DocumentInspector({ tokens, profiles, latestRevision, audioAssets }: { tokens: StyleTokens; profiles: Record<number, VisualProfile>; latestRevision: number | null; audioAssets: StudioAsset[] }) {
+const SHORTCUTS: [string, string][] = [
+  ["Ctrl+Z · Ctrl+Shift+Z", "Desfazer · refazer"],
+  ["Setas", "Mover 1 px (com Shift, 10 px)"],
+  ["Ctrl+D", "Duplicar"],
+  ["Delete", "Excluir"],
+  ["Ctrl+[ · Ctrl+]", "Recuar · avançar"],
+  ["Shift", "Manter a proporção ao redimensionar"],
+  ["Alt", "Mover sem ímã"],
+  ["Duplo clique", "Editar o texto"],
+];
+
+function DocumentInspector({
+  tokens,
+  profiles,
+  latestRevision,
+  audioAssets,
+  projectId,
+}: {
+  tokens: StyleTokens;
+  profiles: Record<number, VisualProfile>;
+  latestRevision: number | null;
+  audioAssets: StudioAsset[];
+  projectId: string;
+}) {
   const content = useStudio((s) => s.content);
   const apply = useStudio((s) => s.apply);
   const select = useStudio((s) => s.select);
@@ -216,10 +245,10 @@ function DocumentInspector({ tokens, profiles, latestRevision, audioAssets }: { 
     <>
       <SceneSection />
       <SlideNotesSection />
-      <SoundtrackSection audioAssets={audioAssets} />
+      <SoundtrackSection audioAssets={audioAssets} projectId={projectId} />
       <Section title="Documento">
-        <p className="text-[12px] text-cbm-gray-400 font-mono tabular-nums">
-          {artboard.width}×{artboard.height}px · {artboard.layers.length} camada(s)
+        <p className="text-[12px] text-cbm-gray-400 tabular-nums">
+          {artboard.width}×{artboard.height} · {plural(artboard.layers.length, "camada", "camadas")}
         </p>
         <ColorField label="Fundo" value={artboard.background.fill} tokens={tokens} onChange={(v) => v && set((c) => ({ ...c, artboard: { ...c.artboard, background: { ...c.artboard.background, fill: v } } }), "bg")} />
         <Segmented
@@ -241,23 +270,23 @@ function DocumentInspector({ tokens, profiles, latestRevision, audioAssets }: { 
               onChange={(e) => set((c) => ({ ...c, style: { ...c.style, primary: e.target.value.toLowerCase() } }), "primary")}
               className="h-7 w-10 bg-transparent border border-line cursor-pointer"
             />
-            <span className="text-[11px] font-mono text-cbm-gray-400">{style.primary ?? `${tokens.colors.primary} (auto)`}</span>
+            {style.primary ? <span className="text-[12px] font-mono text-cbm-gray-200">{style.primary}</span> : <span className="text-[12px] text-cbm-gray-400">Automática (da identidade)</span>}
             {style.primary && (
               <button
                 type="button"
-                className="ml-auto text-[11px] text-cbm-gray-400 hover:text-cbm-gray-200"
+                className="ml-auto h-7 px-1 text-[12px] text-cbm-gray-400 hover:text-cbm-white"
                 onClick={() => set((c) => ({ ...c, style: { mode: c.style.mode, profileRevision: c.style.profileRevision } }), "primary")}
               >
-                Automática
+                Voltar à automática
               </button>
             )}
           </div>
         </div>
-        <div className="text-[11px] text-cbm-gray-400 space-y-1.5">
-          <p>{profile ? `Identidade visual rev ${profile.revision} · ${profile.palette.length} cores · ${profile.fonts.slice(0, 2).join(", ") || "sem fontes"}` : "Sem identidade visual — usa a linguagem Coded by M."}</p>
+        <div className="text-[12px] text-cbm-gray-400 space-y-1.5">
+          <p>{profile ? `Identidade do projeto · ${plural(profile.palette.length, "cor", "cores")}${profile.fonts.length ? ` · ${profile.fonts.slice(0, 2).join(", ")}` : ""}` : "Sem identidade do projeto — usa a linguagem da Coded by M."}</p>
           {latestRevision && latestRevision !== style.profileRevision && (
             <button type="button" className="text-accent hover:text-accent-bright" onClick={() => set((c) => ({ ...c, style: { ...c.style, profileRevision: latestRevision } }), "profile")}>
-              Usar a identidade mais nova (rev {latestRevision})
+              Usar a identidade mais recente
             </button>
           )}
         </div>
@@ -266,15 +295,16 @@ function DocumentInspector({ tokens, profiles, latestRevision, audioAssets }: { 
         <CreativeIssues issues={lintArtboard(artboard, tokens)} onSelect={select} />
       </Section>
       <Section title="Atalhos">
-        <ul className="text-[11px] text-cbm-gray-400 space-y-1 font-mono">
-          <li>Ctrl+Z / Ctrl+Shift+Z — desfazer / refazer</li>
-          <li>Setas — mover 1px (Shift: 10px)</li>
-          <li>Ctrl+D — duplicar · Delete — excluir</li>
-          <li>Ctrl+[ / ] — recuar / avançar</li>
-          <li>Shift ao redimensionar — manter proporção</li>
-          <li>Alt ao mover — sem ímã</li>
-          <li>Duplo clique no texto — editar</li>
-        </ul>
+        <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-[12px]">
+          {SHORTCUTS.map(([keys, action]) => (
+            <div key={keys} className="contents">
+              <dt>
+                <kbd className="font-mono text-[11px] text-cbm-gray-200">{keys}</kbd>
+              </dt>
+              <dd className="text-cbm-gray-400">{action}</dd>
+            </div>
+          ))}
+        </dl>
       </Section>
     </>
   );
@@ -286,15 +316,21 @@ export function Inspector({
   audioAssets,
   profiles,
   latestRevision,
+  projectId,
 }: {
   tokens: StyleTokens;
   assets: StudioAsset[];
   audioAssets: StudioAsset[];
   profiles: Record<number, VisualProfile>;
   latestRevision: number | null;
+  projectId: string;
 }) {
   const selectedId = useStudio((s) => s.selectedId);
   const layers = useStudio((s) => s.content.artboard.layers);
   const found = selectedId ? findLayer(layers, selectedId) : null;
-  return found ? <LayerInspector key={found.layer.id} layer={found.layer} tokens={tokens} assets={assets} /> : <DocumentInspector tokens={tokens} profiles={profiles} latestRevision={latestRevision} audioAssets={audioAssets} />;
+  return found ? (
+    <LayerInspector key={found.layer.id} layer={found.layer} tokens={tokens} assets={assets} />
+  ) : (
+    <DocumentInspector tokens={tokens} profiles={profiles} latestRevision={latestRevision} audioAssets={audioAssets} projectId={projectId} />
+  );
 }

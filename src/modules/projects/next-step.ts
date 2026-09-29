@@ -63,7 +63,7 @@ export function nextStep(p: ProjectProgress): NextStep {
 export function stepStatuses(p: ProjectProgress): StepStatus[] {
   const created = p.kits + p.cases + p.documents;
   return [
-    { key: "material", number: 1, label: "Material", done: p.assets > 0, summary: p.assets > 0 ? plural(p.assets, "asset", "assets") : "nenhuma captura", href: "assets" },
+    { key: "material", number: 1, label: "Material", done: p.assets > 0, summary: p.assets > 0 ? plural(p.assets, "imagem", "imagens") : "nenhuma captura", href: "assets" },
     {
       key: "create",
       number: 2,

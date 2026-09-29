@@ -1,5 +1,6 @@
 "use client";
 import { useActionState, useState, useTransition } from "react";
+import { Camera, Plus, Trash2 } from "lucide-react";
 import { addSourceAction, captureSourceAction, removeSourceAction, type ActionState } from "@/app/actions/projects";
 import { JobFollower } from "@/components/atlas/job-follower";
 import { Button, FormError, INPUT_CLASS, Panel } from "@/components/ui/primitives";
@@ -13,16 +14,19 @@ interface SourceView {
 
 const TYPE_LABEL: Record<SourceView["type"], string> = {
   url: "Site",
-  local: "Dev local",
+  local: "Servidor local",
   github: "GitHub",
-  upload: "Uploads",
+  upload: "Arquivos enviados",
 };
 
 const PLACEHOLDER: Record<"url" | "local" | "github", string> = {
   url: "https://site.com",
   local: "http://localhost:3000",
-  github: "owner/repo ou URL do GitHub",
+  github: "dono/repositório ou link do GitHub",
 };
+
+/** Botões da linha: 40 px de alvo no celular, compactos no desktop. */
+const ROW_BUTTON = "max-sm:h-10 max-sm:flex-1";
 
 export function SourcesPanel({ projectId, sources }: { projectId: string; sources: SourceView[] }) {
   const [addState, addAction, adding] = useActionState<ActionState, FormData>(addSourceAction.bind(null, projectId), null);
@@ -51,29 +55,34 @@ export function SourcesPanel({ projectId, sources }: { projectId: string; source
   return (
     <div className="space-y-4">
       {sources.length === 0 ? (
-        <p className="text-[13px] text-cbm-gray-400">Nenhuma origem ainda.</p>
+        <p className="text-[13px] text-cbm-gray-400">Nenhuma origem ainda. Adicione o site abaixo.</p>
       ) : (
         <Panel>
           <ul className="divide-y divide-line">
             {sources.map((s) => (
-              <li key={s.id} className="px-4 py-3 space-y-2">
-                <div className="flex items-center justify-between gap-3">
+              <li key={s.id} className="px-4 py-3 space-y-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400">{TYPE_LABEL[s.type]}</p>
-                    <p className="text-[13px] text-cbm-gray-200 truncate font-mono">{s.label ? `${s.label} · ` : ""}{s.locator}</p>
+                    <p className="text-[13px] text-cbm-gray-200 truncate" title={s.locator}>
+                      {s.label ? `${s.label} · ` : ""}
+                      {s.locator}
+                    </p>
                   </div>
-                  <div className="flex shrink-0 gap-1">
-                    {(s.type === "url" || s.type === "local") && (
-                      <Button size="sm" variant="primary" disabled={pending || Boolean(jobs[s.id])} onClick={() => capture(s.id)}>
-                        Capturar
+                  {s.type !== "upload" && (
+                    <div className="flex shrink-0 gap-2 sm:gap-1">
+                      {(s.type === "url" || s.type === "local") && (
+                        <Button size="sm" disabled={pending || Boolean(jobs[s.id])} onClick={() => capture(s.id)} className={ROW_BUTTON}>
+                          <Camera size={14} aria-hidden />
+                          Capturar
+                        </Button>
+                      )}
+                      <Button size="sm" variant="ghost" disabled={pending} onClick={() => remove(s.id)} aria-label={`Remover ${s.locator}`} title="Remover origem" className={ROW_BUTTON}>
+                        <Trash2 size={14} aria-hidden />
+                        <span className="sm:sr-only">Remover</span>
                       </Button>
-                    )}
-                    {s.type !== "upload" && (
-                      <Button size="sm" variant="ghost" disabled={pending} onClick={() => remove(s.id)} aria-label={`Remover ${s.locator}`}>
-                        Remover
-                      </Button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
                 {jobs[s.id] && (
                   <JobFollower
@@ -94,15 +103,16 @@ export function SourcesPanel({ projectId, sources }: { projectId: string; source
       )}
       <FormError message={error} />
 
-      <form action={addAction} className="grid gap-2 sm:grid-cols-[8rem_1fr_auto]">
+      <form action={addAction} className="grid gap-2 sm:grid-cols-[9.5rem_minmax(0,1fr)_auto]">
         <select name="type" aria-label="Tipo de origem" className={INPUT_CLASS} value={type} onChange={(e) => setType(e.target.value as typeof type)}>
           <option value="url">Site</option>
-          <option value="local">Dev local</option>
+          <option value="local">Servidor local</option>
           <option value="github">GitHub</option>
         </select>
-        <input name="locator" required aria-label="Endereço da origem" placeholder={PLACEHOLDER[type]} className={INPUT_CLASS} />
-        <Button type="submit" disabled={adding}>
-          Adicionar
+        <input name="locator" required aria-label="Endereço da origem" placeholder={PLACEHOLDER[type]} className={`${INPUT_CLASS} min-w-0 font-mono`} />
+        <Button type="submit" disabled={adding} className="h-[42px]">
+          <Plus size={14} aria-hidden />
+          {adding ? "Adicionando…" : "Adicionar"}
         </Button>
       </form>
       <FormError message={addState?.error} />

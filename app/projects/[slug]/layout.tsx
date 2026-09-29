@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
+import { ChevronLeft } from "lucide-react";
 import { ProjectNav } from "@/components/atlas/project-nav";
 import { ProjectStatusBadge } from "@/components/ui/status";
 import { getAtlasRuntime } from "@/src/infrastructure/runtime";
@@ -18,28 +19,20 @@ export default async function ProjectLayout({ children, params }: { children: Re
   if (!project) notFound();
 
   return (
-    <main className="max-w-6xl mx-auto px-6 py-10 space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0 space-y-1.5">
-          <Link href="/projects" className="text-[12px] text-cbm-gray-400 hover:text-cbm-gray-200">
-            ← Projetos
-          </Link>
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="font-display text-[26px] font-bold leading-tight text-cbm-white tracking-[-0.02em] truncate">{project.name}</h1>
-            <ProjectStatusBadge status={project.status} />
-          </div>
-          <p className="text-[13px] text-cbm-gray-400">
-            <span className="font-medium text-[10px] uppercase tracking-[0.35em] text-signal/70">{project.category}</span>
-            {project.client && <span> · {project.client}</span>}
-          </p>
-        </div>
-        <Link
-          href={`/projects/${project.slug}/settings`}
-          aria-label="Ajustes do projeto"
-          className="flex items-center gap-2 h-8 px-3 border border-line text-[12px] text-cbm-gray-400 hover:text-cbm-white hover:border-cbm-gray-400"
-        >
-          <span aria-hidden>⚙</span> Ajustes do projeto
+    <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-6">
+      <div className="min-w-0 space-y-1.5">
+        <Link href="/projects" className="inline-flex items-center gap-1 h-10 sm:h-8 text-[12px] text-cbm-gray-400 hover:text-cbm-white">
+          <ChevronLeft size={14} aria-hidden />
+          Projetos
         </Link>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="font-display text-[22px] sm:text-[26px] font-bold leading-tight text-cbm-white tracking-[-0.02em] break-words">{project.name}</h1>
+          <ProjectStatusBadge status={project.status} />
+        </div>
+        <p className="text-[13px] text-cbm-gray-400">
+          {project.category}
+          {project.client && <span> · {project.client}</span>}
+        </p>
       </div>
       <ProjectNav slug={project.slug} />
       {children}

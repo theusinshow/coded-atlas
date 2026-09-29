@@ -12,13 +12,15 @@ type Variant = "primary" | "secondary" | "ghost" | "danger";
 type Size = "sm" | "md";
 
 const BASE =
-  "inline-flex items-center justify-center gap-2 font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-2";
+  "inline-flex items-center justify-center gap-2 font-medium transition-colors disabled:cursor-not-allowed focus-visible:outline-2";
 const VARIANTS: Record<Variant, string> = {
   // Variante sólida do DS (§5.2): sinal + Panchang 600 uppercase — a ação principal da tela.
-  primary: "bg-signal text-cbm-black hover:bg-signal-dark font-display font-semibold uppercase tracking-[0.12em]",
-  secondary: "border border-line text-cbm-white hover:border-cbm-gray-400 hover:bg-surface",
-  ghost: "text-cbm-gray-400 hover:text-cbm-gray-100 hover:bg-surface",
-  danger: "border border-bad/60 text-bad hover:bg-bad/10",
+  // Um primário por tela. Desabilitado fica neutro (não um vermelho apagado).
+  primary:
+    "bg-signal text-cbm-black hover:bg-signal-dark font-display font-semibold uppercase tracking-[0.12em] disabled:bg-surface-2 disabled:text-cbm-gray-400 disabled:border disabled:border-line",
+  secondary: "border border-line text-cbm-white hover:border-cbm-gray-400 hover:bg-surface disabled:opacity-40 disabled:hover:bg-transparent",
+  ghost: "text-cbm-gray-400 hover:text-cbm-gray-100 hover:bg-surface disabled:opacity-40",
+  danger: "border border-bad/60 text-bad hover:bg-bad/10 disabled:opacity-40",
 };
 const SIZES: Record<Size, string> = {
   sm: "h-8 px-3 text-[12px]",
@@ -71,11 +73,11 @@ export function Field({ label, htmlFor, hint, children }: { label: string; htmlF
 }
 
 export function PageHeader({
-  eyebrow,
   title,
   description,
   actions,
 }: {
+  /** @deprecated o título já diz onde se está — o pré-título repetido saiu (3.2). */
   eyebrow?: string;
   title: string;
   description?: ReactNode;
@@ -84,12 +86,6 @@ export function PageHeader({
   return (
     <header className="flex flex-wrap items-end justify-between gap-6">
       <div className="min-w-0">
-        {eyebrow && (
-          <p className="text-[10px] font-medium text-signal/70 uppercase tracking-[0.35em] mb-3 flex items-center gap-2">
-            <span className="w-6 h-px bg-signal/50" aria-hidden />
-            {eyebrow}
-          </p>
-        )}
         <h1 className="font-display text-[26px] font-bold leading-tight text-cbm-white tracking-[-0.02em]">{title}</h1>
         {description && <div className="text-sm text-cbm-gray-400 mt-1.5 max-w-2xl">{description}</div>}
       </div>
@@ -139,5 +135,47 @@ export function FormError({ message }: { message?: string | null }) {
     <p role="alert" className="text-[13px] text-bad">
       {message}
     </p>
+  );
+}
+
+/** Seção recolhível (secundária): details/summary nativo — teclado e leitor de tela de graça. */
+export function Collapsible({ title, meta, defaultOpen = false, children }: { title: string; meta?: ReactNode; defaultOpen?: boolean; children: ReactNode }) {
+  return (
+    <details className="group border border-line" open={defaultOpen}>
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[13px] text-cbm-gray-200 hover:text-cbm-white [&::-webkit-details-marker]:hidden">
+        <span className="flex items-center gap-2">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="transition-transform duration-200 group-open:rotate-90" aria-hidden>
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+          {title}
+        </span>
+        {meta && <span className="text-[12px] text-cbm-gray-400">{meta}</span>}
+      </summary>
+      <div className="border-t border-line p-4">{children}</div>
+    </details>
+  );
+}
+
+/** Trilha de navegação única ("Projeto / Criar / Peça") no lugar de vários "← voltar". */
+export function Breadcrumb({ items }: { items: { label: string; href?: string }[] }) {
+  return (
+    <nav aria-label="Você está em" className="text-[12px] text-cbm-gray-400">
+      <ol className="flex flex-wrap items-center gap-1.5">
+        {items.map((item, i) => (
+          <li key={`${item.label}-${i}`} className="flex items-center gap-1.5 min-w-0">
+            {i > 0 && <span aria-hidden className="text-cbm-gray-600">/</span>}
+            {item.href ? (
+              <Link href={item.href} className="inline-flex items-center min-h-10 sm:min-h-0 hover:text-cbm-white truncate">
+                {item.label}
+              </Link>
+            ) : (
+              <span className="text-cbm-gray-200 truncate" aria-current="page">
+                {item.label}
+              </span>
+            )}
+          </li>
+        ))}
+      </ol>
+    </nav>
   );
 }

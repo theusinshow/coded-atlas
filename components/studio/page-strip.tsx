@@ -1,4 +1,5 @@
 "use client";
+import { ChevronLeft, ChevronRight, Copy, Play, Plus, Trash2 } from "lucide-react";
 import type { StyleTokens } from "@/src/core/creative/tokens";
 import { MAX_PAGES, MAX_SLIDES, isMotion, isPresentation, isSequence, type SequenceContent } from "@/src/core/documents/creative-document";
 import { addPage, blankArtboard, duplicatePage, movePage, removePage, renamePage, sequenceItems } from "@/src/core/documents/pages";
@@ -23,8 +24,10 @@ export function PageStrip({ tokens, onPlay }: { tokens: StyleTokens; onPlay?: ()
   const items = sequenceItems(doc);
   const current = items[active];
   const noun = motion ? "Cena" : presentation ? "Slide" : "Página";
+  const article = presentation ? "o" : "a";
   const limit = motion ? MAX_SCENES : presentation ? MAX_SLIDES : MAX_PAGES;
-  const btn = "h-7 px-2 border border-line text-[11px] text-cbm-gray-200 hover:border-cbm-gray-400 hover:text-cbm-white disabled:opacity-30";
+  const btn = "inline-flex h-7 items-center gap-1.5 px-2 border border-line text-[12px] text-cbm-gray-200 transition-colors hover:border-cbm-gray-400 hover:text-cbm-white disabled:opacity-30 disabled:hover:border-line";
+  const iconBtn = `${btn} w-7 justify-center !px-0`;
   const run = (change: (d: SequenceContent) => SequenceContent, page?: number, key?: string) => api.getState().applyDoc((d) => (isSequence(d) ? change(d) : d), { page, key });
   const blank = (d: SequenceContent) => {
     const source = sequenceItems(d)[active];
@@ -39,36 +42,40 @@ export function PageStrip({ tokens, onPlay }: { tokens: StyleTokens; onPlay?: ()
     <section aria-label={motion ? "Cenas do vídeo" : presentation ? "Slides da apresentação" : "Páginas do carrossel"} className="shrink-0 border-t border-line bg-base">
       <div className="flex items-center gap-2 px-3 pt-2">
         {motion && onPlay && (
-          <button type="button" onClick={onPlay} className="h-7 px-3 border border-line text-cbm-white text-[11px] font-medium hover:border-cbm-gray-400" aria-label="Tocar vídeo">
-            ▶ Tocar
+          <button type="button" onClick={onPlay} className={`${btn} px-3 text-cbm-white`} aria-label="Tocar vídeo">
+            <Play size={12} aria-hidden />
+            Tocar
           </button>
         )}
-        <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400">
+        <p className="text-[12px] text-cbm-gray-400 tabular-nums whitespace-nowrap">
           {noun} {active + 1}/{items.length}
-          {motion && ` · total ${seconds(totalDurationMs(doc))}`}
+          {motion && ` · ${seconds(totalDurationMs(doc))} no total`}
         </p>
         <input
-          aria-label={`Título ${presentation ? "do slide" : `da ${noun.toLowerCase()}`}`}
+          aria-label={`Título d${article} ${noun.toLowerCase()}`}
           value={current?.title ?? ""}
-          placeholder={`Título ${presentation ? "do slide" : `da ${noun.toLowerCase()}`}`}
+          placeholder={`Título d${article} ${noun.toLowerCase()}`}
           maxLength={80}
           onChange={(e) => run((d) => renamePage(d, active, e.target.value), undefined, `title:${active}`)}
-          className="h-7 w-48 bg-transparent border border-transparent hover:border-line focus:border-accent focus:outline-none px-1.5 text-[12px] text-cbm-gray-200"
+          className="h-7 w-48 bg-transparent border border-transparent hover:border-line focus:border-accent focus:outline-none px-1.5 text-[12px] text-cbm-gray-200 placeholder:text-cbm-gray-400"
         />
         <div className="ml-auto flex gap-1">
-          <button type="button" className={btn} disabled={active === 0} onClick={() => run((d) => movePage(d, active, active - 1), active - 1)} title="Mover para a esquerda">
-            ←
+          <button type="button" className={iconBtn} disabled={active === 0} onClick={() => run((d) => movePage(d, active, active - 1), active - 1)} title="Mover para a esquerda" aria-label="Mover para a esquerda">
+            <ChevronLeft size={14} aria-hidden />
           </button>
-          <button type="button" className={btn} disabled={active === items.length - 1} onClick={() => run((d) => movePage(d, active, active + 1), active + 1)} title="Mover para a direita">
-            →
+          <button type="button" className={iconBtn} disabled={active === items.length - 1} onClick={() => run((d) => movePage(d, active, active + 1), active + 1)} title="Mover para a direita" aria-label="Mover para a direita">
+            <ChevronRight size={14} aria-hidden />
           </button>
           <button type="button" className={btn} disabled={items.length >= limit} onClick={() => run((d) => duplicatePage(d, active, newLayerId), active + 1)}>
+            <Copy size={12} aria-hidden />
             Duplicar
           </button>
-          <button type="button" className={btn} disabled={items.length >= limit} onClick={() => run(blank, active + 1)}>
-            + {noun}
+          <button type="button" className={btn} disabled={items.length >= limit} onClick={() => run(blank, active + 1)} aria-label={`Adicionar ${noun.toLowerCase()}`}>
+            <Plus size={12} aria-hidden />
+            {noun}
           </button>
           <button type="button" className={`${btn} hover:!border-bad hover:!text-bad`} disabled={items.length <= 1} onClick={() => run((d) => removePage(d, active), Math.max(0, active - 1))}>
+            <Trash2 size={12} aria-hidden />
             Remover
           </button>
         </div>
@@ -76,6 +83,7 @@ export function PageStrip({ tokens, onPlay }: { tokens: StyleTokens; onPlay?: ()
       <ol className="flex gap-2 overflow-x-auto px-3 py-2">
         {items.map((item, index) => {
           const width = Math.round((item.artboard.width / item.artboard.height) * 88);
+          const caption = "durationMs" in item ? `${noun} ${index + 1} · ${seconds(item.durationMs)}` : item.title || `${noun} ${index + 1}`;
           return (
             <li key={item.id} className="shrink-0">
               <button
@@ -84,13 +92,13 @@ export function PageStrip({ tokens, onPlay }: { tokens: StyleTokens; onPlay?: ()
                 aria-current={index === active ? "page" : undefined}
                 aria-label={`${noun} ${index + 1}${item.title ? `: ${item.title}` : ""}`}
                 data-page-thumb={index}
-                className={`block border-2 ${index === active ? "border-accent" : "border-transparent hover:border-cbm-gray-600"}`}
+                className={`block border transition-colors ${index === active ? "border-cbm-white" : "border-line hover:border-cbm-gray-400"}`}
                 style={{ width }}
               >
                 <ArtboardPreview artboard={item.artboard} tokens={tokens} mode="render" />
               </button>
-              <p className="mt-1 text-[10px] font-mono text-cbm-gray-400 tabular-nums truncate" style={{ width }}>
-                {String(index + 1).padStart(2, "0")} {"durationMs" in item ? seconds(item.durationMs) : (item.title ?? "")}
+              <p className={`mt-1 text-[11px] tabular-nums truncate ${index === active ? "text-cbm-gray-200" : "text-cbm-gray-400"}`} style={{ width: Math.max(width, 76) }} title={caption}>
+                {caption}
               </p>
             </li>
           );

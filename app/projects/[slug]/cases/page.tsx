@@ -3,7 +3,9 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { createCaseAction } from "@/app/actions/cases";
-import { Button, EmptyState, Panel, SectionTitle } from "@/components/ui/primitives";
+import { SubmitButton } from "@/components/create/submit-button";
+import { buttonClass, EmptyState, Panel } from "@/components/ui/primitives";
+import { relativeTime } from "@/components/ui/format";
 import { getAtlasRuntime } from "@/src/infrastructure/runtime";
 import { requireProjectBySlug } from "@/src/modules/projects/project-service";
 
@@ -11,24 +13,33 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
-/** Case Builder: estudos de caso do projeto (página web, PDF, módulos Behance). */
+/** "Editado há 2 h", "Editado ontem", "Editado em 12/09". */
+const edited = (when: string) => (/^\d/.test(when) ? `Editado em ${when}` : `Editado ${when}`);
+
+/** Cases do projeto (página web, PDF, módulos para Behance): a lista primeiro, "Montar case" no cabeçalho. */
 export default async function ProjectCasesPage({ params }: Props) {
   const { slug } = await params;
   const { repos } = await getAtlasRuntime();
   const project = await requireProjectBySlug(repos.projects, slug);
   const [documents, directions] = await Promise.all([repos.documents.listByProject(project.id), repos.directions.listByProject(project.id)]);
   const cases = documents.filter((d) => d.kind === "case");
+  const now = new Date();
+
   return (
-    <div className="grid gap-10 lg:grid-cols-[24rem_1fr]">
-      <section aria-labelledby="novo-case">
-        <SectionTitle id="novo-case">Novo case</SectionTitle>
-        <p className="text-[13px] text-cbm-gray-400 mb-4">
-          O Atlas monta o esqueleto com o material capturado — contexto, desktop, mobile, seções, identidade e ficha técnica. Você escreve (ou pede ao Atlas Brain) e exporta.
-        </p>
-        <form action={createCaseAction} className="space-y-3">
+    <section aria-labelledby="cases" className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 id="cases" className="text-[11px] font-medium text-cbm-gray-400 uppercase tracking-[0.22em]">
+          Cases ({cases.length})
+        </h2>
+        <form action={createCaseAction} className="flex flex-wrap items-center gap-2">
           <input type="hidden" name="projectId" value={project.id} />
           {directions.length > 0 && (
-            <select name="directionId" aria-label="Direção criativa do case" defaultValue="" className="w-full h-10 bg-surface border border-line text-sm text-cbm-gray-200 px-3">
+            <select
+              name="directionId"
+              aria-label="Direção criativa do case"
+              defaultValue=""
+              className="h-10 min-w-0 max-w-full bg-surface border border-line text-[13px] text-cbm-gray-200 px-3 focus:outline-none focus:border-accent"
+            >
               <option value="">Estilo automático</option>
               {directions.map((d) => (
                 <option key={d.id} value={d.id}>
@@ -37,32 +48,26 @@ export default async function ProjectCasesPage({ params }: Props) {
               ))}
             </select>
           )}
-          <Button variant="primary" type="submit">
-            Montar case
-          </Button>
+          <SubmitButton className={buttonClass("primary", "md")}>Montar case</SubmitButton>
         </form>
-      </section>
-      <section aria-labelledby="cases">
-        <SectionTitle id="cases">Cases ({cases.length})</SectionTitle>
-        {cases.length === 0 ? (
-          <EmptyState title="Nenhum case ainda">Monte o primeiro ao lado. Ele substitui o rascunho de case do Atlas v1.</EmptyState>
-        ) : (
-          <ul className="space-y-3">
-            {cases.map((doc) => (
-              <li key={doc.id}>
-                <Link href={`/cases/${doc.id}`} className="block group" data-case-doc={doc.id}>
-                  <Panel className="p-4 group-hover:border-cbm-gray-400 transition-colors">
-                    <p className="text-[13px] text-cbm-gray-100">{doc.name}</p>
-                    <p className="text-[11px] font-mono text-cbm-gray-400">
-                      rev {doc.headRevision} · {new Date(doc.updatedAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
-                    </p>
-                  </Panel>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </div>
+      </div>
+
+      {cases.length === 0 ? (
+        <EmptyState title="Nenhum case ainda">O Atlas monta o esqueleto com o material capturado; você escreve e exporta.</EmptyState>
+      ) : (
+        <ul className="space-y-2">
+          {cases.map((doc) => (
+            <li key={doc.id}>
+              <Link href={`/cases/${doc.id}`} className="block group" data-case-doc={doc.id}>
+                <Panel className="px-4 py-3.5 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 group-hover:border-cbm-gray-400 transition-colors">
+                  <p className="text-[14px] text-cbm-white">{doc.name}</p>
+                  <p className="text-[12px] text-cbm-gray-400">{edited(relativeTime(doc.updatedAt, now))}</p>
+                </Panel>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }

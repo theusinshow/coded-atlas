@@ -87,7 +87,7 @@ export function lintArtboard(artboard: Artboard, tokens: StyleTokens): CreativeI
       const lines = estimateTextLines(layer.uppercase ? layer.text.toUpperCase() : layer.text, layer.size, layer.width, layer.letterSpacing);
       const shown = layer.maxLines ? Math.min(lines, layer.maxLines) : lines;
       if ((layer.maxLines && lines > layer.maxLines) || shown * layer.size * layer.lineHeight > layer.height * 1.35) {
-        issues.push({ code: "text-overflow", severity: "warning", layerId: layer.id, message: `"${layerName(layer)}" pode não caber na caixa (≈${lines} linha(s)).` });
+        issues.push({ code: "text-overflow", severity: "warning", layerId: layer.id, message: `"${layerName(layer)}" pode não caber na caixa (≈${lines} ${lines === 1 ? "linha" : "linhas"}).` });
       }
       if (layer.size < unit * 0.014) issues.push({ code: "tiny-text", severity: "info", layerId: layer.id, message: `"${layerName(layer)}" fica ilegível no celular (${Math.round(layer.size)}px numa peça de ${unit}px).` });
     }
