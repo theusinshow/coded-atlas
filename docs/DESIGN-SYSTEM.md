@@ -10,10 +10,9 @@ The Atlas design system derives from the **Coded by M design system** (cbm-port@
 
 | Foundation (Coded by M) | Atlas token / usage |
 |---|---|
-| `#000F08` base | `--color-base` (page) · `background` of the Coded by M style |
-| `#070B08` forest | `--color-surface` (panels, cards) |
-| `#0A120C` SURFACE.frame | `--color-surface-2` (inputs, hover) |
-| `#1A2418` border-active / `#111511` border | `--color-line` (control borders must stay legible) / `--color-line-soft` |
+| `#000F08` base | `background` of the Coded by M style of generated pieces (not the Atlas UI since ADR-049) |
+| Atlas UI neutral blacks (ADR-049): `#0A0A0A` · `#111111` · `#171717` | `--color-base` (page) · `--color-surface` (panels, cards) · `--color-surface-2` (inputs, hover) |
+| Atlas UI borders (ADR-049): `#2A2A2A` / `#1C1C1C` | `--color-line` (control borders must stay legible) / `--color-line-soft` |
 | `#F5F2ED` off-white | text; `--color-accent` = emphasis in structure |
 | `#FB3640` signal / `#C42030` red-dark | `--color-signal`/`-dark`: primary action, focus (2px, offset 3), active marker, error; `--color-accent-bright` = link hover ("hover reveals") |
 | gray-100/200/400/600/800 | `cbm-gray-*` utilities. Readable text never goes below gray-400 (AA 4.7:1); gray-600 is decorative only |

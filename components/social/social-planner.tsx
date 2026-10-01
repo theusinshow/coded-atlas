@@ -124,7 +124,7 @@ export function SocialPlanner({ feed, stories, candidates, initialPostId, initia
           <p className="text-sm text-cbm-white">{view === "feed" ? "O feed ainda está vazio." : "Nenhum story planejado."}</p>
           <p className="mt-2 text-[13px] text-cbm-gray-400">
             {candidates.length === 0
-              ? "Renderize peças num projeto (Criar → Media Kit) e volte aqui para montar os posts."
+              ? "Gere as peças num projeto (Início → Instagram) e volte aqui para montar os posts."
               : `Use "Novo post" e escolha peças já renderizadas${view === "stories" ? " em 9:16" : ""}.`}
           </p>
         </div>
@@ -507,7 +507,7 @@ function NewPostPanel({ candidates, onCreated }: { candidates: CandidateGroup[];
       </div>
 
       {groups.length === 0 ? (
-        <p className="text-[13px] text-cbm-gray-400">Nenhuma peça renderizada serve para {KINDS.find((k) => k.id === kind)?.label.toLowerCase()} ainda. Renderize nos projetos (Criar → Media Kit) e volte aqui.</p>
+        <p className="text-[13px] text-cbm-gray-400">Nenhuma peça renderizada serve para {KINDS.find((k) => k.id === kind)?.label.toLowerCase()} ainda. Gere nos projetos (Início → Instagram) e volte aqui.</p>
       ) : (
         <div className="space-y-5 max-h-[420px] overflow-y-auto pr-1">
           {groups.map((g) => (

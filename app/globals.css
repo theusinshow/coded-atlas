@@ -35,12 +35,20 @@
   --font-display: "Panchang", "Satoshi", sans-serif;
   --font-mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", "Cascadia Code", "Menlo", "Consolas", monospace;
 
-  /* ── Camada semântica do Atlas (mapeia a foundation; não cria outra marca) ── */
-  --color-base: var(--color-cbm-black);
-  --color-surface: var(--color-cbm-forest);
-  --color-surface-2: var(--color-cbm-frame);
-  --color-line: var(--color-cbm-border-active);     /* bordas de controle precisam ser legíveis */
-  --color-line-soft: var(--color-cbm-border);
+  /* ── Interface do Atlas: pretos neutros (ADR-049). Só a UI; as peças geradas
+     no estilo "Coded by M" continuam com a paleta da marca (creative/tokens.ts). ── */
+  --color-ui-black: #0A0A0A;
+  --color-ui-panel: #111111;
+  --color-ui-frame: #171717;
+  --color-ui-border: #1C1C1C;
+  --color-ui-border-active: #2A2A2A;
+
+  /* ── Camada semântica do Atlas (não cria outra marca) ── */
+  --color-base: var(--color-ui-black);
+  --color-surface: var(--color-ui-panel);
+  --color-surface-2: var(--color-ui-frame);
+  --color-line: var(--color-ui-border-active);     /* bordas de controle precisam ser legíveis */
+  --color-line-soft: var(--color-ui-border);
   /* Ênfase: estrutura em off-white; no hover revela o sinal ("hover revela, não só destaca"). */
   --color-accent: var(--color-cbm-white);
   --color-accent-bright: var(--color-cbm-red);

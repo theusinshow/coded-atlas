@@ -131,7 +131,7 @@ export function CompositionGallery({ projectId, slug, assets, profile, profilesB
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 id="galeria" className="text-[11px] font-medium uppercase tracking-[0.22em] text-cbm-gray-400">
-              Composições curadas
+              Visuais prontos
             </h2>
             <p className="text-[13px] text-cbm-gray-400 mt-1.5">Já preenchidas com o material do projeto.</p>
           </div>

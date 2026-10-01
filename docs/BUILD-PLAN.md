@@ -386,3 +386,18 @@ Verificação 3.1.C: typecheck/lint OK; `npm test` 451 testes (33 arquivos; os t
 - [x] 3.2.D Social (Instagram): `SocialPost` + migration `0010_social_posts`, regras do Instagram (puras, testadas), `/social` com grid do perfil (3:4), stories com áreas seguras, editor com prévia e carrossel, status rascunho → pronto → publicado, legenda/hashtags com contadores, pacote (peças + legenda.txt), menu global "Social". Nada é publicado pelo Atlas.
 
 Verificação 3.2: typecheck/lint OK; `npm test` 470 (38 arquivos; regras do Instagram, serviço social, pôster de vídeo, textos); build OK; `npm run e2e` 26/26 (novo passo Social); detector do impeccable sem achados; rodada final de prints desktop + celular de 18 telas com dados reais: sem rolagem lateral, no máximo 1 botão vermelho por tela, sem erros.
+
+## Atlas 3.3 — Começar pelo objetivo (concluída 2026-10-01)
+
+Pedido do Matheus ao testar para o portfólio: "ta meio confuso" + fundo mais escuro. Escolheu o caminho A e preto neutro (ADR-049, ADR-050; design em `docs/superpowers/specs/2026-10-01-comecar-pelo-objetivo-design.md`).
+
+- [x] Fundo preto neutro só na UI (`--color-ui-*` → camada semântica); foundation da marca e peças geradas inalteradas.
+- [x] `swapKitItemVisual` / `removeKitItem` (kit-service) com testes de integração: ciclo de alternativas, recusa fora de composição, último item, kit renderizado volta a pronto, recusa durante render.
+- [x] "Abrir pasta": `FolderDestination.locate/canReveal/reveal` (confinado por string e `realpath`, `explorer.exe` sem shell) + `revealExport`; testes com caminhos inválidos, pasta inexistente e junction para fora.
+- [x] `src/core/kits/goals.ts` (objetivos → presets, kit atual, ação do cartão, arquivos do último render), testado.
+- [x] Início do projeto ("O que você quer fazer?" + "Seus arquivos" + identidade/endereços recolhidos); `next-step.ts` removido.
+- [x] Caminho guiado `/projects/[slug]/fazer/[goal]`: Material (captura completa) → Peças (trocar/tirar/ajustar) → Gerar (PNG + MP4 final) → Pronto (ZIP, salvar na pasta, abrir pasta, caminho com copiar; Instagram → planejador Social).
+- [x] Navegação: Início + "Avançado" (Material · Criar · Entregar, mesmas URLs); prévias de peças do kit extraídas para `components/kits/item-views.ts`.
+- [x] Textos: sub-abas sem jargão, "Visuais prontos", "Conjuntos de peças", "Arquivos gerados", "Peças antigas" recolhidas, caminho completo da pasta e "Abrir pasta" no histórico de entregas.
+
+Verificação 3.3: typecheck/lint OK; `npm test` 476 (38 arquivos); build OK; `npm run e2e` 27/27 (novo passo: Início → Portfólio → montar, trocar e tirar peça → gerar → salvar na pasta, conferindo a pasta no disco); prints desktop 1440 e celular 390 de Início, caminho guiado, Entregar, Criar e Projetos com dados reais, sem rolagem lateral.

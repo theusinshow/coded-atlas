@@ -131,6 +131,7 @@ Delivered in 2.14 (Publish & Portfolio):
   - 3.2.B motion foundation (MotionConfig with reduced motion, feedback/continuity only: tab indicator, list/presence transitions, job status feedback);
   - 3.2.C fixes on every screen from the audit;
   - 3.2.D Social: `SocialPost` domain + migration, planner at `/social` (feed grid, stories, queue, caption/hashtags, pack download), global nav item;
+- ✅ **3.3 — Começar pelo objetivo** — done 2026-10-01 (ADR-049, ADR-050) (authorized 2026-10-01; owner chose path A and a neutral black background): Início with goals + "Seus arquivos", guided path `/projects/[slug]/fazer/[goal]` over existing Media Kits, kit operations swap visual / remove item, "Abrir pasta" confined to the export dir, current tabs under "Avançado", plain-language labels, neutral black UI background (generated pieces unchanged). Design: `docs/superpowers/specs/2026-10-01-comecar-pelo-objetivo-design.md`;
 - bug fixes and hardening of what 2.1–2.14 delivered;
 - documentation and test improvements;
 - small polish items the owner reports.
@@ -145,7 +146,7 @@ The v1 library in `public/generated` (or `ATLAS_OUTPUT_DIR`) is read-only input 
 
 ## Completion criteria
 
-Atlas 3.0 (ROADMAP): Project URL → Generate Media Kit → Review → Render → Export works end-to-end. Verified by `npm run e2e` (24 steps) and the owner's acceptance test on 2026-09-28.
+Atlas 3.0 (ROADMAP): Project URL → Generate Media Kit → Review → Render → Export works end-to-end. Verified by `npm run e2e` (24 steps; 27 since 3.3) and the owner's acceptance test on 2026-09-28.
 
 ## Agent rule
 

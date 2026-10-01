@@ -8,7 +8,7 @@ import { cleanOutputLabel, commonLabelPrefix, withoutPrefix } from "@/components
 import { ExportForm, SelectAllButton } from "@/components/publish/export-forms";
 import { ExportHistory } from "@/components/publish/export-history";
 import { plural } from "@/components/ui/format";
-import { EmptyState, LinkButton, SectionTitle } from "@/components/ui/primitives";
+import { Collapsible, EmptyState, LinkButton, SectionTitle } from "@/components/ui/primitives";
 import type { Output } from "@/src/core/assets/output";
 import { getAtlasRuntime } from "@/src/infrastructure/runtime";
 import { requireProjectBySlug } from "@/src/modules/projects/project-service";
@@ -61,7 +61,7 @@ export default async function ProjectPublishPage({ params }: Props) {
   if (outputs.length === 0) {
     return (
       <EmptyState
-        title="Nenhuma peça final ainda"
+        title="Nenhum arquivo gerado ainda"
         action={
           <LinkButton href={`/projects/${project.slug}/create`} size="sm">
             Ir para Criar
@@ -75,9 +75,12 @@ export default async function ProjectPublishPage({ params }: Props) {
     <div className="space-y-10">
       {rendered.length > 0 && (
         <section aria-labelledby="renders" className="space-y-8">
-          <SectionTitle id="renders" aside={<SelectAllButton formId={FORM_ID} />}>
-            Peças ({rendered.length})
-          </SectionTitle>
+          <div className="space-y-1.5">
+            <SectionTitle id="renders" aside={<SelectAllButton formId={FORM_ID} />}>
+              Arquivos gerados ({rendered.length})
+            </SectionTitle>
+            <p className="text-[13px] text-cbm-gray-400">Marque os arquivos para baixar juntos num ZIP ou salvar na pasta de entregas.</p>
+          </div>
           {groups.map((group) => {
             const labels = group.items.map((o) => cleanOutputLabel(o.label));
             const prefix = commonLabelPrefix(labels);
@@ -136,23 +139,22 @@ export default async function ProjectPublishPage({ params }: Props) {
         </section>
       )}
       {legacy.length > 0 && (
-        <section aria-labelledby="legado">
-          <SectionTitle id="legado" aside={rendered.length === 0 ? <SelectAllButton formId={FORM_ID} /> : undefined}>
-            Peças anteriores ({legacy.length})
-          </SectionTitle>
-          <ul className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
-            {legacy.map((o) => (
-              <li key={o.id}>
-                <OutputCard output={o} selectFor={FORM_ID} />
-              </li>
-            ))}
-          </ul>
+        <section aria-label="Peças antigas">
+          <Collapsible title={`Peças antigas (${legacy.length})`} meta="da versão anterior do Atlas" defaultOpen={rendered.length === 0}>
+            <ul className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
+              {legacy.map((o) => (
+                <li key={o.id}>
+                  <OutputCard output={o} selectFor={FORM_ID} />
+                </li>
+              ))}
+            </ul>
+          </Collapsible>
         </section>
       )}
       {exports.length > 0 && (
         <section aria-labelledby="entregas">
           <SectionTitle id="entregas">Entregas ({exports.length})</SectionTitle>
-          <ExportHistory records={exports} jobStatus={jobStatus} />
+          <ExportHistory records={exports} jobStatus={jobStatus} folderRoot={exportDeps.folder.label} canReveal={exportDeps.folder.canReveal} />
         </section>
       )}
       <ExportForm formId={FORM_ID} mode="package" projectId={project.id} destinations={destinationStatus(exportDeps)} defaultName={`${project.name} · pacote`} />

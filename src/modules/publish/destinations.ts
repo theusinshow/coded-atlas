@@ -14,6 +14,12 @@ export interface FolderDestination {
   /** Raiz exibida na UI (Ajustes) — nunca vai para o banco como caminho absoluto. */
   readonly label: string;
   deliver(folder: string, files: readonly DeliveryFile[]): Promise<{ folder: string; files: number }>;
+  /** Caminho absoluto de uma entrega, só para exibir ("copiar caminho"). */
+  locate(folder: string): string;
+  /** O sistema sabe abrir uma pasta no gerenciador de arquivos? */
+  readonly canReveal: boolean;
+  /** Abre a pasta da entrega no gerenciador de arquivos (confinada à raiz). */
+  reveal(folder: string): Promise<void>;
 }
 
 export interface GithubDestination {

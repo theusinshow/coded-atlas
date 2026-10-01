@@ -10,16 +10,18 @@ Only the places where work happens are primary links: projects, the Instagram pl
 
 ## Project navigation
 
-The project is a three-step flow (owner decision 2026-09-29, ADR-046). Existing URLs are kept, and each step groups screens under a light sub-navigation:
+The project starts from the owner's goal (Atlas 3.3, ADR-050; replaces the three-step overview of ADR-046). Existing URLs are kept:
 
 ```text
-Visão geral · 1 Material · 2 Criar · 3 Entregar                 ⚙ Ajustes do projeto
-                 │            │           └ publish
-                 │            └ create (Início) · kits · cases · plans
-                 └ assets · capture
+Início · Avançado ›  [Material · Criar · Entregar]                ⚙ Ajustes do projeto
+  │                      │          │         └ publish
+  │                      │          └ create · kits · cases · plans
+  │                      └ assets · capture
+  ├ "O que você quer fazer?" → /fazer/portfolio · instagram · lancamento · case (→ cases)
+  └ "Seus arquivos" (rendered kits: Baixar ZIP · Abrir pasta · Abrir)
 ```
 
-Visão geral answers "what should I do now?" with a single **Próximo passo** (`src/modules/projects/next-step.ts`: capture → Media Kit → render → case → deliver) and the status of the three steps.
+Each media goal (`src/core/kits/goals.ts`) is a guided page `/projects/[slug]/fazer/[goal]` over the latest Media Kit of its preset: **1 Material** (last capture, "Capturar de novo" = complete profile) → **2 Peças** (Trocar visual, Tirar, Ajustar no editor) → **3 Gerar** (PNG + MP4, final) → **4 Pronto** (Baixar tudo, Salvar na pasta, Abrir pasta, path with copy). "Avançado" opens the full screens and is already open on them.
 
 ## Main journey
 

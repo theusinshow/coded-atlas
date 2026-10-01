@@ -1,4 +1,5 @@
 import { Download, ExternalLink } from "lucide-react";
+import { RevealFolderButton } from "@/components/goals/goal-actions";
 import { formatBytes, plural, relativeTime } from "@/components/ui/format";
 import type { ExportRecord } from "@/src/core/publish/export";
 
@@ -14,13 +15,20 @@ const STATUS: Record<ViewStatus, { label: string; className: string }> = {
   cancelled: { label: "Cancelado", className: "text-cbm-gray-400 border-line" },
 };
 
+/** Caminho completo da pasta da entrega (raiz da UI + subpasta), com o separador do sistema. */
+function folderPath(root: string | undefined, folder: string): string {
+  if (!root) return `${folder}/`;
+  const sep = root.includes("\\") ? "\\" : "/";
+  return root.endsWith(sep) ? `${root}${folder}` : `${root}${sep}${folder}`;
+}
+
 const LINK = "inline-flex h-10 items-center gap-1.5 text-[12px] text-accent transition-colors hover:text-accent-bright sm:h-8";
 
 /**
  * Histórico de entregas. `jobStatus` corrige registros cujo job morreu antes de
  * começar (cancelado/falhou na fila): o registro fica "na fila" para sempre sem isso.
  */
-export function ExportHistory({ records, jobStatus }: { records: ExportRecord[]; jobStatus: Record<string, string> }) {
+export function ExportHistory({ records, jobStatus, folderRoot, canReveal = false }: { records: ExportRecord[]; jobStatus: Record<string, string>; folderRoot?: string; canReveal?: boolean }) {
   return (
     <ul className="divide-y divide-line border border-line" data-export-history>
       {records.map((r) => {
@@ -45,7 +53,7 @@ export function ExportHistory({ records, jobStatus }: { records: ExportRecord[];
                   {relativeTime(r.createdAt)}
                 </time>
               </p>
-              {r.result.folder && <p className="break-words text-[12px] text-cbm-gray-400">Salvo na pasta: {r.result.folder}/</p>}
+              {r.result.folder && <p className="break-all text-[12px] text-cbm-gray-400">Salvo em: {folderPath(folderRoot, r.result.folder)}</p>}
               {r.result.error && <p className="text-[12px] text-bad">{r.result.error}</p>}
             </div>
             <div className="flex items-center gap-4 justify-self-start sm:justify-self-end">
@@ -56,6 +64,7 @@ export function ExportHistory({ records, jobStatus }: { records: ExportRecord[];
                   Baixar (.zip)
                 </a>
               )}
+              {status === "delivered" && r.result.folder && canReveal && <RevealFolderButton exportId={r.id} />}
               {status === "delivered" && r.result.commitUrl && (
                 <a href={r.result.commitUrl} target="_blank" rel="noreferrer" className={LINK}>
                   Ver commit

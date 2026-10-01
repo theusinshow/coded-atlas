@@ -103,7 +103,7 @@ export default async function PortfolioPage() {
       {history.length > 0 && (
         <section aria-labelledby="historico">
           <SectionTitle id="historico">Exportações ({history.length})</SectionTitle>
-          <ExportHistory records={history} jobStatus={jobStatus} />
+          <ExportHistory records={history} jobStatus={jobStatus} folderRoot={exportDeps.folder.label} canReveal={exportDeps.folder.canReveal} />
         </section>
       )}
 

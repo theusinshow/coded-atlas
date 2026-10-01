@@ -16,6 +16,7 @@ import {
   createExport,
   packagePaths,
   type ExportDestination,
+  type ExportId,
   type ExportRecord,
   type ExportRepository,
   type PortfolioEntry,
@@ -161,6 +162,14 @@ async function portfolioProject(deps: ExportDeps, project: Project, outputs: Out
 }
 
 /** Lista final de arquivos (caminhos relativos seguros) e o nome-base da entrega. */
+/** "Abrir pasta": só para entregas em pasta já concluídas; o caminho vem do registro. */
+export async function revealExport(deps: Pick<ExportDeps, "exports" | "folder">, exportId: ExportId): Promise<void> {
+  const record = await deps.exports.getById(exportId);
+  if (!record) throw new DomainError("NOT_FOUND", "Entrega não encontrada.");
+  if (record.destination !== "folder" || record.status !== "delivered" || !record.result.folder) throw new DomainError("VALIDATION", "Esta entrega não tem uma pasta para abrir.");
+  await deps.folder.reveal(record.result.folder);
+}
+
 export async function buildDelivery(deps: ExportDeps, record: ExportRecord): Promise<{ base: string; files: DeliveryFile[] }> {
   const outputs = await loadOutputs(deps, record.outputIds);
   const files: DeliveryFile[] = [];

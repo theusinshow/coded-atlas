@@ -1,7 +1,7 @@
 # Atlas 3.3 — Começar pelo objetivo (design)
 
 **Data:** 2026-10-01
-**Status:** aprovado em conversa (partes 1–3); aguardando revisão deste documento
+**Status:** implementado em 2026-10-01 (ver "Desvios na implementação" no fim)
 **Autorização:** o Matheus escolheu o caminho A ("começar pelo objetivo") e o fundo preto neutro em 2026-10-01.
 
 ## Problema
@@ -40,7 +40,9 @@ Uma camada de UI orientada a objetivo sobre o motor existente. O motor (kits, ca
 
 `Início` + menu `Avançado` (Material, Criar, Entregar, Ajustes — mesmas URLs de hoje). Nada é removido.
 
-### Caminho guiado: `/projects/[slug]/fazer/[kitId]`
+### Caminho guiado: `/projects/[slug]/fazer/[goal]`
+
+> Na implementação a URL ficou pelo objetivo (`/fazer/portfolio`) em vez do id do kit: assim o caminho começa mesmo sem captura e sem kit, e mostra sempre o kit mais recente daquele preset (ADR-050).
 
 Uma página, quatro passos visíveis em sequência; o estado vem do kit e dos jobs, não de estado local.
 
@@ -96,3 +98,13 @@ Objetivo "Vídeo" separado (vídeo já vem nos kits), objetivos configuráveis p
 ## Ordem
 
 1. Fundo preto. 2. Operações de kit. 3. Abrir pasta. 4. Início + navegação. 5. Caminho `/fazer`. 6. Textos e "Peças antigas". 7. Verificação, `BUILD-PLAN.md`, `CURRENT.md`, commit.
+
+## Desvios na implementação
+
+- URL por objetivo (`/fazer/portfolio`), não por kit — o caminho começa sem captura/kit e sempre mostra o kit mais recente do preset.
+- "Seus arquivos" lista os kits gerados (ZIP direto + "Abrir pasta" quando houver entrega em pasta), não só os registros `Export`: quem só baixou o ZIP também acha os arquivos ali.
+- "Trocar visual" usa primeiro as alternativas do preset e depois qualquer composição que aceite o formato (com o material completo), para não ficar só com duas opções.
+- O passo Material não tem botão "Usar esta": com material, ele já conta como feito; o botão é só "Capturar de novo".
+- "Abrir pasta" virou capacidade do `FolderDestination` (`locate`, `canReveal`, `reveal` com opener injetável), não uma porta `FolderOpener` separada.
+- Falha parcial: a geração é um job só; se ele falha, o passo 3 mostra o erro e "Tentar de novo". Peças que não puderam ser montadas aparecem no passo 2 com o motivo.
+- Studio e editores avançados continuam dizendo "Renderizar".

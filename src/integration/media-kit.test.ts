@@ -16,7 +16,7 @@ import { PlaywrightStaticRenderer } from "../infrastructure/render/playwright-st
 import { SharpMediaProbe } from "../infrastructure/sharp/media-probe";
 import { LocalAssetStorage } from "../infrastructure/storage/local-asset-storage";
 import { importUploads } from "../modules/import/upload";
-import { enqueueKitRender, generateMediaKit, type KitDeps } from "../modules/kits/kit-service";
+import { enqueueKitRender, generateMediaKit, removeKitItem, swapKitItemVisual, type KitDeps } from "../modules/kits/kit-service";
 import { createNewProject } from "../modules/projects/project-service";
 import { createRenderJobHandler } from "../modules/render/render-job";
 import { isDomainError } from "../shared/errors";
@@ -119,5 +119,70 @@ describe("Media Kit", () => {
   it("sem imagens no projeto: erro claro", async () => {
     const { project } = await createNewProject({ ...repos, storage }, { name: "Vazio", category: "Site" });
     await expect(generateMediaKit(kitDeps(), project.id, { presetId: "launch-kit" })).rejects.toSatisfy((e: unknown) => isDomainError(e, "VALIDATION"));
+  });
+
+  describe("trocar visual e tirar peça", () => {
+    it("trocar visual: próxima composição usável, mesmo formato e estilo; a instância antiga sai", async () => {
+      const project = await setup();
+      const kit = await generateMediaKit(kitDeps(), project.id, { presetId: "portfolio-kit" });
+      const hero = kit.items.find((i) => i.presetItemId === "hero")!;
+      const before = (await repos.compositionInstances.getById(hero.instanceId as never))!;
+      expect(before.compositionId).toBe("desktop-hero");
+
+      const swapped = await swapKitItemVisual(kitDeps(), kit.id, hero.id);
+      const item = swapped.items.find((i) => i.id === hero.id)!;
+      expect(item.instanceId).not.toBe(hero.instanceId);
+      const after = (await repos.compositionInstances.getById(item.instanceId as never))!;
+      expect(after.compositionId).toBe("floating-devices");
+      expect(after).toMatchObject({ formatId: before.formatId, styleMode: before.styleMode });
+      expect(await repos.compositionInstances.getById(hero.instanceId as never)).toBeNull();
+      expect((await repos.kits.getById(kit.id))!.items.find((i) => i.id === hero.id)!.instanceId).toBe(item.instanceId);
+
+      // Troca sucessiva percorre as alternativas e volta ao começo.
+      const seen = new Set([before.compositionId, after.compositionId]);
+      let current = swapped;
+      for (let n = 0; n < 12; n++) {
+        current = await swapKitItemVisual(kitDeps(), kit.id, hero.id);
+        const id = (await repos.compositionInstances.getById(current.items.find((i) => i.id === hero.id)!.instanceId as never))!.compositionId;
+        if (id === "desktop-hero") break;
+        seen.add(id);
+      }
+      expect((await repos.compositionInstances.getById(current.items.find((i) => i.id === hero.id)!.instanceId as never))!.compositionId).toBe("desktop-hero");
+      expect(seen.size).toBeGreaterThanOrEqual(2);
+    });
+
+    it("trocar visual recusa item que não é composição", async () => {
+      const project = await setup();
+      const kit = await generateMediaKit(kitDeps(), project.id, { presetId: "portfolio-kit" });
+      const video = kit.items.find((i) => i.kind === "video")!;
+      await expect(swapKitItemVisual(kitDeps(), kit.id, video.id)).rejects.toSatisfy((e: unknown) => isDomainError(e, "VALIDATION"));
+    });
+
+    it("tirar peça remove o item e sua instância; o último item não sai", async () => {
+      const project = await setup();
+      const kit = await generateMediaKit(kitDeps(), project.id, { presetId: "portfolio-kit" });
+      const first = kit.items[0];
+      const after = await removeKitItem(kitDeps(), kit.id, first.id);
+      expect(after.items.map((i) => i.id)).not.toContain(first.id);
+      expect(after.items).toHaveLength(kit.items.length - 1);
+      expect(await repos.compositionInstances.getById(first.instanceId as never)).toBeNull();
+
+      let current = after;
+      while (current.items.length > 1) current = await removeKitItem(kitDeps(), kit.id, current.items[0].id);
+      await expect(removeKitItem(kitDeps(), kit.id, current.items[0].id)).rejects.toSatisfy((e: unknown) => isDomainError(e, "VALIDATION"));
+    });
+
+    it("kit renderizado volta a pronto ao mudar; renderizando, recusa", async () => {
+      const project = await setup();
+      const kit = await generateMediaKit(kitDeps(), project.id, { presetId: "portfolio-kit" });
+      await repos.kits.update({ ...kit, status: "rendered" });
+      const changed = await removeKitItem(kitDeps(), kit.id, kit.items[1].id);
+      expect(changed.status).toBe("ready");
+
+      await enqueueKitRender(kitDeps(), kit.id, { image: "png", video: false, quality: "final" });
+      const hero = changed.items.find((i) => i.presetItemId === "hero")!;
+      await expect(swapKitItemVisual(kitDeps(), kit.id, hero.id)).rejects.toSatisfy((e: unknown) => isDomainError(e, "CONFLICT"));
+      await expect(removeKitItem(kitDeps(), kit.id, hero.id)).rejects.toSatisfy((e: unknown) => isDomainError(e, "CONFLICT"));
+    });
   });
 });

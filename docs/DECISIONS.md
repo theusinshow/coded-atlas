@@ -328,3 +328,22 @@ Accepted (2026-09-29; owner: "fácil de usar, objetivo, mas muito bem feito, sem
 - **Structure:** one red primary per screen, content before forms, secondary sections collapsed (`Collapsible`), a single `Breadcrumb` on detail pages, auto-applied filters, and a shared media card with whole-card selection plus a sticky action bar. The Studio and case editor show a "use a larger screen" state below 1024 px. The app has no horizontal scroll on mobile.
 - **Media performance:** video Outputs and Assets get cached poster thumbnails (FFmpeg frame → WebP), so grids never mount `<video>`.
 - **Process:** an independent audit (desktop and mobile screenshots of every page, with a style scan), followed by three parallel implementation passes with disjoint file ownership, one integration pass, e2e and a final screenshot round.
+
+## ADR-049 — Atlas UI on neutral black; Coded by M palette stays in the pieces (3.3)
+
+Accepted (2026-10-01; owner: "trocar esse background color para algo mais dark", chose "preto neutro").
+
+- **The Atlas interface moves off the green-tinted brand black.** The semantic layer (`--color-base`, `--color-surface`, `--color-surface-2`, `--color-line`, `--color-line-soft`) now points to Atlas-only neutral blacks (`--color-ui-*`: `#0A0A0A`, `#111111`, `#171717`, `#1C1C1C`, `#2A2A2A`). Components were untouched because they already use the semantic names.
+- **The foundation is unchanged.** `--color-cbm-*` keep the brand values. Off-white, warm grays, the signal red, Satoshi/Panchang, radius 0 and red rarity still apply to the UI.
+- **Generated pieces are unchanged.** The "Coded by M" style of compositions keeps `#000F08` through `src/core/creative/tokens.ts`, so the Atlas UI is a tool chrome and the brand lives in what it produces.
+- This deliberately diverges from ADR-045 for the UI background only.
+
+## ADR-050 — Start from the goal (3.3)
+
+Accepted (2026-10-01; owner tested the Atlas for portfolio media: "ta meio confuso" — didn't know where to start, too many options in Criar, couldn't find the result, jargon. Chose path A over restructuring tabs or polish only).
+
+- **The project opens on Início**, not on a state-driven overview. It asks "O que você quer fazer?" (Portfólio / site, Instagram, Lançamento, Case / apresentação) and lists "Seus arquivos". The "Próximo passo" engine (`next-step.ts`) was removed: it recommended steps from internal state, not from the owner's goal.
+- **A goal is a Media Kit preset, not a new entity.** `/projects/[slug]/fazer/[goal]` shows the latest kit of that preset in four steps (Material → Peças → Gerar → Pronto). The URL is keyed by goal, not kit id, so a project without capture can start the path and "continuar de onde parou" needs no extra state. Case goes to the existing case editor.
+- **Two kit operations:** `swapKitItemVisual` (next usable composition: preset alternatives first, then any composition that accepts the format; cyclic) and `removeKitItem` (never the last). Both refuse while rendering and send a rendered kit back to `ready`; the replaced instance is deleted, Outputs stay.
+- **"Abrir pasta"** is a `FolderDestination` capability (`locate`, `canReveal`, `reveal`). The action receives only an export id; the path comes from the record, is confined to `ATLAS_EXPORT_DIR` by string and by `realpath` (junctions), and opens with `explorer.exe` without a shell. Other OSes show the path with "copiar".
+- **The previous tabs move under "Avançado"** (same URLs). Labels near the main path drop jargon ("Imagens e vídeos", "Visuais", "Conjuntos de peças", "Arquivos gerados"); v1 outputs collapse into "Peças antigas". Studio and editors keep "Renderizar".

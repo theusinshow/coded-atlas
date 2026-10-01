@@ -1,4 +1,5 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { spawn } from "node:child_process";
+import { mkdir, realpath, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { DeliveryFile, FolderDestination, GithubDestination } from "../../modules/publish/destinations";
 import { DomainError } from "../../shared/errors";
@@ -16,9 +17,23 @@ function assertRelative(relative: string): string[] {
  * Pasta local de entregas (ATLAS_EXPORT_DIR, padrão `<ATLAS_HOME>/exports`): cada
  * pacote vira uma subpasta. Confinado à raiz — nada escapa dela.
  */
+/** Abre uma pasta no Explorador do Windows (sem shell; o caminho vai como argumento). */
+const openInExplorer = async (absolute: string): Promise<void> => {
+  spawn("explorer.exe", [absolute], { detached: true, stdio: "ignore", windowsHide: false }).unref();
+};
+
 export class LocalFolderDestination implements FolderDestination {
   readonly configured = true;
-  constructor(private readonly root: string) {}
+  readonly canReveal: boolean;
+  private readonly opener: ((absolute: string) => Promise<void>) | null;
+
+  constructor(
+    private readonly root: string,
+    opener?: (absolute: string) => Promise<void>
+  ) {
+    this.opener = opener ?? (process.platform === "win32" ? openInExplorer : null);
+    this.canReveal = !!this.opener;
+  }
 
   get label(): string {
     return this.root;
@@ -34,6 +49,23 @@ export class LocalFolderDestination implements FolderDestination {
       await writeFile(target, file.bytes, { flag: "wx" }); // nunca sobrescreve
     }
     return { folder, files: files.length };
+  }
+
+  locate(folder: string): string {
+    const base = path.resolve(this.root, ...assertRelative(folder));
+    if (!base.startsWith(path.resolve(this.root) + path.sep)) throw new DomainError("PATH_OUTSIDE_ROOT", "Pasta de entrega fora da raiz.");
+    return base;
+  }
+
+  async reveal(folder: string): Promise<void> {
+    if (!this.opener) throw new DomainError("VALIDATION", "Abrir pasta não é suportado neste sistema.");
+    const base = this.locate(folder);
+    // Confinamento também no disco real: junction/symlink não pode levar para fora.
+    const real = await realpath(base).catch(() => null);
+    if (!real) throw new DomainError("NOT_FOUND", "A pasta desta entrega não existe mais.");
+    const realRoot = await realpath(this.root);
+    if (!real.startsWith(realRoot + path.sep)) throw new DomainError("PATH_OUTSIDE_ROOT", "Pasta de entrega fora da raiz.");
+    await this.opener(base);
   }
 }
 

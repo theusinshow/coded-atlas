@@ -10,46 +10,18 @@ import { outputFileUrl, outputThumbUrl } from "@/components/create/output-card";
 import { RenderFonts } from "@/components/create/render-fonts";
 import { STYLE_MODES } from "@/components/create/types";
 import { DeleteKitForm, KitRenderForm, KitVideo } from "@/components/kits/kit-forms";
+import { buildItemViews, frameRatio } from "@/components/kits/item-views";
 import { Breadcrumb, Panel, SectionTitle } from "@/components/ui/primitives";
-import { formatDuration, plural } from "@/components/ui/format";
+import { plural } from "@/components/ui/format";
 import type { Output } from "@/src/core/assets/output";
-import { CompositionInstanceIdSchema } from "@/src/core/creative/composition";
-import { getComposition } from "@/src/core/creative/compositions";
-import { FORMATS } from "@/src/core/creative/formats";
-import { buildArtboard } from "@/src/core/creative/instance-artboard";
-import { resolveTokens, type StyleTokens } from "@/src/core/creative/tokens";
-import type { Artboard } from "@/src/core/documents/artboard";
-import { contentPages, CreativeDocumentIdSchema, isCarousel, isMotion } from "@/src/core/documents/creative-document";
 import { isTerminal } from "@/src/core/jobs/job";
-import { MediaKitIdSchema, type KitItem } from "@/src/core/kits/media-kit";
-import { totalDurationMs } from "@/src/core/motion/motion";
+import { MediaKitIdSchema } from "@/src/core/kits/media-kit";
 import { getAtlasRuntime } from "@/src/infrastructure/runtime";
 import { requireProjectBySlug } from "@/src/modules/projects/project-service";
 import { JobIdSchema } from "@/src/shared/id";
 
 interface Props {
   params: Promise<{ slug: string; kitId: string }>;
-}
-
-interface ItemView {
-  item: KitItem;
-  preview: { artboard: Artboard; tokens: StyleTokens } | null;
-  href: string | null;
-  detail: string;
-  /** Última edição do rascunho — para saber se o render ficou para trás. */
-  updatedAt: string | null;
-  durationMs: number | null;
-}
-
-/** Moldura comum da grade: a proporção mais frequente entre os itens (empate → a mais larga). */
-function frameRatio(items: KitItem[]): number {
-  const counts = new Map<number, number>();
-  for (const i of items) {
-    const r = FORMATS[i.formatId].width / FORMATS[i.formatId].height;
-    counts.set(r, (counts.get(r) ?? 0) + 1);
-  }
-  const [best] = [...counts.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0])[0] ?? [1];
-  return Math.min(16 / 9, Math.max(0.8, best));
 }
 
 function ItemStatus({ busy, outputs, stale }: { busy: boolean; outputs: Output[]; stale: boolean }) {
@@ -69,51 +41,8 @@ export default async function KitPage({ params }: Props) {
   if (!kit || kit.projectId !== project.id) notFound();
 
   const [assets, profiles, outputs] = await Promise.all([repos.assets.listByProject(project.id), repos.visualProfiles.listByProject(project.id), repos.outputs.listByProject(project.id)]);
-  const assetMap = new Map(assets.map((a) => [a.id as string, a]));
-  const profileOf = (rev: number | null) => (rev ? (profiles.find((p) => p.revision === rev) ?? null) : null);
 
-  // Prévias calculadas no servidor (o mesmo kernel do render; o cliente só desenha).
-  const views: ItemView[] = await Promise.all(
-    kit.items.map(async (item): Promise<ItemView> => {
-      const empty = { item, preview: null, href: null, updatedAt: null, durationMs: null };
-      if (item.instanceId) {
-        const instance = await repos.compositionInstances.getById(CompositionInstanceIdSchema.parse(item.instanceId));
-        const definition = instance ? getComposition(instance.compositionId) : undefined;
-        if (!instance || !definition) return { ...empty, detail: "Rascunho excluído" };
-        const profile = profileOf(instance.visualProfileRevision);
-        return {
-          item,
-          preview: { artboard: buildArtboard(definition, instance, assetMap, profile), tokens: resolveTokens(profile, instance.styleMode, instance.overrides) },
-          href: `/projects/${project.slug}/create/${instance.id}`,
-          detail: `${definition.name} · ${FORMATS[instance.formatId].label}`,
-          updatedAt: instance.updatedAt,
-          durationMs: null,
-        };
-      }
-      if (item.documentId) {
-        const document = await repos.documents.getById(CreativeDocumentIdSchema.parse(item.documentId));
-        const head = document ? await repos.documents.getRevision(document.id, document.headRevision) : null;
-        if (!document || !head) return { ...empty, detail: "Documento excluído" };
-        const style = head.content.style;
-        const pages = contentPages(head.content);
-        const durationMs = isMotion(head.content) ? totalDurationMs(head.content) : null;
-        const detail = isMotion(head.content)
-          ? `Vídeo · ${plural(head.content.scenes.length, "cena", "cenas")} · ${formatDuration(durationMs ?? 0)}`
-          : isCarousel(head.content)
-            ? `Carrossel · ${plural(pages.length, "página", "páginas")}`
-            : FORMATS[item.formatId].label;
-        return {
-          item,
-          preview: pages[0] ? { artboard: pages[0].artboard, tokens: resolveTokens(profileOf(style.profileRevision), style.mode, style.primary ? { primary: style.primary } : {}) } : null,
-          href: `/studio/${document.id}`,
-          detail,
-          updatedAt: document.updatedAt,
-          durationMs,
-        };
-      }
-      return { ...empty, detail: "Não gerado" };
-    })
-  );
+  const views = await buildItemViews(repos, project.slug, kit, assets, profiles);
 
   const lastJob = kit.lastRenderJobId ? await repos.jobs.getById(JobIdSchema.parse(kit.lastRenderJobId)) : null;
   const busyJobId = lastJob && !isTerminal(lastJob.status) ? lastJob.id : null;
@@ -126,7 +55,7 @@ export default async function KitPage({ params }: Props) {
   return (
     <div className="space-y-8">
       <RenderFonts />
-      <Breadcrumb items={[{ label: project.name, href: base }, { label: "Media Kits", href: `${base}/kits` }, { label: kit.name }]} />
+      <Breadcrumb items={[{ label: project.name, href: base }, { label: "Conjuntos de peças", href: `${base}/kits` }, { label: kit.name }]} />
 
       <header className="space-y-3">
         <h2 className="text-[20px] font-semibold leading-snug text-cbm-white">{kit.name}</h2>

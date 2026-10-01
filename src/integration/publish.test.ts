@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -13,7 +13,7 @@ import { GithubApiDestination, LocalFolderDestination, githubConfigFromEnv } fro
 import { LocalAssetStorage } from "../infrastructure/storage/local-asset-storage";
 import { buildZip } from "../infrastructure/zip/zip-builder";
 import { createNewProject, deleteProjectPermanently } from "../modules/projects/project-service";
-import { createExportJobHandler, deliveryStamp, requestPackage, requestPortfolio, type ExportDeps } from "../modules/publish/export-service";
+import { createExportJobHandler, deliveryStamp, requestPackage, requestPortfolio, revealExport, type ExportDeps } from "../modules/publish/export-service";
 import { isDomainError } from "../shared/errors";
 import { JobWorker } from "../workers/job-worker";
 
@@ -124,6 +124,36 @@ describe("Publish & Portfolio", () => {
     }
     expect(existsSync(path.join(dir, "fora"))).toBe(false);
     expect(existsSync(path.join(dir, "exports", "escape.txt"))).toBe(false);
+  });
+
+  it("abrir pasta: abre a pasta real da entrega, só dentro da raiz de entregas", async () => {
+    const { project, hero } = await setup();
+    const opened: string[] = [];
+    const folder = new LocalFolderDestination(path.join(dir, "exports"), async (p) => void opened.push(p));
+    const d = deps({ folder });
+    const { record } = await requestPackage(d, { projectId: project.id, outputIds: [hero.id], destination: "folder" });
+    expect((await run(d))?.status).toBe("completed");
+
+    await revealExport(d, record.id);
+    const delivered = (await repos.exports.getById(record.id))!;
+    expect(opened).toHaveLength(1);
+    expect(path.relative(path.join(dir, "exports"), opened[0])).toBe(delivered.result.folder);
+    expect(folder.locate(delivered.result.folder!)).toBe(opened[0]);
+
+    // Caminhos fora da raiz, pasta inexistente e junction para fora são recusados.
+    for (const bad of ["../fora", "/abs", "a/../../b", "c:\\x"]) {
+      await expect(folder.reveal(bad)).rejects.toSatisfy((e: unknown) => isDomainError(e, "PATH_OUTSIDE_ROOT"));
+    }
+    await expect(folder.reveal("nao-existe")).rejects.toSatisfy((e: unknown) => isDomainError(e, "NOT_FOUND"));
+    mkdirSync(path.join(dir, "fora"));
+    symlinkSync(path.join(dir, "fora"), path.join(dir, "exports", "atalho"), "junction");
+    await expect(folder.reveal("atalho")).rejects.toSatisfy((e: unknown) => isDomainError(e, "PATH_OUTSIDE_ROOT"));
+    expect(opened).toHaveLength(1);
+
+    // Entrega em ZIP não tem pasta para abrir.
+    const zip = await requestPackage(d, { projectId: project.id, outputIds: [hero.id], destination: "download" });
+    expect((await run(d))?.status).toBe("completed");
+    await expect(revealExport(d, zip.record.id)).rejects.toSatisfy((e: unknown) => isDomainError(e, "VALIDATION"));
   });
 
   it("recusa peças de outro projeto, seleção vazia e GitHub sem configuração", async () => {

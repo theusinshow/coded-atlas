@@ -7,6 +7,7 @@
  *
  * Sobe um site fixture local (não depende de internet) e cresce a cada fase.
  */
+import { existsSync, readdirSync } from "node:fs";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { chromium, type Page } from "playwright";
@@ -139,6 +140,7 @@ async function main(): Promise<void> {
 
     await step("identidade visual e biblioteca global", async () => {
       await page.goto(`${BASE}/projects/e2e-${slug}`);
+      await page.locator("summary", { hasText: "Identidade visual" }).click();
       await page.getByRole("list", { name: "Paleta" }).getByText("#101418").waitFor();
       await page.goto(`${BASE}/library?q=servi&project=e2e-${slug}`);
       await page.getByText("Serviços").first().waitFor();
@@ -247,6 +249,7 @@ async function main(): Promise<void> {
 
     await step("sistema criativo: corrigir identidade, memória do projeto e direção salva", async () => {
       await page.goto(`${BASE}/projects/e2e-${slug}`);
+      await page.locator("summary", { hasText: "Identidade visual" }).click();
       await page.getByText("Corrigir identidade").click();
       await page.getByLabel("Cores").fill("#0b1f33, #f2a900, #ffffff");
       await page.getByRole("button", { name: "Salvar nova revisão" }).click();
@@ -341,12 +344,14 @@ async function main(): Promise<void> {
       assert(res.ok && res.headers.get("content-type") === "video/mp4", `mp4 HTTP ${res.status}`);
     });
 
-    await step("media kit: gerar pela visão geral → render em lote → ZIP por item", async () => {
+    await step("media kit (avançado): montar → render em lote → ZIP por item", async () => {
       await page.goto(`${BASE}/projects/e2e-${slug}`);
-      await page.getByRole("link", { name: "Gerar Media Kit" }).click();
+      await page.getByRole("button", { name: "Avançado" }).click();
+      await page.getByRole("link", { name: "Criar", exact: true }).click();
+      await page.getByRole("link", { name: "Conjuntos de peças" }).click();
       await page.waitForURL(`**/projects/e2e-${slug}/kits`);
       await page.getByText("Kit social", { exact: true }).click();
-      await page.getByRole("button", { name: "Gerar Media Kit" }).click();
+      await page.getByRole("button", { name: "Montar conjunto de peças" }).click();
       await page.waitForURL(/\/kits\/[0-9A-Z]{26}$/, { timeout: 60_000 });
       await page.locator("[data-kit-item] [data-atlas-artboard]").first().waitFor();
       assert((await page.locator("[data-kit-item]").count()) === 5, "kit social deveria ter 5 itens");
@@ -359,6 +364,41 @@ async function main(): Promise<void> {
       assert(res.ok && res.headers.get("content-type") === "application/zip", `zip HTTP ${res.status}`);
       const zip = Buffer.from(await res.arrayBuffer());
       assert(zip.subarray(0, 2).toString() === "PK" && zip.includes(Buffer.from("01-post-1-1/")) && zip.includes(Buffer.from(".mp4")), "zip do kit sem pastas por item ou sem vídeo");
+    });
+
+    await step("objetivo: Início → Portfólio → montar, trocar e tirar peça → gerar → salvar na pasta", async () => {
+      await page.goto(`${BASE}/projects/e2e-${slug}`);
+      await page.getByRole("heading", { name: "O que você quer fazer?" }).waitFor();
+      await page.locator('[data-goal="portfolio"]').click();
+      await page.waitForURL(`**/projects/e2e-${slug}/fazer/portfolio`);
+      assert((await page.locator('[data-goal-step="1"]').getAttribute("data-step-state")) === "done", "material deveria estar pronto");
+      await page.getByRole("button", { name: "Montar as peças" }).click();
+      await page.locator("[data-goal-piece] [data-atlas-artboard]").first().waitFor({ timeout: 60_000 });
+      assert((await page.locator("[data-goal-piece]").count()) === 5, "portfólio deveria ter 5 peças");
+
+      const hero = page.locator('[data-goal-piece="hero"]');
+      const before = await hero.locator("p").nth(1).textContent();
+      await hero.getByRole("button", { name: /Trocar visual/ }).click();
+      await waitFor(async () => (await hero.locator("p").nth(1).textContent()) !== before, "visual trocado", 30_000);
+
+      // Tirar o vídeo deixa a geração rápida e exercita "Tirar".
+      await page.locator('[data-goal-piece="showcase"]').getByRole("button", { name: /Tirar/ }).click();
+      await waitFor(async () => (await page.locator("[data-goal-piece]").count()) === 4, "peça removida", 30_000);
+
+      await page.getByRole("button", { name: "Gerar arquivos" }).click();
+      await page.locator('[data-goal-step="4"][data-step-state="current"]').waitFor({ timeout: 300_000 });
+      const zipLink = page.getByRole("link", { name: "Baixar tudo (.zip)" });
+      const res = await fetch(`${BASE}${await zipLink.getAttribute("href")}`);
+      assert(res.ok && res.headers.get("content-type") === "application/zip", `zip HTTP ${res.status}`);
+      assert((await page.locator("[data-goal-file]").count()) === 4, "4 peças geradas");
+
+      await page.getByRole("button", { name: "Salvar na pasta" }).click();
+      await page.locator("[data-goal-folder] code").waitFor({ timeout: 60_000 });
+      const folder = (await page.locator("[data-goal-folder] code").textContent()) ?? "";
+      assert(existsSync(folder) && readdirSync(folder).length > 0, `pasta da entrega não existe: ${folder}`);
+
+      await page.goto(`${BASE}/projects/e2e-${slug}`);
+      await page.locator("[data-home-files] li").first().getByText("Portfólio / site").waitFor();
     });
 
     await step("apresentação: storyboard → notas → PDF + PPTX em Publicar", async () => {
@@ -426,7 +466,7 @@ async function main(): Promise<void> {
       await page.getByText("Pasta de entregas", { exact: true }).click();
       await page.getByRole("button", { name: "Exportar portfólio" }).click();
       await page.getByText("Concluído").waitFor({ timeout: 60_000 });
-      await page.locator('[data-export-status="delivered"]', { hasText: /pasta: portfolio-/ }).first().waitFor({ timeout: 15_000 });
+      await page.locator('[data-export-status="delivered"]', { hasText: /Salvo em: .*portfolio-/ }).first().waitFor({ timeout: 15_000 });
     });
 
     await step("social: novo post com peça do projeto → legenda → pronto → pacote com legenda.txt", async () => {

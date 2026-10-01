@@ -3,17 +3,18 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowRight, ArrowUpRight, Check } from "lucide-react";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { AssetThumb } from "@/components/atlas/asset-image";
 import { SourcesPanel } from "@/components/atlas/sources-panel";
 import { VisualIdentity } from "@/components/atlas/visual-identity";
 import { IdentityEditor } from "@/components/creative/identity-editor";
-import { LABEL_CLASS, LinkButton, Panel, SectionTitle } from "@/components/ui/primitives";
-import { JOB_TYPE_LABEL, JobStatusBadge, jobOutcome } from "@/components/ui/status";
-import { relativeTime } from "@/components/ui/format";
+import { DownloadLink, RevealFolderButton } from "@/components/goals/goal-actions";
+import { Collapsible, SectionTitle } from "@/components/ui/primitives";
+import { plural, relativeTime } from "@/components/ui/format";
+import { currentKitFor, goalAction, goalOfPreset, GOALS, kitFiles } from "@/src/core/kits/goals";
+import { getKitPreset } from "@/src/core/kits/media-kit";
 import { getAtlasRuntime } from "@/src/infrastructure/runtime";
 import { getProjectOverview } from "@/src/modules/projects/overview";
-import { nextStep, stepStatuses } from "@/src/modules/projects/next-step";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -26,129 +27,149 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: `${project?.name ?? "Projeto"} — Coded Atlas` };
 }
 
-export default async function ProjectOverviewPage({ params }: Props) {
+const ACTION_LABEL = { start: "Começar", resume: "Continuar de onde parou", done: "Ver arquivos" } as const;
+
+/**
+ * Início do projeto (Atlas 3.3 — começar pelo objetivo): a primeira pergunta é o
+ * que o Matheus quer fazer; logo abaixo, onde estão os arquivos já gerados. O resto
+ * (identidade, endereços) fica recolhido; as telas completas vivem em "Avançado".
+ */
+export default async function ProjectHomePage({ params }: Props) {
   const { slug } = await params;
   const runtime = await getAtlasRuntime();
   const o = await getProjectOverview(runtime.repos, slug);
-  const profile = await runtime.repos.visualProfiles.latest(o.project.id);
-  const url = o.sources.find((s) => s.type === "url" || s.type === "local");
-  const [kits, documents, exports] = await Promise.all([
+  const [profile, kits, outputs, exports] = await Promise.all([
+    runtime.repos.visualProfiles.latest(o.project.id),
     runtime.repos.kits.listByProject(o.project.id),
-    runtime.repos.documents.listByProject(o.project.id),
+    runtime.repos.outputs.listByProject(o.project.id),
     runtime.repos.exports.listByProject(o.project.id),
   ]);
-  const progress = {
-    hasSiteSource: Boolean(url),
-    assets: o.totalAssets,
-    kits: kits.length,
-    renderedKits: kits.filter((k) => k.status === "rendered").length,
-    pendingKitId: kits.find((k) => k.status !== "rendered")?.id ?? null,
-    cases: documents.filter((d) => d.kind === "case").length,
-    documents: documents.filter((d) => d.kind !== "case").length,
-    outputs: o.outputs,
-    exports: exports.length,
-  };
-  const next = nextStep(progress);
-  const steps = stepStatuses(progress);
   const base = `/projects/${o.project.slug}`;
-  const hrefOf = (h: string) => (h.startsWith("#") ? h : h ? `${base}/${h}` : base);
+  const url = o.sources.find((s) => s.type === "url" || s.type === "local");
+  const caseCount = (await runtime.repos.documents.listByProject(o.project.id)).filter((d) => d.kind === "case").length;
+
+  const delivered = kits
+    .filter((k) => k.status === "rendered")
+    .map((kit) => {
+      const files = kitFiles(outputs, kit);
+      const ids = new Set(files.map((f) => f.id as string));
+      const folder = exports
+        .filter((e) => e.destination === "folder" && e.status === "delivered" && e.result.folder && e.outputIds.some((id) => ids.has(id)))
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+      return { kit, files, folder, goal: goalOfPreset(kit.presetId) };
+    })
+    .filter((d) => d.files.length > 0)
+    .sort((a, b) => b.kit.updatedAt.localeCompare(a.kit.updatedAt))
+    .slice(0, 6);
 
   return (
-    <div className="space-y-10">
-      <section className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-        <div className="aspect-video border border-line overflow-hidden">
-          <AssetThumb id={o.cover?.id} alt={`Capa de ${o.project.name}`} width={1280} className="w-full h-full" />
-        </div>
-        <div className="min-w-0 space-y-5">
-          {o.project.description && <p className="text-sm text-cbm-gray-200 leading-relaxed">{o.project.description}</p>}
-          {url && (
-            <a href={url.locator} target="_blank" rel="noreferrer" className="flex min-h-10 min-w-0 items-center gap-1.5 text-[13px] text-accent hover:text-accent-bright sm:min-h-0">
-              <span className="truncate">{url.locator.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
-              <ArrowUpRight size={14} className="shrink-0" aria-hidden />
-              <span className="sr-only">(abre em nova aba)</span>
-            </a>
-          )}
-          <div className="border border-line bg-surface p-5 space-y-3" data-next-step={next.step}>
-            <p className={`${LABEL_CLASS} !mb-0`}>Próximo passo</p>
-            <h2 className="text-[18px] font-semibold leading-snug text-cbm-white">{next.title}</h2>
-            <p className="text-[13px] text-cbm-gray-400 leading-relaxed">{next.detail}</p>
-            <LinkButton href={hrefOf(next.href)} variant="primary" className="max-sm:w-full">
-              {next.cta}
-            </LinkButton>
-          </div>
-          <ol className="grid grid-cols-3 gap-2" aria-label="Passos do projeto">
-            {steps.map((st) => (
-              <li key={st.key} className="min-w-0">
+    <div className="space-y-12">
+      <section aria-labelledby="objetivo">
+        <h2 id="objetivo" className="mb-4 font-display text-[18px] font-bold leading-tight tracking-[-0.01em] text-cbm-white">
+          O que você quer fazer?
+        </h2>
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {GOALS.map((goal) => {
+            const kit = goal.presetId ? currentKitFor(kits, goal.presetId) : null;
+            const action = goal.presetId ? goalAction(kit) : caseCount > 0 ? "resume" : "start";
+            const pieces = goal.presetId ? (getKitPreset(goal.presetId)?.items.map((i) => i.label) ?? []) : ["Página web", "PDF", "Apresentação"];
+            return (
+              <li key={goal.id} className="min-w-0">
                 <Link
-                  href={hrefOf(st.href)}
-                  className={`block h-full border px-3 py-3 transition-colors hover:border-cbm-gray-400 ${next.step === st.key ? "border-cbm-gray-600" : "border-line"}`}
-                  data-step={st.key}
-                  data-step-done={st.done}
+                  href={`${base}/fazer/${goal.id}`}
+                  className="group flex h-full flex-col border border-line bg-surface p-5 transition-colors hover:border-cbm-gray-400 focus-visible:border-cbm-white"
+                  data-goal={goal.id}
                 >
-                  <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] font-medium uppercase tracking-[0.14em] text-cbm-gray-400 sm:tracking-[0.22em]">
-                    <span className={`grid h-4 w-4 shrink-0 place-items-center text-[11px] font-semibold tabular-nums ${st.done ? "text-ok" : next.step === st.key ? "text-cbm-white" : "text-cbm-gray-400"}`} aria-hidden>
-                      {st.done ? <Check size={14} /> : st.number}
-                    </span>
-                    <span>{st.label}</span>
-                    {st.done && <span className="sr-only">(feito)</span>}
-                  </p>
-                  <p className="mt-1.5 text-[12px] text-cbm-gray-200 leading-snug">{st.summary}</p>
+                  <span className="text-[15px] font-semibold leading-snug text-cbm-white">{goal.title}</span>
+                  <span className="mt-1.5 text-[12px] leading-snug text-cbm-gray-400">{goal.description}</span>
+                  <span className="mt-4 flex flex-wrap gap-1" aria-label="O que sai">
+                    {pieces.map((p) => (
+                      <span key={p} className="border border-line px-1.5 py-0.5 text-[11px] text-cbm-gray-400">
+                        {p}
+                      </span>
+                    ))}
+                  </span>
+                  <span className="mt-auto flex items-center gap-1.5 pt-5 text-[12px] text-accent group-hover:text-accent-bright">
+                    {ACTION_LABEL[action]}
+                    <ArrowRight size={14} className="transition-transform duration-150 group-hover:translate-x-0.5" aria-hidden />
+                  </span>
                 </Link>
               </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      <section aria-labelledby="arquivos">
+        <SectionTitle
+          id="arquivos"
+          aside={
+            <Link href={`${base}/publish`} className="-my-2 inline-flex h-10 items-center gap-1 text-[12px] text-cbm-gray-400 hover:text-cbm-white sm:my-0 sm:h-8">
+              Todas as entregas
+              <ArrowRight size={14} aria-hidden />
+            </Link>
+          }
+        >
+          Seus arquivos
+        </SectionTitle>
+        {delivered.length === 0 ? (
+          <p className="border border-dashed border-line p-5 text-[13px] text-cbm-gray-400">Nada gerado ainda. Escolha um objetivo acima: no fim do caminho os arquivos aparecem aqui.</p>
+        ) : (
+          <ul className="divide-y divide-line border border-line" data-home-files>
+            {delivered.map(({ kit, files, folder, goal }) => (
+              <li key={kit.id} className="grid gap-2 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                <div className="min-w-0">
+                  <p className="truncate text-[13px] text-cbm-gray-100">{goal?.title ?? kit.name}</p>
+                  <p className="text-[12px] text-cbm-gray-400">
+                    {plural(files.length, "arquivo", "arquivos")} · {relativeTime(kit.updatedAt)}
+                    {folder && " · salvo na pasta"}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-4">
+                  <DownloadLink href={`/api/atlas/kits/${kit.id}/zip`}>Baixar (.zip)</DownloadLink>
+                  {folder && runtime.exportDeps.folder.canReveal && <RevealFolderButton exportId={folder.id} />}
+                  {goal && (
+                    <Link href={`${base}/fazer/${goal.id}`} className="inline-flex h-10 sm:h-8 items-center text-[12px] text-cbm-gray-400 hover:text-cbm-white">
+                      Abrir
+                    </Link>
+                  )}
+                </div>
+              </li>
             ))}
-          </ol>
-        </div>
+          </ul>
+        )}
       </section>
 
-      <section aria-labelledby="identidade">
-        <SectionTitle id="identidade">Identidade visual</SectionTitle>
-        <div className="space-y-4">
-          <VisualIdentity profile={profile} />
-          <IdentityEditor projectId={o.project.id} profile={profile} />
+      <section aria-labelledby="projeto" className="space-y-3">
+        <SectionTitle id="projeto">Sobre o projeto</SectionTitle>
+        <div className="grid gap-6 md:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
+          <div className="aspect-video overflow-hidden border border-line">
+            <AssetThumb id={o.cover?.id} alt={`Capa de ${o.project.name}`} width={640} className="h-full w-full" />
+          </div>
+          <div className="min-w-0 space-y-3">
+            {o.project.description && <p className="text-sm leading-relaxed text-cbm-gray-200">{o.project.description}</p>}
+            {url && (
+              <a href={url.locator} target="_blank" rel="noreferrer" className="flex min-h-10 min-w-0 items-center gap-1.5 text-[13px] text-accent hover:text-accent-bright sm:min-h-0">
+                <span className="truncate">{url.locator.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
+                <ArrowUpRight size={14} className="shrink-0" aria-hidden />
+                <span className="sr-only">(abre em nova aba)</span>
+              </a>
+            )}
+            <p className="text-[12px] text-cbm-gray-400">
+              {plural(o.totalAssets, "item de material", "itens de material")} · {plural(o.outputs, "arquivo gerado", "arquivos gerados")}
+            </p>
+          </div>
         </div>
-      </section>
-
-      <div className="grid gap-10 lg:grid-cols-2">
-        <section aria-labelledby="origens" className="min-w-0">
-          <SectionTitle id="origens">Origens</SectionTitle>
+        <Collapsible title="Identidade visual" meta={profile ? `${plural(profile.palette.length, "cor", "cores")}` : "não lida ainda"}>
+          <div className="space-y-4">
+            <VisualIdentity profile={profile} />
+            <IdentityEditor projectId={o.project.id} profile={profile} />
+          </div>
+        </Collapsible>
+        <Collapsible title="Endereços do site" meta={plural(o.sources.length, "endereço", "endereços")}>
           <SourcesPanel projectId={o.project.id} sources={o.sources} />
-        </section>
-
-        <section aria-labelledby="atividade" className="min-w-0">
-          <SectionTitle
-            id="atividade"
-            aside={
-              <Link href="/jobs" className="-my-2 inline-flex h-10 items-center gap-1 text-[12px] text-cbm-gray-400 hover:text-cbm-white sm:my-0 sm:h-8">
-                Ver atividade
-                <ArrowRight size={14} aria-hidden />
-              </Link>
-            }
-          >
-            Atividade recente
-          </SectionTitle>
-          {o.recentJobs.length === 0 ? (
-            <p className="text-[13px] text-cbm-gray-400">Nenhuma atividade ainda.</p>
-          ) : (
-            <Panel>
-              <ul className="divide-y divide-line">
-                {o.recentJobs.map((job) => (
-                  <li key={job.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
-                    <div className="min-w-0">
-                      <p className="text-[13px] text-cbm-gray-200">{JOB_TYPE_LABEL[job.type] ?? job.type}</p>
-                      <p className={`text-[12px] truncate ${job.status === "failed" ? "text-bad" : "text-cbm-gray-400"}`}>
-                        {jobOutcome(job)} · {relativeTime(job.updatedAt)}
-                      </p>
-                    </div>
-                    <div className="shrink-0">
-                      <JobStatusBadge status={job.status} />
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </Panel>
-          )}
-        </section>
-      </div>
+        </Collapsible>
+      </section>
     </div>
   );
 }

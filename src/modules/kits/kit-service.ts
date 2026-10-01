@@ -1,6 +1,7 @@
 import { buildShortlist } from "../../core/brain/context";
 import { deterministicPlan, type CreativeDirection } from "../../core/brain/plan";
 import { autoBind, missingSlots } from "../../core/creative/auto-bind";
+import { CompositionInstanceIdSchema } from "../../core/creative/composition";
 import { getComposition, COMPOSITIONS } from "../../core/creative/compositions";
 import { CreativeDirectionIdSchema, type CreativeDirectionRepository } from "../../core/creative/direction";
 import { resolvePreferences, type CreativeMemoryRepository } from "../../core/creative/memory";
@@ -10,7 +11,7 @@ import { createMediaKit, getKitPreset, type KitItem, type MediaKit, type MediaKi
 import type { SourceRepository } from "../../core/projects/repositories";
 import { DomainError } from "../../shared/errors";
 import { JobIdSchema, newId, type ProjectId } from "../../shared/id";
-import { createInstance, type CompositionDeps } from "../create/composition-service";
+import { createInstance, deleteInstance, type CompositionDeps } from "../create/composition-service";
 import { createCarouselFromItems, createVideoFromRecipe, type DocumentDeps } from "../create/document-service";
 import type { RenderJobPayload } from "../render/render-job";
 import type { VideoQuality } from "../render/motion-renderer";
@@ -129,6 +130,69 @@ export async function enqueueKitRender(deps: Pick<KitDeps, "kits" | "jobs">, kit
   const job = await deps.jobs.create(createJob({ type: "render", projectId: kit.projectId, payload: { target: { kind: "kit", kitId: kit.id }, formats, quality: options.quality } satisfies RenderJobPayload }));
   await deps.kits.update({ ...kit, status: "rendering", lastRenderJobId: job.id });
   return job;
+}
+
+/** Kit que pode ser alterado agora: existe e não tem render em andamento. */
+async function editableKit(deps: Pick<KitDeps, "kits" | "jobs">, kitId: MediaKitId): Promise<MediaKit> {
+  const kit = await deps.kits.getById(kitId);
+  if (!kit) throw new DomainError("NOT_FOUND", "Media Kit não encontrado.");
+  if (kit.status === "rendering" && kit.lastRenderJobId) {
+    const last = await deps.jobs.getById(JobIdSchema.parse(kit.lastRenderJobId));
+    if (last && !isTerminal(last.status)) throw new DomainError("CONFLICT", "Espere a geração terminar para mudar as peças.");
+  }
+  return kit;
+}
+
+/** Mudou a peça: o render anterior deixa de representar o kit. */
+const touched = (kit: MediaKit, items: KitItem[]): MediaKit => ({ ...kit, items, status: kit.status === "rendered" || kit.status === "rendering" ? "ready" : kit.status });
+
+/**
+ * "Trocar visual": o item passa para a próxima composição usável (as do preset
+ * primeiro, depois as demais que aceitam o formato), em ciclo. Mesmo formato,
+ * estilo e destaque do kit; a instância anterior sai (Outputs já gerados ficam).
+ */
+export async function swapKitItemVisual(deps: KitDeps, kitId: MediaKitId, itemId: string): Promise<MediaKit> {
+  const kit = await editableKit(deps, kitId);
+  const item = kit.items.find((i) => i.id === itemId);
+  if (!item) throw new DomainError("NOT_FOUND", "Peça não encontrada no kit.");
+  if (item.kind !== "composition") throw new DomainError("VALIDATION", "Só imagens podem trocar de visual.");
+  const project = await deps.projects.getById(kit.projectId);
+  if (!project) throw new DomainError("NOT_FOUND", "Projeto não encontrado.");
+  const [assets, sources, memories] = await Promise.all([deps.assets.listByProject(kit.projectId), deps.sources.listByProject(kit.projectId), deps.memory.listFor(kit.projectId)]);
+  const preferences = resolvePreferences(memories);
+  const bindingContext = { project, assets, url: sources.find((s) => s.type === "url")?.locator ?? null };
+
+  const preferred = getKitPreset(kit.presetId)?.items.find((p) => p.id === item.presetItemId)?.compositions ?? [];
+  const ordered = [...preferred, ...COMPOSITIONS.map((c) => c.id).filter((id) => !preferred.includes(id))];
+  const usable = ordered.filter((id) => {
+    const definition = getComposition(id);
+    return definition && !preferences.avoidCompositions.has(id) && definition.formats.includes(item.formatId) && missingSlots(definition, autoBind(definition, bindingContext)).length === 0;
+  });
+  const current = item.instanceId ? (await deps.compositionInstances.getById(CompositionInstanceIdSchema.parse(item.instanceId)))?.compositionId : undefined;
+  const next = usable[(usable.indexOf(current ?? "") + 1) % Math.max(usable.length, 1)];
+  if (!next || next === current) throw new DomainError("VALIDATION", "Não há outro visual para esta peça com o material atual.");
+
+  const instance = await createInstance(deps.composition, kit.projectId, {
+    compositionId: next,
+    formatId: item.formatId,
+    styleMode: kit.direction.styleMode,
+    name: `${kit.name} · ${item.label}`.slice(0, 120),
+    overrides: kit.direction.accent ? { primary: kit.direction.accent } : {},
+  });
+  const updated = await deps.kits.update(touched(kit, kit.items.map((i) => (i.id === item.id ? { ...i, instanceId: instance.id, note: null } : i))));
+  if (item.instanceId) await deleteInstance(deps.composition, CompositionInstanceIdSchema.parse(item.instanceId)).catch(() => undefined);
+  return updated;
+}
+
+/** "Tirar": remove a peça do kit (nunca a última); a instância de composição sai junto. */
+export async function removeKitItem(deps: KitDeps, kitId: MediaKitId, itemId: string): Promise<MediaKit> {
+  const kit = await editableKit(deps, kitId);
+  const item = kit.items.find((i) => i.id === itemId);
+  if (!item) throw new DomainError("NOT_FOUND", "Peça não encontrada no kit.");
+  if (kit.items.length <= 1) throw new DomainError("VALIDATION", "O kit precisa de pelo menos uma peça.");
+  const updated = await deps.kits.update(touched(kit, kit.items.filter((i) => i.id !== item.id)));
+  if (item.instanceId) await deleteInstance(deps.composition, CompositionInstanceIdSchema.parse(item.instanceId)).catch(() => undefined);
+  return updated;
 }
 
 export async function deleteMediaKit(deps: Pick<KitDeps, "kits">, kitId: MediaKitId): Promise<MediaKit> {

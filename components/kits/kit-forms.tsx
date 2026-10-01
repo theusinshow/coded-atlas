@@ -66,7 +66,7 @@ export function KitGenerator({ projectId, directions }: { projectId: string; dir
         <p className="text-[12px] text-cbm-gray-400 mt-1.5">Vale para todas as peças do kit.</p>
       </div>
       <Button variant="primary" type="submit" disabled={pending} className="w-full">
-        {pending ? "Gerando…" : "Gerar Media Kit"}
+        {pending ? "Montando…" : "Montar conjunto de peças"}
       </Button>
       <FormError message={state?.error} />
     </form>

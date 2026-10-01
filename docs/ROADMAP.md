@@ -142,3 +142,7 @@ Port the last v1-only capabilities (authenticated capture, visual diff) to 2.x, 
 ## Atlas 3.2 — UI/UX pass and Social (authorized 2026-09-29)
 
 A senior UI/UX pass on every screen: coherent, objective, with restrained motion (Motion, free React Bits, useAnimations) and every trace of AI slop removed. Plus a global **Social** planner for the Coded by M Instagram (feed grid preview, posts/carousels/reels, stories with safe zones, captions and hashtags, draft → ready → posted). Nothing is ever published automatically.
+
+## Atlas 3.3 — Começar pelo objetivo (authorized 2026-10-01)
+
+The owner tested the Atlas for portfolio media and found it confusing (where to start, too many options in Criar, can't find the result, system jargon). Each project opens on **Início**: "O que você quer fazer?" (Portfólio / site, Instagram, Lançamento, Case / apresentação) and "Seus arquivos". Each goal is a guided 4-step path over an existing Media Kit (Material → Peças → Gerar → Pronto) ending in Baixar ZIP / Salvar na pasta / Abrir pasta. The current tabs move under "Avançado". The Atlas UI moves to a neutral black background; generated pieces keep the Coded by M palette. Design: `docs/superpowers/specs/2026-10-01-comecar-pelo-objetivo-design.md`.
