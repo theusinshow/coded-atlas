@@ -401,3 +401,7 @@ Pedido do Matheus ao testar para o portfólio: "ta meio confuso" + fundo mais es
 - [x] Textos: sub-abas sem jargão, "Visuais prontos", "Conjuntos de peças", "Arquivos gerados", "Peças antigas" recolhidas, caminho completo da pasta e "Abrir pasta" no histórico de entregas.
 
 Verificação 3.3: typecheck/lint OK; `npm test` 476 (38 arquivos); build OK; `npm run e2e` 27/27 (novo passo: Início → Portfólio → montar, trocar e tirar peça → gerar → salvar na pasta, conferindo a pasta no disco); prints desktop 1440 e celular 390 de Início, caminho guiado, Entregar, Criar e Projetos com dados reais, sem rolagem lateral.
+
+## Manutenção pós-3.3
+
+- [x] 2026-10-01 — **Marca do Coded Atlas** (ADR-051): símbolo "visor de captura" escolhido pelo Matheus entre 3 opções; SVGs em `public/brand/` (padrão, pequeno, sobre claro, monocromáticos), ícone da aba `app/icon.svg`, `AtlasMark` na barra do topo no lugar do triângulo; diretrizes em `docs/BRAND.md` e página visual `docs/brand/atlas-brand.html`. Verificação: typecheck/lint OK; ícone servido em `/icon.svg` e no `<head>`; prints da barra, do ícone em 16/32 px e da página de marca (desktop e celular, sem rolagem lateral).

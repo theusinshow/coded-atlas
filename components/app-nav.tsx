@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Search, Settings } from "lucide-react";
 import { DURATION, EASE_OUT } from "@/components/ui/motion";
+import { AtlasMark } from "@/components/ui/atlas-mark";
 
 /**
  * Navegação global (docs/UX-ARCHITECTURE.md): só os lugares onde o trabalho
@@ -48,7 +49,7 @@ export function AppNav() {
     <header className="sticky top-0 z-40 border-b border-line/80 bg-base/85 backdrop-blur-md">
       <nav aria-label="Principal" className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-wrap items-center justify-between gap-x-6">
         <Link href="/projects" className="flex items-center gap-2.5 h-14 shrink-0">
-          <span className="tri text-signal" aria-hidden />
+          <AtlasMark size={16} />
           <span className="font-display text-[13px] font-bold tracking-[0.04em] text-cbm-white">CODED ATLAS</span>
         </Link>
 

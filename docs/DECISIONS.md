@@ -347,3 +347,11 @@ Accepted (2026-10-01; owner tested the Atlas for portfolio media: "ta meio confu
 - **Two kit operations:** `swapKitItemVisual` (next usable composition: preset alternatives first, then any composition that accepts the format; cyclic) and `removeKitItem` (never the last). Both refuse while rendering and send a rendered kit back to `ready`; the replaced instance is deleted, Outputs stay.
 - **"Abrir pasta"** is a `FolderDestination` capability (`locate`, `canReveal`, `reveal`). The action receives only an export id; the path comes from the record, is confined to `ATLAS_EXPORT_DIR` by string and by `realpath` (junctions), and opens with `explorer.exe` without a shell. Other OSes show the path with "copiar".
 - **The previous tabs move under "Avançado"** (same URLs). Labels near the main path drop jargon ("Imagens e vídeos", "Visuais", "Conjuntos de peças", "Arquivos gerados"); v1 outputs collapse into "Peças antigas". Studio and editors keep "Renderizar".
+
+## ADR-051 — Coded Atlas symbol: the viewfinder
+
+Accepted (2026-10-01; owner chose option B of three — "A" aberto, visor de captura, Λ com incisão).
+
+- **The symbol is a capture viewfinder**: two off-white corners (top-right, bottom-left) cut by the signal diagonal, top-left → bottom-right, on a 160 × 160 grid. It reuses the Coded by M symbol grammar (round-cap strokes, off-white structure, one cut in the signal, same diagonal direction), so the Atlas reads as a sub-brand, not a parallel identity.
+- **It speaks about the product (frame and cut), not the letter.** It never signs generated pieces; those keep signing as Coded by M.
+- Two stroke weights (12 from 48 px, 18 below 40 px); the app icon is the only container: a square `#0A0A0A` tile, radius 0. Files in `public/brand/`, `app/icon.svg`, `components/ui/atlas-mark.tsx`. Rules in `docs/BRAND.md`; visual guidelines in `docs/brand/atlas-brand.html`.

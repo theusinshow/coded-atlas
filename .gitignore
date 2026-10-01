@@ -40,3 +40,6 @@ next-env.d.ts
 
 # Atlas 2.x — banco e storage locais (dados do usuário; nunca versionar)
 /.atlas/
+
+# mockups do brainstorming (visual companion)
+.superpowers/

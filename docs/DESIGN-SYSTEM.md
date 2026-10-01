@@ -6,6 +6,8 @@ The Atlas design system derives from the **Coded by M design system** (cbm-port@
 
 **Core:** a deep base, warm structure and a single signal that cuts. There is no pure black or white, `border-radius` is 0, and red is rare (at most 2–3 per screen).
 
+**Atlas brand (symbol, lockup, icon):** `docs/BRAND.md` and `docs/brand/atlas-brand.html` (ADR-051).
+
 ## Mapping (implemented)
 
 | Foundation (Coded by M) | Atlas token / usage |
